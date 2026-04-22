@@ -20,6 +20,15 @@ logging.basicConfig(
 GPIO_PIN = 3
 UPDATE_INTERVAL = 300  # seconds (5 minutes)
 
+# Day mode runs from DAY_START_HOUR up to (but not including) DAY_END_HOUR.
+DAY_START_HOUR = 7
+DAY_END_HOUR = 23
+
+# Button press classification (seconds).
+LONG_PRESS_SECONDS = 5.0        # hold this long → shutdown
+SHORT_PRESS_MIN_SECONDS = 0.05  # anything shorter is debounce noise
+SHORT_PRESS_MAX_SECONDS = 2.0   # anything between MAX and LONG_PRESS is ignored
+
 # === FONTS ===
 font_large = load_font(28)
 font_small = load_font(22)
@@ -95,9 +104,9 @@ def button_listener(button, epd):
             time.sleep(0.01)
         duration = time.time() - start
 
-        if duration >= 5.0:
+        if duration >= LONG_PRESS_SECONDS:
             shutdown_procedure(epd)
-        elif 0.05 < duration < 2.0:
+        elif SHORT_PRESS_MIN_SECONDS < duration < SHORT_PRESS_MAX_SECONDS:
             logging.info("Short press — forcing update.")
             try:
                 draw_clock(epd)
@@ -136,8 +145,7 @@ def main():
     last_state = None
     while True:
         now = datetime.now()
-        # Day mode: 7:00am–10:59pm (hours 7–22 inclusive)
-        if 7 <= now.hour < 23:
+        if DAY_START_HOUR <= now.hour < DAY_END_HOUR:
             if last_state == "night":
                 # After a night-mode full display() call, the partial-refresh base
                 # image is stale (goodnight screen). Reset it before resuming clock.
