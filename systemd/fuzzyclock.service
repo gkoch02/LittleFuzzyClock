@@ -1,0 +1,14 @@
+[Unit]
+Description=E-Ink Fuzzy Clock Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/fuzzyclock_daemon.py
+Restart=always
+User=pi
+WorkingDirectory=/home/pi
+StandardOutput=null
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

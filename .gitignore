@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dry_run.png
+.DS_Store
