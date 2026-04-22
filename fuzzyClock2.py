@@ -4,12 +4,14 @@ from PIL import Image, ImageDraw
 
 from fuzzyclock_core import load_font, render_clock
 
-# Lazy-import the EPD driver so the script can run in --dry-run mode
-# on machines without the waveshare library installed.
+# Lazy-import the EPD driver so the script can run in --dry-run mode on
+# machines without the waveshare library — or without Pi hardware. The
+# driver raises RuntimeError (not ImportError) on non-Pi Linux when it
+# can't find the GPIO backend, so catch that too.
 try:
     from waveshare_epd import epd2in13_V4
     EPD_AVAILABLE = True
-except ImportError:
+except (ImportError, RuntimeError):
     EPD_AVAILABLE = False
 
 font_large = load_font(28)
