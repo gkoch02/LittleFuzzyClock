@@ -4,6 +4,7 @@
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+TARGET_USER="${SUDO_USER:-$USER}"
 
 echo "==> Installing system packages..."
 # Python deps come from apt rather than pip so we don't collide with PEP 668
@@ -22,9 +23,12 @@ if ! lsmod | grep -q spi_bcm2835; then
     echo "    SPI enabled — you may need to reboot before the display works."
 fi
 
-echo "==> Installing systemd units..."
-sudo cp "$REPO_DIR/systemd/fuzzyclock.service" /etc/systemd/system/
-sudo cp "$REPO_DIR/systemd/fuzzyclock.timer"   /etc/systemd/system/
+echo "==> Installing systemd unit (user=$TARGET_USER, dir=$REPO_DIR)..."
+sed \
+    -e "s|__REPO_DIR__|$REPO_DIR|g" \
+    -e "s|__USER__|$TARGET_USER|g" \
+    "$REPO_DIR/systemd/fuzzyclock.service" \
+    | sudo tee /etc/systemd/system/fuzzyclock.service > /dev/null
 sudo systemctl daemon-reload
 sudo systemctl enable --now fuzzyclock.service
 

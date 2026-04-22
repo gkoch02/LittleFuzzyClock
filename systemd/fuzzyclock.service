@@ -3,11 +3,12 @@ Description=E-Ink Fuzzy Clock Daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/LittleFuzzyClock/fuzzyclock_daemon.py
+# __REPO_DIR__ and __USER__ are substituted by deploy.sh at install time.
+ExecStart=/usr/bin/python3 __REPO_DIR__/fuzzyclock_daemon.py
 Restart=always
-User=pi
-WorkingDirectory=/home/pi/LittleFuzzyClock
-StandardOutput=null
+User=__USER__
+WorkingDirectory=__REPO_DIR__
+StandardOutput=journal
 StandardError=journal
 
 [Install]

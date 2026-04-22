@@ -1,6 +1,8 @@
 # For development/dry-run environments (e.g. macOS).
 # On Raspberry Pi, deploy.sh installs these via apt instead to avoid PEP 668.
-Pillow
-gpiozero
-spidev
-RPi.GPIO
+# Upper bounds guard against future major-version breakage; widen as
+# newer majors are validated against the daemon and --dry-run.
+Pillow>=10,<13
+gpiozero>=1.6,<3
+spidev>=3.5,<4
+RPi.GPIO>=0.7,<1

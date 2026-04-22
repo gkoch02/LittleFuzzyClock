@@ -1,0 +1,65 @@
+"""Tests for fuzzyclock_core.fuzzy_time.
+
+Run with: python3 -m unittest test_fuzzy_time
+"""
+
+import unittest
+
+from fuzzyclock_core import fuzzy_time
+
+
+class FuzzyTimeTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0), ("just after", "nine am"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15), ("quarter past", "nine am"))
+
+    def test_half_past(self):
+        self.assertEqual(fuzzy_time(9, 30), ("half past", "nine am"))
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(fuzzy_time(9, 45), ("quarter to", "ten am"))
+
+    def test_almost_next_hour(self):
+        # Minutes 57-59 should round up into "almost [next hour]" and
+        # NOT wrap back to "just after [current hour]" via % 12.
+        self.assertEqual(fuzzy_time(9, 57), ("almost", "ten am"))
+        self.assertEqual(fuzzy_time(9, 59), ("almost", "ten am"))
+
+    def test_noon_rollover(self):
+        self.assertEqual(fuzzy_time(11, 58), ("almost", "twelve pm"))
+
+    def test_midnight_rollover(self):
+        self.assertEqual(fuzzy_time(23, 58), ("almost", "twelve am"))
+
+    def test_midnight(self):
+        self.assertEqual(fuzzy_time(0, 0), ("just after", "twelve am"))
+
+    def test_noon(self):
+        self.assertEqual(fuzzy_time(12, 0), ("just after", "twelve pm"))
+
+    def test_pm_suffix(self):
+        self.assertEqual(fuzzy_time(15, 30), ("half past", "three pm"))
+
+    def test_am_to_pm_boundary(self):
+        # 11:45 rounds to "quarter to twelve pm"
+        self.assertEqual(fuzzy_time(11, 45), ("quarter to", "twelve pm"))
+
+    def test_every_minute_roundtrips(self):
+        # Smoke test: every minute of every hour should produce a valid
+        # (phrase, hour) tuple with no exceptions and known vocabulary.
+        valid_phrases = {
+            "just after", "a little past", "ten past", "quarter past",
+            "twenty past", "twenty-five past", "half past",
+            "twenty-five to", "twenty to", "quarter to", "ten to", "almost",
+        }
+        for h in range(24):
+            for m in range(60):
+                phrase, hour_str = fuzzy_time(h, m)
+                self.assertIn(phrase, valid_phrases, f"{h:02d}:{m:02d}")
+                self.assertTrue(hour_str.endswith(" am") or hour_str.endswith(" pm"))
+
+
+if __name__ == "__main__":
+    unittest.main()
