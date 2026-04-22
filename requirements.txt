@@ -1,0 +1,4 @@
+Pillow
+gpiozero
+spidev
+RPi.GPIO
