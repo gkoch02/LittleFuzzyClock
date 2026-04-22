@@ -6,11 +6,15 @@ set -e
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "==> Installing system packages..."
+# Python deps come from apt rather than pip so we don't collide with PEP 668
+# (externally-managed-environment) on Raspberry Pi OS Bookworm+.
 sudo apt-get update -qq
-sudo apt-get install -y python3-pip fonts-dejavu-core
-
-echo "==> Installing Python dependencies..."
-pip3 install -r "$REPO_DIR/requirements.txt"
+sudo apt-get install -y \
+    fonts-dejavu-core \
+    python3-pil \
+    python3-gpiozero \
+    python3-spidev \
+    python3-rpi.gpio
 
 echo "==> Enabling SPI (requires reboot if not already enabled)..."
 if ! lsmod | grep -q spi_bcm2835; then

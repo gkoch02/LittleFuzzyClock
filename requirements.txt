@@ -1,3 +1,5 @@
+# For development/dry-run environments (e.g. macOS).
+# On Raspberry Pi, deploy.sh installs these via apt instead to avoid PEP 668.
 Pillow
 gpiozero
 spidev

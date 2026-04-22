@@ -4,10 +4,12 @@ import sys
 import time
 import threading
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from gpiozero import Button
 from subprocess import run
 from waveshare_epd import epd2in13_V4
+
+from fuzzyclock_core import draw_border, load_font, render_clock
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,44 +18,24 @@ logging.basicConfig(
 
 # === CONFIGURATION ===
 GPIO_PIN = 3
-FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 UPDATE_INTERVAL = 300  # seconds (5 minutes)
 
 # === FONTS ===
-font_large = ImageFont.truetype(FONT_PATH, 28)
-font_small = ImageFont.truetype(FONT_PATH, 22)
-font_tiny  = ImageFont.truetype(FONT_PATH, 14)
+font_large = load_font(28)
+font_small = load_font(22)
+font_tiny  = load_font(14)
+font_goodnight = load_font(24)
 
 # === EPD LOCK — protects all SPI writes to the display ===
 epd_lock = threading.Lock()
 
-# === TIME DESCRIPTIONS ===
-HOUR_WORDS = {
-    1: "one", 2: "two", 3: "three", 4: "four",
-    5: "five", 6: "six", 7: "seven", 8: "eight",
-    9: "nine", 10: "ten", 11: "eleven", 12: "twelve"
-}
-
-def fuzzy_time(hour, minute):
-    words = [
-        "just after", "a little past", "ten past", "quarter past",
-        "twenty past", "twenty-five past", "half past",
-        "twenty-five to", "twenty to", "quarter to", "ten to", "almost"
-    ]
-    # Cap at 11 so minutes 57-59 stay as "almost [next hour]" rather than
-    # wrapping back to index 0 ("just after [current hour]") via % 12.
-    rounded = min(int(round(minute / 5.0)), 11)
-    word = words[rounded]
-    display_hour = hour if rounded <= 6 else (hour + 1) % 24
-    hour_12 = display_hour % 12 or 12
-    suffix = "AM" if display_hour < 12 else "PM"
-    return word, f"{HOUR_WORDS[hour_12]} {suffix.lower()}"
 
 def _blank_base_image(epd):
     """Return a blank white image sized for the display (pre-rotated)."""
     width, height = epd.height, epd.width
     img = Image.new('1', (width, height), 255)
     return img
+
 
 def reset_base_image(epd):
     """Re-issue a blank base image for partial refresh (needed after a full display() call)."""
@@ -62,14 +44,14 @@ def reset_base_image(epd):
         draw_border(ImageDraw.Draw(base), epd.height, epd.width)
         epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
 
+
 def display_goodnight(epd):
     width, height = epd.height, epd.width
     image = Image.new('1', (width, height), 255)
     draw = ImageDraw.Draw(image)
 
     text = "Goodnight"
-    font = ImageFont.truetype(FONT_PATH, 24)
-    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_bbox = draw.textbbox((0, 0), text, font=font_goodnight)
     x = (width - (text_bbox[2] - text_bbox[0])) // 2
     y = (height - (text_bbox[3] - text_bbox[1])) // 2
 
@@ -77,51 +59,25 @@ def display_goodnight(epd):
         (10, 10, width - 10, height - 10),
         radius=15,
         outline=0,
-        width=2
+        width=2,
     )
-    draw.text((x, y), text, font=font, fill=0)
+    draw.text((x, y), text, font=font_goodnight, fill=0)
 
     with epd_lock:
         epd.display(epd.getbuffer(image.rotate(180)))
     time.sleep(2)
 
-def draw_border(draw, width, height, margin=4):
-    r = 6
-    draw.rectangle((margin, margin, width - margin, height - margin), outline=0, width=1)
-    draw.ellipse((margin + 2, margin + 2, margin + 2 + r, margin + 2 + r), outline=0)
-    draw.ellipse((width - margin - r - 2, margin + 2, width - margin - 2, margin + 2 + r), outline=0)
-    draw.rectangle((margin + 2, height - margin - r - 2, margin + 2 + r, height - margin - 2), outline=0)
-    draw.rectangle((width - margin - r - 2, height - margin - r - 2, width - margin - 2, height - margin - 2), outline=0)
 
 def draw_clock(epd):
     width, height = epd.height, epd.width
-    now = datetime.now()
-
     image = Image.new('1', (width, height), 255)
     draw = ImageDraw.Draw(image)
 
-    phrase, hour_str = fuzzy_time(now.hour, now.minute)
-    day_line = now.strftime("%A, %b %d")
-
-    phrase_font = font_small if len(phrase) > 12 else font_large
-    phrase_bbox = draw.textbbox((0, 0), phrase, font=phrase_font)
-    hour_bbox   = draw.textbbox((0, 0), hour_str, font=font_large)
-    day_bbox    = draw.textbbox((0, 0), day_line, font=font_tiny)
-
-    total_height = (
-        (phrase_bbox[3] - phrase_bbox[1]) +
-        (hour_bbox[3] - hour_bbox[1]) +
-        (day_bbox[3] - day_bbox[1]) + 10
-    )
-    y = (height - total_height) // 2
-
-    draw_border(draw, width, height)
-    draw.text(((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, y), phrase, font=phrase_font, fill=0)
-    draw.text(((width - (hour_bbox[2] - hour_bbox[0])) // 2, y + (phrase_bbox[3] - phrase_bbox[1]) + 4), hour_str, font=font_large, fill=0)
-    draw.text(((width - (day_bbox[2] - day_bbox[0])) // 2, height - day_bbox[3] - 6), day_line, font=font_tiny, fill=0)
+    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny)
 
     with epd_lock:
         epd.displayPartial(epd.getbuffer(image.rotate(180)))
+
 
 def shutdown_procedure(epd):
     logging.info("Button long press detected — shutting down.")
@@ -129,6 +85,7 @@ def shutdown_procedure(epd):
     with epd_lock:
         epd.sleep()
     run(["shutdown", "-h", "now"])
+
 
 def button_listener(button, epd):
     while True:
@@ -148,6 +105,7 @@ def button_listener(button, epd):
                 logging.exception("draw_clock() failed on button press")
         else:
             logging.info("Ignored press (%.2f s)", duration)
+
 
 def main():
     epd = epd2in13_V4.EPD()
@@ -199,6 +157,7 @@ def main():
             last_state = "night"
 
         time.sleep(UPDATE_INTERVAL)
+
 
 if __name__ == "__main__":
     main()
