@@ -5,7 +5,7 @@ Run with: python3 -m unittest test_fuzzy_time
 
 import unittest
 
-from fuzzyclock_core import fuzzy_time
+from fuzzyclock_core import DIALECTS, fuzzy_time
 
 
 class FuzzyTimeTests(unittest.TestCase):
@@ -59,6 +59,104 @@ class FuzzyTimeTests(unittest.TestCase):
                 phrase, hour_str = fuzzy_time(h, m)
                 self.assertIn(phrase, valid_phrases, f"{h:02d}:{m:02d}")
                 self.assertTrue(hour_str.endswith(" am") or hour_str.endswith(" pm"))
+
+
+class ShakespeareDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(
+            fuzzy_time(9, 0, "shakespeare"),
+            ("'tis just past", "nine of the clock"),
+        )
+
+    def test_quarter_past(self):
+        self.assertEqual(
+            fuzzy_time(9, 15, "shakespeare"),
+            ("'tis a quarter past", "nine of the clock"),
+        )
+
+    def test_half_past(self):
+        self.assertEqual(
+            fuzzy_time(9, 30, "shakespeare"),
+            ("'tis half past", "nine of the clock"),
+        )
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(
+            fuzzy_time(9, 45, "shakespeare"),
+            ("a quarter 'fore", "ten of the clock"),
+        )
+
+    def test_almost_next_hour_does_not_wrap(self):
+        # The min(..., 11) cap must hold for all dialects.
+        self.assertEqual(
+            fuzzy_time(9, 58, "shakespeare"),
+            ("almost", "ten of the clock"),
+        )
+
+    def test_midnight_rollover(self):
+        self.assertEqual(
+            fuzzy_time(23, 58, "shakespeare"),
+            ("almost", "twelve of the clock"),
+        )
+
+
+class KlingonDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "klingon"), ("newly forged", "Hut rep"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15, "klingon"), ("quarter past", "Hut rep"))
+
+    def test_half_past(self):
+        self.assertEqual(fuzzy_time(9, 30, "klingon"), ("half past", "Hut rep"))
+
+    def test_quarter_to_advances_hour(self):
+        # 10 in Klingon is "wa'maH".
+        self.assertEqual(fuzzy_time(9, 45, "klingon"), ("quarter 'til", "wa'maH rep"))
+
+    def test_almost_next_hour_does_not_wrap(self):
+        self.assertEqual(fuzzy_time(9, 58, "klingon"), ("battle nears", "wa'maH rep"))
+
+    def test_midnight_rollover_uses_klingon_twelve(self):
+        # 12 in Klingon is "wa'maH cha'".
+        self.assertEqual(fuzzy_time(23, 58, "klingon"), ("battle nears", "wa'maH cha' rep"))
+
+
+class BelterDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "belter"), ("just past", "nine bell, ya"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15, "belter"), ("quarter past", "nine bell, ya"))
+
+    def test_half_past(self):
+        self.assertEqual(fuzzy_time(9, 30, "belter"), ("half past", "nine bell, ya"))
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(fuzzy_time(9, 45, "belter"), ("quarter to da", "ten bell, ya"))
+
+    def test_almost_next_hour_does_not_wrap(self):
+        self.assertEqual(fuzzy_time(9, 58, "belter"), ("almost, ke", "ten bell, ya"))
+
+    def test_midnight_rollover(self):
+        self.assertEqual(fuzzy_time(23, 58, "belter"), ("almost, ke", "twelve bell, ya"))
+
+
+class AllDialectsRoundtripTests(unittest.TestCase):
+    def test_every_minute_every_dialect(self):
+        # Every dialect must produce a valid phrase from its own table for
+        # every minute of every hour, with no exceptions.
+        for dialect, spec in DIALECTS.items():
+            valid = set(spec["phrases"])
+            for h in range(24):
+                for m in range(60):
+                    phrase, hour_str = fuzzy_time(h, m, dialect)
+                    self.assertIn(phrase, valid, f"{dialect} {h:02d}:{m:02d}")
+                    self.assertTrue(hour_str, f"{dialect} {h:02d}:{m:02d}")
+
+    def test_unknown_dialect_raises(self):
+        with self.assertRaises(KeyError):
+            fuzzy_time(9, 0, "esperanto")
 
 
 if __name__ == "__main__":

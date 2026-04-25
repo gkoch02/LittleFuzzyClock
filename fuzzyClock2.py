@@ -2,7 +2,7 @@ import argparse
 from datetime import datetime
 from PIL import Image, ImageDraw
 
-from fuzzyclock_core import load_font, render_clock
+from fuzzyclock_core import DIALECTS, DEFAULT_DIALECT, load_font, render_clock
 
 # Lazy-import the EPD driver so the script can run in --dry-run mode on
 # machines without the waveshare library — or without Pi hardware. The
@@ -19,7 +19,7 @@ font_small = load_font(22)
 font_tiny  = load_font(14)
 
 
-def draw_fuzzy_clock(dry_run=False, output="dry_run.png"):
+def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT):
     if dry_run:
         # 2.13" V4 display is 122×250 in portrait; landscape = 250×122
         width, height = 250, 122
@@ -37,7 +37,7 @@ def draw_fuzzy_clock(dry_run=False, output="dry_run.png"):
         image = Image.new('1', (width, height), 255)
 
     draw = ImageDraw.Draw(image)
-    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny)
+    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny, dialect=dialect)
 
     if dry_run:
         image.save(output)
@@ -59,5 +59,9 @@ if __name__ == "__main__":
         "--output", default="dry_run.png", metavar="FILE",
         help="Output PNG path for --dry-run (default: dry_run.png)"
     )
+    parser.add_argument(
+        "--dialect", default=DEFAULT_DIALECT, choices=sorted(DIALECTS.keys()),
+        help=f"Phrasing personality (default: {DEFAULT_DIALECT})"
+    )
     args = parser.parse_args()
-    draw_fuzzy_clock(dry_run=args.dry_run, output=args.output)
+    draw_fuzzy_clock(dry_run=args.dry_run, output=args.output, dialect=args.dialect)
