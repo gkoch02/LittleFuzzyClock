@@ -35,6 +35,21 @@ DIALECTS = {
         # AM/PM is anachronistic; "of the clock" reads right at any hour.
         "format_hour": lambda hour_word, is_pm: f"{hour_word} of the clock",
     },
+    "klingon": {
+        "phrases": [
+            "newly forged", "moments past", "ten past", "quarter past",
+            "twenty past", "twenty-five past", "half past",
+            "twenty-five 'til", "twenty 'til", "quarter 'til", "ten 'til",
+            "battle nears",
+        ],
+        # Actual tlhIngan Hol numerals; "rep" is Klingon for "hour".
+        "hours": {
+            1: "wa'", 2: "cha'", 3: "wej", 4: "loS",
+            5: "vagh", 6: "jav", 7: "Soch", 8: "chorgh",
+            9: "Hut", 10: "wa'maH", 11: "wa'maH wa'", 12: "wa'maH cha'",
+        },
+        "format_hour": lambda hour_word, is_pm: f"{hour_word} rep",
+    },
 }
 
 DEFAULT_DIALECT = "classic"

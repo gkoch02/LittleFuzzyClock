@@ -100,6 +100,28 @@ class ShakespeareDialectTests(unittest.TestCase):
         )
 
 
+class KlingonDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "klingon"), ("newly forged", "Hut rep"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15, "klingon"), ("quarter past", "Hut rep"))
+
+    def test_half_past(self):
+        self.assertEqual(fuzzy_time(9, 30, "klingon"), ("half past", "Hut rep"))
+
+    def test_quarter_to_advances_hour(self):
+        # 10 in Klingon is "wa'maH".
+        self.assertEqual(fuzzy_time(9, 45, "klingon"), ("quarter 'til", "wa'maH rep"))
+
+    def test_almost_next_hour_does_not_wrap(self):
+        self.assertEqual(fuzzy_time(9, 58, "klingon"), ("battle nears", "wa'maH rep"))
+
+    def test_midnight_rollover_uses_klingon_twelve(self):
+        # 12 in Klingon is "wa'maH cha'".
+        self.assertEqual(fuzzy_time(23, 58, "klingon"), ("battle nears", "wa'maH cha' rep"))
+
+
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
         # Every dialect must produce a valid phrase from its own table for
@@ -114,7 +136,7 @@ class AllDialectsRoundtripTests(unittest.TestCase):
 
     def test_unknown_dialect_raises(self):
         with self.assertRaises(KeyError):
-            fuzzy_time(9, 0, "klingon")
+            fuzzy_time(9, 0, "esperanto")
 
 
 if __name__ == "__main__":
