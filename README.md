@@ -62,15 +62,18 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## After-hours mode
 
-After dark, the clock can flip to white-on-black so it doesn't glare at you across the room. To enable it, give the daemon your latitude and longitude — it computes local sunrise and sunset itself (no network calls). Without these set, the clock stays in normal day/night mode and the inversion never kicks in.
+After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.json`:
 
-```ini
-[Service]
-Environment=FUZZYCLOCK_LAT=37.7749
-Environment=FUZZYCLOCK_LON=-122.4194
+```json
+{
+  "latitude": 37.2872,
+  "longitude": -121.9500
+}
 ```
 
-The schedule then becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked once per refresh tick (every 5 minutes), so the swap happens at the next tick after the sun crosses the horizon.
+Edit those two numbers to match your location and restart the service. If the file is missing or malformed, after-hours mode stays off and the clock keeps the original day/night behaviour.
+
+The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked once per refresh tick (every 5 minutes), so the swap happens at the next tick after the sun crosses the horizon.
 
 Sunrise/sunset are computed via NOAA's simplified solar-position equation, accurate to roughly a minute outside polar regions. At extreme latitudes where the sun never rises or never sets on a given day, the daemon stays in normal day mode.
 
@@ -95,6 +98,7 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | `test_sun.py` | Unit tests for the sunrise/sunset approximation used by after-hours mode |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
+| `fuzzyclock_config.json` | Latitude/longitude for the after-hours sunset/sunrise calculation |
 | `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
 | `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |
 | `waveshare_epd/` | Waveshare e-Paper Python library (MIT, from [Waveshare's e-Paper repo](https://github.com/waveshare/e-Paper)) |

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import signal
@@ -49,23 +50,39 @@ def _resolve_dialect():
     return requested
 
 
-def _resolve_float_env(name, default):
-    raw = os.environ.get(name)
-    if raw is None:
-        return default
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.json")
+
+
+def _load_coordinates(path=CONFIG_PATH):
+    """Read (latitude, longitude) from the JSON config file.
+
+    Returns (None, None) if the file is missing or malformed; the daemon
+    treats that as "after-hours mode disabled" rather than crashing.
+    """
     try:
-        return float(raw)
-    except ValueError:
-        logging.warning("Ignoring %s=%r (not a number); using %s", name, raw, default)
-        return default
+        with open(path) as f:
+            cfg = json.load(f)
+    except FileNotFoundError:
+        logging.warning("Config file %s not found; after-hours mode disabled.", path)
+        return None, None
+    except (OSError, json.JSONDecodeError) as exc:
+        logging.warning("Could not read %s (%s); after-hours mode disabled.", path, exc)
+        return None, None
+    try:
+        return float(cfg["latitude"]), float(cfg["longitude"])
+    except (KeyError, TypeError, ValueError) as exc:
+        logging.warning(
+            "Config file %s missing/invalid latitude or longitude (%s); "
+            "after-hours mode disabled.", path, exc,
+        )
+        return None, None
 
 
 DIALECT = _resolve_dialect()
-# After-hours toggle is location-driven. Without coordinates we'd be guessing
-# at sunset, so the feature is opt-in: set FUZZYCLOCK_LAT and FUZZYCLOCK_LON to
-# enable. Both must be set or the daemon stays in normal day/night behaviour.
-LATITUDE = _resolve_float_env("FUZZYCLOCK_LAT", None)
-LONGITUDE = _resolve_float_env("FUZZYCLOCK_LON", None)
+# After-hours toggle is location-driven. Coordinates come from
+# fuzzyclock_config.json next to this file; if it's missing or malformed,
+# the feature stays off and the daemon falls back to plain day/night.
+LATITUDE, LONGITUDE = _load_coordinates()
 AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
 
 # === FONTS ===
@@ -191,7 +208,8 @@ def main():
         )
     else:
         logging.info(
-            "After-hours mode disabled. Set FUZZYCLOCK_LAT and FUZZYCLOCK_LON to enable."
+            "After-hours mode disabled (set latitude/longitude in %s to enable).",
+            CONFIG_PATH,
         )
 
     # Graceful shutdown on SIGTERM (systemd stop) or SIGINT (Ctrl-C)
