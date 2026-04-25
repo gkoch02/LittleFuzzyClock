@@ -40,11 +40,13 @@ pip install -r requirements.txt   # only needed off-Pi; deploy.sh uses apt on-Pi
 python3 fuzzyClock2.py --dry-run --output preview.png
 ```
 
-There's also a small unit test suite for the time-phrasing logic:
+There's also a unit test suite covering the time-phrasing logic and a render smoke test for the clock face:
 
 ```bash
-python3 -m unittest test_fuzzy_time
+python3 -m unittest discover
 ```
+
+The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`.
 
 ## Files
 
@@ -54,6 +56,9 @@ python3 -m unittest test_fuzzy_time
 | `fuzzyClock2.py` | Standalone dev script with `--dry-run` PNG output |
 | `fuzzyclock_core.py` | Shared rendering logic (fuzzy time phrasing, font loading, clock layout) used by both of the above |
 | `test_fuzzy_time.py` | Unit tests for `fuzzy_time()` edge cases |
+| `test_render.py` | Smoke tests for `draw_border` and `render_clock` |
+| `test_dry_run.py` | End-to-end test that invokes `fuzzyClock2.py --dry-run` |
+| `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
 | `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
 | `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |
