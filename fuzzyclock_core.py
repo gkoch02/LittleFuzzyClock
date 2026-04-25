@@ -1,5 +1,8 @@
 """Shared rendering logic for the fuzzy clock."""
 
+import math
+from datetime import datetime, timedelta, timezone
+
 from PIL import ImageFont
 
 FONT_CANDIDATES = [
@@ -90,17 +93,25 @@ def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     return word, spec["format_hour"](spec["hours"][hour_12], is_pm)
 
 
-def draw_border(draw, width, height, margin=4):
+def draw_border(draw, width, height, margin=4, invert=False):
+    ink = 255 if invert else 0
     r = 6
-    draw.rectangle((margin, margin, width - margin, height - margin), outline=0, width=1)
-    draw.ellipse((margin + 2, margin + 2, margin + 2 + r, margin + 2 + r), outline=0)
-    draw.ellipse((width - margin - r - 2, margin + 2, width - margin - 2, margin + 2 + r), outline=0)
-    draw.rectangle((margin + 2, height - margin - r - 2, margin + 2 + r, height - margin - 2), outline=0)
-    draw.rectangle((width - margin - r - 2, height - margin - r - 2, width - margin - 2, height - margin - 2), outline=0)
+    draw.rectangle((margin, margin, width - margin, height - margin), outline=ink, width=1)
+    draw.ellipse((margin + 2, margin + 2, margin + 2 + r, margin + 2 + r), outline=ink)
+    draw.ellipse((width - margin - r - 2, margin + 2, width - margin - 2, margin + 2 + r), outline=ink)
+    draw.rectangle((margin + 2, height - margin - r - 2, margin + 2 + r, height - margin - 2), outline=ink)
+    draw.rectangle((width - margin - r - 2, height - margin - r - 2, width - margin - 2, height - margin - 2), outline=ink)
 
 
-def render_clock(draw, width, height, now, font_large, font_small, font_tiny, dialect=DEFAULT_DIALECT):
-    """Draw the full clock face (border + phrase + hour + day line) onto `draw`."""
+def render_clock(draw, width, height, now, font_large, font_small, font_tiny,
+                 dialect=DEFAULT_DIALECT, invert=False):
+    """Draw the full clock face (border + phrase + hour + day line) onto `draw`.
+
+    When `invert` is True the foreground is white (255) instead of black; the
+    caller is responsible for filling the canvas with the matching background
+    colour before calling this helper.
+    """
+    ink = 255 if invert else 0
     phrase, hour_str = fuzzy_time(now.hour, now.minute, dialect)
     day_line = now.strftime("%A, %b %d")
 
@@ -117,18 +128,71 @@ def render_clock(draw, width, height, now, font_large, font_small, font_tiny, di
     )
     y = (height - total_height) // 2
 
-    draw_border(draw, width, height)
+    draw_border(draw, width, height, invert=invert)
     draw.text(
         ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, y),
-        phrase, font=phrase_font, fill=0,
+        phrase, font=phrase_font, fill=ink,
     )
     draw.text(
         ((width - (hour_bbox[2] - hour_bbox[0])) // 2,
          y + (phrase_bbox[3] - phrase_bbox[1]) + 4),
-        hour_str, font=hour_font, fill=0,
+        hour_str, font=hour_font, fill=ink,
     )
     # Day line is pinned to the bottom edge as a fixed footer.
     draw.text(
         ((width - (day_bbox[2] - day_bbox[0])) // 2, height - day_bbox[3] - 6),
-        day_line, font=font_tiny, fill=0,
+        day_line, font=font_tiny, fill=ink,
+    )
+
+
+def sun_times(date, latitude, longitude):
+    """Approximate sunrise and sunset for `date` at (latitude, longitude).
+
+    Returns aware UTC datetimes (sunrise, sunset). `date` may be a `date` or
+    `datetime`; only the calendar day is used. Returns (None, None) for polar
+    night / midnight sun (the sun never crosses the horizon that day).
+
+    Implementation follows NOAA's simplified solar position algorithm. Accuracy
+    is within ~1 minute outside polar regions, which is plenty for "switch the
+    clock theme around dusk".
+    """
+    n = date.timetuple().tm_yday
+    # Fractional year (radians)
+    gamma = 2 * math.pi / 365 * (n - 1)
+    # Equation of time (minutes)
+    eqtime = 229.18 * (
+        0.000075
+        + 0.001868 * math.cos(gamma)
+        - 0.032077 * math.sin(gamma)
+        - 0.014615 * math.cos(2 * gamma)
+        - 0.040849 * math.sin(2 * gamma)
+    )
+    # Solar declination (radians)
+    decl = (
+        0.006918
+        - 0.399912 * math.cos(gamma)
+        + 0.070257 * math.sin(gamma)
+        - 0.006758 * math.cos(2 * gamma)
+        + 0.000907 * math.sin(2 * gamma)
+        - 0.002697 * math.cos(3 * gamma)
+        + 0.00148 * math.sin(3 * gamma)
+    )
+    lat_rad = math.radians(latitude)
+    # 90.833° accounts for atmospheric refraction + the sun's apparent radius.
+    cos_h = (
+        math.cos(math.radians(90.833)) / (math.cos(lat_rad) * math.cos(decl))
+        - math.tan(lat_rad) * math.tan(decl)
+    )
+    if cos_h > 1 or cos_h < -1:
+        return None, None
+    h_deg = math.degrees(math.acos(cos_h))
+
+    # Times come out in minutes-from-UTC-midnight.
+    sunrise_min = 720 - 4 * (longitude + h_deg) - eqtime
+    sunset_min = 720 - 4 * (longitude - h_deg) - eqtime
+
+    base = datetime(date.year, date.month, date.day, tzinfo=timezone.utc)
+    return (
+        base + timedelta(minutes=sunrise_min),
+        base + timedelta(minutes=sunset_min),
     )

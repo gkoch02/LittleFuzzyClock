@@ -43,6 +43,15 @@ class DrawBorderTests(unittest.TestCase):
         draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT)
         self.assertLess(_count_black_pixels(image), (WIDTH * HEIGHT) // 4)
 
+    def test_inverted_border_draws_in_white(self):
+        # Black canvas with invert=True should leave a sparse white border —
+        # i.e. some white pixels appear, but the bulk of the canvas stays black.
+        image = Image.new("1", (WIDTH, HEIGHT), 0)
+        draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT, invert=True)
+        black = _count_black_pixels(image)
+        self.assertGreater(WIDTH * HEIGHT - black, 0)
+        self.assertGreater(black, (WIDTH * HEIGHT) * 3 // 4)
+
 
 class RenderClockTests(unittest.TestCase):
     def setUp(self):
@@ -72,6 +81,21 @@ class RenderClockTests(unittest.TestCase):
                     _count_black_pixels(image), 100,
                     f"render produced too little ink at {hour:02d}:{minute:02d}",
                 )
+
+    def test_inverted_render_swaps_ink(self):
+        # Same scene rendered normally vs. inverted should be (near-)complementary:
+        # the count of black pixels in one should roughly equal the count of
+        # white pixels in the other, since invert just swaps fill colours.
+        normal = self._render(datetime(2026, 4, 25, 9, 15))
+        inverted = Image.new("1", (WIDTH, HEIGHT), 0)
+        render_clock(
+            ImageDraw.Draw(inverted), WIDTH, HEIGHT,
+            datetime(2026, 4, 25, 9, 15), *self.fonts,
+            invert=True,
+        )
+        normal_black = _count_black_pixels(normal)
+        inverted_white = WIDTH * HEIGHT - _count_black_pixels(inverted)
+        self.assertEqual(normal_black, inverted_white)
 
     def test_shakespeare_dialect_renders(self):
         # Shakespeare phrases like "'tis a quarter past" trip the long-phrase
