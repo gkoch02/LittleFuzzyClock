@@ -14,7 +14,8 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 
 ## Behaviour
 
-- **Day mode (7 AM – 10:59 PM):** display updates every 5 minutes via partial refresh
+- **Day mode (sunrise – sunset, within 7 AM – 10:59 PM):** display updates every 5 minutes via partial refresh, black ink on white
+- **After-hours mode (sunset – 10:59 PM):** same clock face but with the colours inverted (white ink on black). Opt-in — see [After-hours mode](#after-hours-mode) below
 - **Night mode (11 PM – 6:59 AM):** shows "Goodnight" and the display sleeps
 - **Short button press (0.05–2 s):** forces an immediate refresh
 - **Long button press (≥ 5 s):** graceful shutdown (`shutdown -h now`)
@@ -59,6 +60,23 @@ Environment=FUZZYCLOCK_DIALECT=shakespeare
 
 Unknown values fall back to `classic` with a warning in the daemon log.
 
+## After-hours mode
+
+After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.json`:
+
+```json
+{
+  "latitude": 37.2872,
+  "longitude": -121.9500
+}
+```
+
+Edit those two numbers to match your location and restart the service. If the file is missing or malformed, after-hours mode stays off and the clock keeps the original day/night behaviour.
+
+The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked once per refresh tick (every 5 minutes), so the swap happens at the next tick after the sun crosses the horizon.
+
+Sunrise/sunset are computed via NOAA's simplified solar-position equation, accurate to roughly a minute outside polar regions. At extreme latitudes where the sun never rises or never sets on a given day, the daemon stays in normal day mode.
+
 There's also a unit test suite covering the time-phrasing logic and a render smoke test for the clock face:
 
 ```bash
@@ -77,8 +95,10 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | `test_fuzzy_time.py` | Unit tests for `fuzzy_time()` edge cases |
 | `test_render.py` | Smoke tests for `draw_border` and `render_clock` |
 | `test_dry_run.py` | End-to-end test that invokes `fuzzyClock2.py --dry-run` |
+| `test_sun.py` | Unit tests for the sunrise/sunset approximation used by after-hours mode |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
+| `fuzzyclock_config.json` | Latitude/longitude for the after-hours sunset/sunrise calculation |
 | `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
 | `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |
 | `waveshare_epd/` | Waveshare e-Paper Python library (MIT, from [Waveshare's e-Paper repo](https://github.com/waveshare/e-Paper)) |

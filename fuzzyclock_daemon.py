@@ -1,16 +1,24 @@
+import json
 import logging
 import os
 import signal
 import sys
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from PIL import Image, ImageDraw
 from gpiozero import Button
 from subprocess import run
 from waveshare_epd import epd2in13_V4
 
-from fuzzyclock_core import DEFAULT_DIALECT, DIALECTS, draw_border, load_font, render_clock
+from fuzzyclock_core import (
+    DEFAULT_DIALECT,
+    DIALECTS,
+    draw_border,
+    load_font,
+    render_clock,
+    sun_times,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,7 +50,40 @@ def _resolve_dialect():
     return requested
 
 
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.json")
+
+
+def _load_coordinates(path=CONFIG_PATH):
+    """Read (latitude, longitude) from the JSON config file.
+
+    Returns (None, None) if the file is missing or malformed; the daemon
+    treats that as "after-hours mode disabled" rather than crashing.
+    """
+    try:
+        with open(path) as f:
+            cfg = json.load(f)
+    except FileNotFoundError:
+        logging.warning("Config file %s not found; after-hours mode disabled.", path)
+        return None, None
+    except (OSError, json.JSONDecodeError) as exc:
+        logging.warning("Could not read %s (%s); after-hours mode disabled.", path, exc)
+        return None, None
+    try:
+        return float(cfg["latitude"]), float(cfg["longitude"])
+    except (KeyError, TypeError, ValueError) as exc:
+        logging.warning(
+            "Config file %s missing/invalid latitude or longitude (%s); "
+            "after-hours mode disabled.", path, exc,
+        )
+        return None, None
+
+
 DIALECT = _resolve_dialect()
+# After-hours toggle is location-driven. Coordinates come from
+# fuzzyclock_config.json next to this file; if it's missing or malformed,
+# the feature stays off and the daemon falls back to plain day/night.
+LATITUDE, LONGITUDE = _load_coordinates()
+AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
 
 # === FONTS ===
 font_large = load_font(28)
@@ -54,18 +95,38 @@ font_goodnight = load_font(24)
 epd_lock = threading.Lock()
 
 
-def _blank_base_image(epd):
-    """Return a blank white image sized for the display (pre-rotated)."""
-    width, height = epd.height, epd.width
-    img = Image.new('1', (width, height), 255)
-    return img
+def current_mode(now=None):
+    """Return one of "day", "after_hours", "night" for the given local time.
+
+    Outside the wake window we're always in night/goodnight. Inside it, the sun
+    decides between day (normal ink) and after-hours (inverted ink). When no
+    coordinates are configured, after-hours is disabled and we always return
+    "day" inside the wake window.
+    """
+    now = now or datetime.now().astimezone()
+    if not (DAY_START_HOUR <= now.hour < DAY_END_HOUR):
+        return "night"
+    if not AFTER_HOURS_ENABLED:
+        return "day"
+    sunrise, sunset = sun_times(now.date(), LATITUDE, LONGITUDE)
+    if sunrise is None or sunset is None:
+        # Polar night / midnight sun: stick with day mode.
+        return "day"
+    now_utc = now.astimezone(timezone.utc)
+    return "day" if sunrise <= now_utc <= sunset else "after_hours"
 
 
-def reset_base_image(epd):
-    """Re-issue a blank base image for partial refresh (needed after a full display() call)."""
+def reset_base_image(epd, invert=False):
+    """Re-issue a blank base image for partial refresh.
+
+    Required after any full epd.display() call (e.g. the goodnight screen) and
+    whenever the foreground/background swap, since partial refresh diffs
+    against the previously-set base image.
+    """
+    bg = 0 if invert else 255
     with epd_lock:
-        base = _blank_base_image(epd)
-        draw_border(ImageDraw.Draw(base), epd.height, epd.width)
+        base = Image.new('1', (epd.height, epd.width), bg)
+        draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert)
         epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
 
 
@@ -92,12 +153,17 @@ def display_goodnight(epd):
     time.sleep(2)
 
 
-def draw_clock(epd):
+def draw_clock(epd, invert=False):
     width, height = epd.height, epd.width
-    image = Image.new('1', (width, height), 255)
+    bg = 0 if invert else 255
+    image = Image.new('1', (width, height), bg)
     draw = ImageDraw.Draw(image)
 
-    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny, dialect=DIALECT)
+    render_clock(
+        draw, width, height, datetime.now(),
+        font_large, font_small, font_tiny,
+        dialect=DIALECT, invert=invert,
+    )
 
     with epd_lock:
         epd.displayPartial(epd.getbuffer(image.rotate(180)))
@@ -124,7 +190,7 @@ def button_listener(button, epd):
         elif SHORT_PRESS_MIN_SECONDS < duration < SHORT_PRESS_MAX_SECONDS:
             logging.info("Short press — forcing update.")
             try:
-                draw_clock(epd)
+                draw_clock(epd, invert=current_mode() == "after_hours")
             except Exception:
                 logging.exception("draw_clock() failed on button press")
         else:
@@ -135,6 +201,16 @@ def main():
     epd = epd2in13_V4.EPD()
     epd.init()
     width, height = epd.height, epd.width
+
+    if AFTER_HOURS_ENABLED:
+        logging.info(
+            "After-hours mode enabled at lat=%.4f lon=%.4f.", LATITUDE, LONGITUDE,
+        )
+    else:
+        logging.info(
+            "After-hours mode disabled (set latitude/longitude in %s to enable).",
+            CONFIG_PATH,
+        )
 
     # Graceful shutdown on SIGTERM (systemd stop) or SIGINT (Ctrl-C)
     def _handle_signal(signum, frame):
@@ -149,35 +225,34 @@ def main():
     # Create the button in the main thread
     button = Button(GPIO_PIN, pull_up=True, bounce_time=0.05)
 
-    # Clear display and draw initial border as base image for partial refresh
-    base_image = Image.new('1', (width, height), 255)
-    draw_border(ImageDraw.Draw(base_image), width, height)
-    epd.displayPartBaseImage(epd.getbuffer(base_image.rotate(180)))
+    # Seed the partial-refresh base image to match whichever mode we're starting in.
+    initial_mode = current_mode()
+    reset_base_image(epd, invert=(initial_mode == "after_hours"))
 
     # Start button monitoring thread
     threading.Thread(target=button_listener, args=(button, epd), daemon=True).start()
 
     last_state = None
     while True:
-        now = datetime.now()
-        if DAY_START_HOUR <= now.hour < DAY_END_HOUR:
-            if last_state == "night":
-                # After a night-mode full display() call, the partial-refresh base
-                # image is stale (goodnight screen). Reset it before resuming clock.
-                logging.info("Entering day mode — resetting partial refresh base image.")
-                reset_base_image(epd)
-            elif last_state != "day":
-                logging.info("Entering day mode.")
-            try:
-                draw_clock(epd)
-            except Exception:
-                logging.exception("draw_clock() failed in main loop")
-            last_state = "day"
-        else:
+        mode = current_mode()
+        if mode == "night":
             if last_state != "night":
                 logging.info("Entering night mode.")
                 display_goodnight(epd)
-            last_state = "night"
+        else:
+            invert = mode == "after_hours"
+            # Any transition into a clock-displaying mode (or a swap between
+            # normal/inverted) leaves the partial-refresh base image stale, so
+            # we re-seed it before the next displayPartial call. The very
+            # first iteration is already covered by the seed above.
+            if last_state is not None and last_state != mode:
+                logging.info("Entering %s mode.", mode.replace("_", "-"))
+                reset_base_image(epd, invert=invert)
+            try:
+                draw_clock(epd, invert=invert)
+            except Exception:
+                logging.exception("draw_clock() failed in main loop")
+        last_state = mode
 
         time.sleep(UPDATE_INTERVAL)
 
