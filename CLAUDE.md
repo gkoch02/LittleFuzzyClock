@@ -11,7 +11,7 @@ Notes for Claude Code sessions on this repo. Keep it short — the README covers
 
 ## Testing
 
-- Unit tests: `python3 -m unittest test_fuzzy_time` — pure-logic, no deps beyond stdlib. Add cases here when touching `fuzzy_time()`.
+- Unit tests: `python3 -m unittest test_fuzzy_time` — pure-logic for `fuzzy_time()`, but PIL is still imported transitively via `fuzzyclock_core`, so `pip install Pillow` (or apt's `python3-pil`) needs to be available. Add cases here when touching `fuzzy_time()`.
 - Render smoke test: `python3 fuzzyClock2.py --dry-run --output /tmp/out.png`. On non-Pi Linux the waveshare driver's import raises `RuntimeError`, which the `try/except` already handles.
 
 ## Deploy path
