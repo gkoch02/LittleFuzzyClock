@@ -4,6 +4,8 @@ A fuzzy clock for a Raspberry Pi Zero driving a [Waveshare 2.13" e-ink display (
 
 Instead of showing an exact time, it displays natural-language phrases like "quarter past nine am" or "twenty to three pm", with the date as a footer and a small Bauhaus-inspired border.
 
+![Preview of the fuzzy clock display](docs/preview.png)
+
 ## Hardware
 
 - Raspberry Pi Zero (or any Pi with SPI)
