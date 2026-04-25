@@ -1,4 +1,5 @@
 import logging
+import os
 import signal
 import sys
 import time
@@ -9,7 +10,7 @@ from gpiozero import Button
 from subprocess import run
 from waveshare_epd import epd2in13_V4
 
-from fuzzyclock_core import draw_border, load_font, render_clock
+from fuzzyclock_core import DEFAULT_DIALECT, DIALECTS, draw_border, load_font, render_clock
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +29,20 @@ DAY_END_HOUR = 23
 LONG_PRESS_SECONDS = 5.0        # hold this long → shutdown
 SHORT_PRESS_MIN_SECONDS = 0.05  # anything shorter is debounce noise
 SHORT_PRESS_MAX_SECONDS = 2.0   # anything between MAX and LONG_PRESS is ignored
+
+
+def _resolve_dialect():
+    requested = os.environ.get("FUZZYCLOCK_DIALECT", DEFAULT_DIALECT)
+    if requested not in DIALECTS:
+        logging.warning(
+            "Unknown FUZZYCLOCK_DIALECT=%r; falling back to %r. Valid: %s",
+            requested, DEFAULT_DIALECT, sorted(DIALECTS.keys()),
+        )
+        return DEFAULT_DIALECT
+    return requested
+
+
+DIALECT = _resolve_dialect()
 
 # === FONTS ===
 font_large = load_font(28)
@@ -82,7 +97,7 @@ def draw_clock(epd):
     image = Image.new('1', (width, height), 255)
     draw = ImageDraw.Draw(image)
 
-    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny)
+    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny, dialect=DIALECT)
 
     with epd_lock:
         epd.displayPartial(epd.getbuffer(image.rotate(180)))

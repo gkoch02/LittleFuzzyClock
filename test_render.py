@@ -73,6 +73,17 @@ class RenderClockTests(unittest.TestCase):
                     f"render produced too little ink at {hour:02d}:{minute:02d}",
                 )
 
+    def test_shakespeare_dialect_renders(self):
+        # Shakespeare phrases like "'tis a quarter past" trip the long-phrase
+        # branch that switches to font_small. Confirm it puts ink on canvas.
+        image = Image.new("1", (WIDTH, HEIGHT), 255)
+        render_clock(
+            ImageDraw.Draw(image), WIDTH, HEIGHT,
+            datetime(2026, 4, 25, 9, 15), *self.fonts,
+            dialect="shakespeare",
+        )
+        self.assertGreater(_count_black_pixels(image), 200)
+
 
 if __name__ == "__main__":
     unittest.main()

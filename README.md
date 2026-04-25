@@ -42,6 +42,23 @@ pip install -r requirements.txt   # only needed off-Pi; deploy.sh uses apt on-Pi
 python3 fuzzyClock2.py --dry-run --output preview.png
 ```
 
+## Phrasing personalities
+
+The clock ships with two phrasings: `classic` (default) and `shakespeare` (e.g. `'tis half past nine of the clock`). Pick one with `--dialect`:
+
+```bash
+python3 fuzzyClock2.py --dry-run --dialect shakespeare --output preview.png
+```
+
+The daemon reads the same setting from the `FUZZYCLOCK_DIALECT` environment variable. To change it on the Pi, add a line to the systemd unit and restart:
+
+```ini
+[Service]
+Environment=FUZZYCLOCK_DIALECT=shakespeare
+```
+
+Unknown values fall back to `classic` with a warning in the daemon log.
+
 There's also a unit test suite covering the time-phrasing logic and a render smoke test for the clock face:
 
 ```bash
