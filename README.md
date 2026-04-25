@@ -8,7 +8,7 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 
 - Raspberry Pi Zero (or any Pi with SPI)
 - Waveshare 2.13" e-Paper HAT V4 (122×250, black/white)
-- Push button wired to GPIO pin 3 (for manual refresh and shutdown)
+- Push button between GPIO 3 (BCM, physical pin 5) and ground — used for manual refresh and shutdown. GPIO 3 doubles as the Pi's wake-from-halt pin, so the same button can also power the clock back on after a long-press shutdown.
 
 ## Behaviour
 
@@ -19,7 +19,7 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 
 ## Rebuilding from scratch
 
-Clone the repo anywhere on the Pi and run the deploy script — the systemd unit is templated at install time with the invoking user's home directory, so it's no longer tied to the `pi` account:
+Clone the repo anywhere on the Pi and run the deploy script. The systemd unit is templated at install time with the invoking user's home directory, so the clock works under any account — there's no need to run as `pi`:
 
 ```bash
 git clone https://github.com/gkoch02/LittleFuzzyClock.git
@@ -27,9 +27,9 @@ cd LittleFuzzyClock
 bash deploy.sh
 ```
 
-That's it. The script installs dependencies (via `apt` — Raspberry Pi OS Bookworm's PEP 668 blocks pip from touching the system Python), enables SPI, installs the systemd service, and starts it.
+That's it. The script installs dependencies via `apt` (Raspberry Pi OS Bookworm's PEP 668 blocks pip from touching the system Python), enables SPI, and installs and starts the `fuzzyclock.service` systemd unit.
 
-> **Note:** If SPI wasn't already enabled, the script enables it but you may need to reboot once before the display responds.
+> **Note:** If SPI wasn't already enabled, the script enables it for you, but you may need to reboot once before the display responds.
 
 ## Testing without hardware
 
@@ -40,11 +40,13 @@ pip install -r requirements.txt   # only needed off-Pi; deploy.sh uses apt on-Pi
 python3 fuzzyClock2.py --dry-run --output preview.png
 ```
 
-There's also a small unit test suite for the time-phrasing logic:
+There's also a unit test suite covering the time-phrasing logic and a render smoke test for the clock face:
 
 ```bash
-python3 -m unittest test_fuzzy_time
+python3 -m unittest discover
 ```
+
+The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`.
 
 ## Files
 
@@ -54,6 +56,9 @@ python3 -m unittest test_fuzzy_time
 | `fuzzyClock2.py` | Standalone dev script with `--dry-run` PNG output |
 | `fuzzyclock_core.py` | Shared rendering logic (fuzzy time phrasing, font loading, clock layout) used by both of the above |
 | `test_fuzzy_time.py` | Unit tests for `fuzzy_time()` edge cases |
+| `test_render.py` | Smoke tests for `draw_border` and `render_clock` |
+| `test_dry_run.py` | End-to-end test that invokes `fuzzyClock2.py --dry-run` |
+| `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
 | `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
 | `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |

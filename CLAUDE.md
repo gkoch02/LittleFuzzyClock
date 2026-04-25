@@ -11,8 +11,12 @@ Notes for Claude Code sessions on this repo. Keep it short — the README covers
 
 ## Testing
 
-- Unit tests: `python3 -m unittest test_fuzzy_time` — pure-logic, no deps beyond stdlib. Add cases here when touching `fuzzy_time()`.
-- Render smoke test: `python3 fuzzyClock2.py --dry-run --output /tmp/out.png`. On non-Pi Linux the waveshare driver's import raises `RuntimeError`, which the `try/except` already handles.
+- Run everything: `python3 -m unittest discover`. PIL is needed (transitively via `fuzzyclock_core`); install with `pip install Pillow` or apt's `python3-pil`. DejaVu fonts must be present too (`fonts-dejavu-core`) or `load_font()` will exit.
+- `test_fuzzy_time.py` — pure-logic cases for `fuzzy_time()`. Add cases here when touching the phrasing logic.
+- `test_render.py` — smoke tests for `draw_border` and `render_clock`. Asserts ink-on-canvas, not pixel-exact output, to stay font-version stable.
+- `test_dry_run.py` — invokes `fuzzyClock2.py --dry-run` as a subprocess and validates the PNG. Exercises the EPD-not-available fallback.
+- Manual render check: `python3 fuzzyClock2.py --dry-run --output /tmp/out.png`. On non-Pi Linux the waveshare driver's import raises `RuntimeError`, which the `try/except` already handles.
+- CI: `.github/workflows/test.yml` runs the full suite on Python 3.11 and 3.12 on every push and PR.
 
 ## Deploy path
 

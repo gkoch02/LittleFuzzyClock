@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 matches Raspberry Pi OS Bookworm; 3.12 covers recent dev boxes.
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install DejaVu fonts
+        # fuzzyclock_core.load_font() looks for DejaVuSans-Bold.ttf first; the
+        # rendering tests fail without it.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - name: Install Pillow
+        # gpiozero / RPi.GPIO / spidev aren't needed: fuzzyClock2.py catches
+        # the missing-EPD case and the daemon isn't imported by the tests.
+        run: pip install "Pillow>=10,<13"
+
+      - name: Run tests
+        run: python -m unittest discover -v
