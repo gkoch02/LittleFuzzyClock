@@ -50,6 +50,18 @@ DIALECTS = {
         },
         "format_hour": lambda hour_word, is_pm: f"{hour_word} rep",
     },
+    "belter": {
+        # Lang Belta creole: "to da" for "to the", "ke" as a sentence tag,
+        # "savvy" for "you understand?". Belters keep maritime "bell" for time.
+        "phrases": [
+            "just past", "showxa pasa", "ten past", "quarter past",
+            "twenty past", "twenty-five past", "half past",
+            "twenty-five to da", "twenty to da", "quarter to da", "ten to da",
+            "almost, ke",
+        ],
+        "hours": HOUR_WORDS,
+        "format_hour": lambda hour_word, is_pm: f"{hour_word} bell, ya",
+    },
 }
 
 DEFAULT_DIALECT = "classic"

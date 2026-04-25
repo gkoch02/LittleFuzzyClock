@@ -122,6 +122,26 @@ class KlingonDialectTests(unittest.TestCase):
         self.assertEqual(fuzzy_time(23, 58, "klingon"), ("battle nears", "wa'maH cha' rep"))
 
 
+class BelterDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "belter"), ("just past", "nine bell, ya"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15, "belter"), ("quarter past", "nine bell, ya"))
+
+    def test_half_past(self):
+        self.assertEqual(fuzzy_time(9, 30, "belter"), ("half past", "nine bell, ya"))
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(fuzzy_time(9, 45, "belter"), ("quarter to da", "ten bell, ya"))
+
+    def test_almost_next_hour_does_not_wrap(self):
+        self.assertEqual(fuzzy_time(9, 58, "belter"), ("almost, ke", "ten bell, ya"))
+
+    def test_midnight_rollover(self):
+        self.assertEqual(fuzzy_time(23, 58, "belter"), ("almost, ke", "twelve bell, ya"))
+
+
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
         # Every dialect must produce a valid phrase from its own table for

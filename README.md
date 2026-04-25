@@ -44,7 +44,7 @@ python3 fuzzyClock2.py --dry-run --output preview.png
 
 ## Phrasing personalities
 
-The clock ships with three phrasings: `classic` (default), `shakespeare` (e.g. `'tis half past nine of the clock`), and `klingon` (e.g. `half past Hut rep`, using actual tlhIngan Hol numerals). Pick one with `--dialect`:
+The clock ships with four phrasings: `classic` (default), `shakespeare` (e.g. `'tis half past nine of the clock`), `klingon` (e.g. `half past Hut rep`, using actual tlhIngan Hol numerals), and `belter` (e.g. `quarter to da / ten bell, ya` — Lang Belta creole from *The Expanse*). Pick one with `--dialect`:
 
 ```bash
 python3 fuzzyClock2.py --dry-run --dialect shakespeare --output preview.png
