@@ -74,7 +74,7 @@ def load_font(size):
     for path in FONT_CANDIDATES:
         try:
             return ImageFont.truetype(path, size)
-        except IOError:
+        except OSError:
             continue
     raise SystemExit(
         "No usable font found. Tried:\n" + "\n".join(f"  {p}" for p in FONT_CANDIDATES)
@@ -97,10 +97,15 @@ def draw_border(draw, width, height, margin=4, invert=False):
     ink = 255 if invert else 0
     r = 6
     draw.rectangle((margin, margin, width - margin, height - margin), outline=ink, width=1)
-    draw.ellipse((margin + 2, margin + 2, margin + 2 + r, margin + 2 + r), outline=ink)
-    draw.ellipse((width - margin - r - 2, margin + 2, width - margin - 2, margin + 2 + r), outline=ink)
-    draw.rectangle((margin + 2, height - margin - r - 2, margin + 2 + r, height - margin - 2), outline=ink)
-    draw.rectangle((width - margin - r - 2, height - margin - r - 2, width - margin - 2, height - margin - 2), outline=ink)
+    # Corner brackets: top corners are circles, bottom corners are squares.
+    tl = (margin + 2, margin + 2)
+    tr = (width - margin - r - 2, margin + 2)
+    bl = (margin + 2, height - margin - r - 2)
+    br = (width - margin - r - 2, height - margin - r - 2)
+    draw.ellipse((tl[0], tl[1], tl[0] + r, tl[1] + r), outline=ink)
+    draw.ellipse((tr[0], tr[1], tr[0] + r, tr[1] + r), outline=ink)
+    draw.rectangle((bl[0], bl[1], bl[0] + r, bl[1] + r), outline=ink)
+    draw.rectangle((br[0], br[1], br[0] + r, br[1] + r), outline=ink)
 
 
 def render_clock(draw, width, height, now, font_large, font_small, font_tiny,

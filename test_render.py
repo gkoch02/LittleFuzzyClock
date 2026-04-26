@@ -15,7 +15,6 @@ from PIL import Image, ImageDraw
 
 from fuzzyclock_core import draw_border, load_font, render_clock
 
-
 WIDTH, HEIGHT = 250, 122  # landscape orientation of the 2.13" V4 panel
 
 

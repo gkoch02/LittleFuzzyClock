@@ -6,6 +6,19 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Run ruff
+        # Config (line length, rule selection, exclusions) lives in pyproject.toml.
+        run: ruff check .
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -29,8 +42,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends fonts-dejavu-core
 
       - name: Install Pillow
-        # gpiozero / RPi.GPIO / spidev aren't needed: fuzzyClock2.py catches
-        # the missing-EPD case and the daemon isn't imported by the tests.
+        # gpiozero / RPi.GPIO / spidev aren't installed: the daemon's hardware
+        # imports are guarded so test_daemon* can import fuzzyclock_daemon
+        # without them, and fuzzyClock2.py handles the missing-EPD case.
         run: pip install "Pillow>=10,<13"
 
       - name: Run tests

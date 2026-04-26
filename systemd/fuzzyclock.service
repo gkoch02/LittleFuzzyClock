@@ -1,11 +1,19 @@
 [Unit]
 Description=E-Ink Fuzzy Clock Daemon
 After=network.target
+# If the daemon crashes 5 times within 5 minutes, give up rather than tight-looping.
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 # __REPO_DIR__ and __USER__ are substituted by deploy.sh at install time.
 ExecStart=/usr/bin/python3 __REPO_DIR__/fuzzyclock_daemon.py
 Restart=always
+RestartSec=10
+# Give the daemon time to flush a final SPI write and put the panel to sleep
+# on stop. Hard-killed after this. Pairs with the cooperative shutdown via
+# _stop_event in fuzzyclock_daemon.py.
+TimeoutStopSec=15
 User=__USER__
 WorkingDirectory=__REPO_DIR__
 StandardOutput=journal

@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 100
+# Conservative floor: works on Pi OS Bullseye (3.9), macOS dev boxes,
+# and the 3.11/3.12 matrix CI actually tests. Setting this to py311 made
+# UP017 auto-rewrite `timezone.utc` to the 3.11-only `UTC` alias and
+# silently broke older installs.
+target-version = "py39"
+# waveshare_epd/ is vendored upstream; don't lint or reformat it.
+extend-exclude = ["waveshare_epd"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
