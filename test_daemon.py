@@ -21,6 +21,12 @@ import fuzzyclock_daemon as d
 class CurrentModeTests(unittest.TestCase):
     """Pure-function tests after the B1 signature refactor."""
 
+    def setUp(self):
+        # The daemon caches sun_times by (date, lat, lon). Clear it between
+        # tests so a future patched _raw_sun_times can't be shadowed by an
+        # entry left over from a real-math test.
+        d._sun_times_cached.cache_clear()
+
     def _at(self, hour, minute=0, month=4, day=26):
         # 2026-04-26 is the project's notional "today"; specific date only
         # matters when after_hours_enabled is True (sun_times runs).
@@ -68,6 +74,54 @@ class CurrentModeTests(unittest.TestCase):
             d.current_mode(when, None, None, False, day_start=5, day_end=22),
             "day",
         )
+
+    def test_exact_sunset_boundary_is_still_day(self):
+        # Comparison is inclusive on both ends (sunrise <= now <= sunset).
+        # Mock _sun_times_cached so this test doesn't depend on the real
+        # ephemeris numbers — we just want to verify the boundary semantics.
+        sunrise = datetime(2024, 6, 21, 5, 0, tzinfo=UTC)
+        sunset = datetime(2024, 6, 21, 20, 0, tzinfo=UTC)
+        with mock.patch.object(d, "_sun_times_cached", return_value=(sunrise, sunset)):
+            self.assertEqual(d.current_mode(sunset, 0.0, 0.0, True), "day")
+            one_second_later = sunset.replace(second=1)
+            self.assertEqual(d.current_mode(one_second_later, 0.0, 0.0, True), "after_hours")
+
+
+class RenderStateTests(unittest.TestCase):
+    """The cross-thread retry counter and recovery flag added during the
+    code-review fixes; lets the button thread's failures trigger main-loop
+    recovery, and lets goodnight clear stale failure state."""
+
+    def setUp(self):
+        # Reset module state between tests so they don't bleed.
+        d._on_render_success()
+
+    def tearDown(self):
+        d._on_render_success()
+
+    def test_success_clears_counter_and_recovery_flag(self):
+        for _ in range(d.RENDER_RETRY_REINIT):
+            d._on_render_failure()
+        self.assertTrue(d._needs_recovery)
+        d._on_render_success()
+        self.assertEqual(d._consecutive_failures, 0)
+        self.assertFalse(d._needs_recovery)
+
+    def test_recovery_flag_flips_at_reinit_threshold(self):
+        for _ in range(d.RENDER_RETRY_REINIT - 1):
+            count, fatal = d._on_render_failure()
+            self.assertFalse(fatal)
+            self.assertFalse(d._needs_recovery)
+        count, fatal = d._on_render_failure()
+        self.assertEqual(count, d.RENDER_RETRY_REINIT)
+        self.assertTrue(d._needs_recovery)
+        self.assertFalse(fatal)
+
+    def test_fatal_returned_at_fatal_threshold(self):
+        fatal = False
+        for _ in range(d.RENDER_RETRY_FATAL):
+            _count, fatal = d._on_render_failure()
+        self.assertTrue(fatal)
 
 
 class SleepToNextTickTests(unittest.TestCase):

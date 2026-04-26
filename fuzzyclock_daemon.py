@@ -19,14 +19,6 @@ from fuzzyclock_core import (
 )
 from fuzzyclock_core import sun_times as _raw_sun_times
 
-
-# The ephemeris is stable for a calendar day, but current_mode() is now
-# evaluated every TICK_INTERVAL (60s). maxsize=4 covers today, yesterday
-# at midnight rollover, and a small buffer; older entries self-evict.
-@lru_cache(maxsize=4)
-def _sun_times_cached(date, latitude, longitude):
-    return _raw_sun_times(date, latitude, longitude)
-
 # Hardware-only deps. Guarded so the module is importable on CI / dev boxes
 # without GPIO + an EPD driver installed; the daemon's main() will refuse to
 # run if they're missing, but tests can import this file freely. RuntimeError
@@ -106,12 +98,14 @@ def _load_coordinates(path=CONFIG_PATH):
         return None, None
 
 
-DIALECT = _resolve_dialect()
-# After-hours toggle is location-driven. Coordinates come from
-# fuzzyclock_config.json next to this file; if it's missing or malformed,
-# the feature stays off and the daemon falls back to plain day/night.
-LATITUDE, LONGITUDE = _load_coordinates()
-AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
+# Daemon config. These are populated in main() rather than at import time so
+# that test code can `import fuzzyclock_daemon` without triggering a config
+# read or warning logs. _current_mode_now() and draw_clock() read them, but
+# they're only ever called from inside main()'s control flow.
+DIALECT = DEFAULT_DIALECT
+LATITUDE = None
+LONGITUDE = None
+AFTER_HOURS_ENABLED = False
 
 # === FONTS ===
 font_large = load_font(28)
@@ -128,6 +122,32 @@ epd_lock = threading.Lock()
 # avoids a deadlock if a signal arrives mid-render.
 _stop_event = threading.Event()
 
+# Render-failure state. The button thread and the main loop both call
+# draw_clock; we track failures across both so the recovery + fatal-exit
+# thresholds reflect actual panel health, not just main-loop activity.
+_render_state_lock = threading.Lock()
+_consecutive_failures = 0
+_needs_recovery = False
+
+
+def _on_render_success():
+    """Called after any successful SPI write; clears the recovery flags."""
+    global _consecutive_failures, _needs_recovery
+    with _render_state_lock:
+        _consecutive_failures = 0
+        _needs_recovery = False
+
+
+def _on_render_failure():
+    """Called after a draw failure. Returns (count, fatal); also flips the
+    recovery flag once we've crossed RENDER_RETRY_REINIT."""
+    global _consecutive_failures, _needs_recovery
+    with _render_state_lock:
+        _consecutive_failures += 1
+        if _consecutive_failures >= RENDER_RETRY_REINIT:
+            _needs_recovery = True
+        return _consecutive_failures, _consecutive_failures >= RENDER_RETRY_FATAL
+
 
 def _sleep_to_next_tick(interval, now=None):
     """Return seconds until the next wall-clock multiple of `interval`.
@@ -139,6 +159,14 @@ def _sleep_to_next_tick(interval, now=None):
     now = now if now is not None else time.time()
     delay = interval - (now % interval)
     return delay if delay > 0 else interval
+
+
+# The ephemeris is stable for a calendar day, but current_mode() is now
+# evaluated every TICK_INTERVAL (60s). maxsize=4 covers today, yesterday at
+# midnight rollover, and a small buffer; older entries self-evict.
+@lru_cache(maxsize=4)
+def _sun_times_cached(date, latitude, longitude):
+    return _raw_sun_times(date, latitude, longitude)
 
 
 def current_mode(now, latitude, longitude, after_hours_enabled,
@@ -224,10 +252,22 @@ def draw_clock(epd, invert=False):
 
 
 def shutdown_procedure(epd):
+    """Long-press handler: try to leave the panel in a tidy state, then halt.
+
+    Each step is independently guarded so that a transient SPI hiccup on the
+    goodnight screen or epd.sleep() doesn't prevent the actual `shutdown -h`
+    call — the user pressed-and-held for five seconds, they want a shutdown.
+    """
     logging.info("Button long press detected — shutting down.")
-    display_goodnight(epd)
-    with epd_lock:
-        epd.sleep()
+    try:
+        display_goodnight(epd)
+    except Exception:
+        logging.exception("display_goodnight() failed during shutdown; continuing.")
+    try:
+        with epd_lock:
+            epd.sleep()
+    except Exception:
+        logging.exception("epd.sleep() failed during shutdown; continuing.")
     run(["shutdown", "-h", "now"])
 
 
@@ -247,8 +287,18 @@ def button_listener(button, epd):
             logging.info("Short press — forcing update.")
             try:
                 draw_clock(epd, invert=_current_mode_now() == "after_hours")
+                _on_render_success()
             except Exception:
-                logging.exception("draw_clock() failed on button press")
+                count, fatal = _on_render_failure()
+                logging.exception(
+                    "draw_clock() failed on button press (%d/%d).",
+                    count, RENDER_RETRY_FATAL,
+                )
+                # Recovery itself happens in the main loop's render path,
+                # but if we've crossed the fatal threshold here we signal
+                # main to exit so systemd can restart us with a clean slate.
+                if fatal:
+                    _stop_event.set()
         else:
             logging.info("Ignored press (%.2f s)", duration)
 
@@ -276,6 +326,17 @@ def main():
             "waveshare_epd is not installed; the fuzzy-clock daemon requires the "
             "EPD driver. Use fuzzyClock2.py --dry-run for hardware-free testing."
         )
+
+    # Load configuration here rather than at import time so tests can import
+    # the module without triggering warnings or filesystem reads. After-hours
+    # mode is location-driven via fuzzyclock_config.json next to this file;
+    # if it's missing or malformed, the feature stays off and we fall back
+    # to plain day/night.
+    global DIALECT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
+    DIALECT = _resolve_dialect()
+    LATITUDE, LONGITUDE = _load_coordinates()
+    AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
+
     epd = epd2in13_V4.EPD()
     epd.init()
 
@@ -314,8 +375,6 @@ def main():
     reset_base_image(epd, invert=(initial_mode == "after_hours"))
 
     last_state = None
-    consecutive_failures = 0
-    force_full = False
 
     while not _stop_event.is_set():
         mode = _current_mode_now()
@@ -324,7 +383,15 @@ def main():
                 logging.info("Entering night mode.")
                 try:
                     display_goodnight(epd)
+                    # A successful goodnight is a clean SPI write; treat it
+                    # as evidence that the panel is healthy and reset any
+                    # stale failure state from earlier in the day.
+                    _on_render_success()
                 except Exception:
+                    # Log and accept stale state until morning. If we crashed
+                    # here instead, systemd would restart us and we'd retry
+                    # immediately — fine once, but a stuck panel could burn
+                    # through StartLimitBurst and disable the unit overnight.
                     logging.exception("display_goodnight() failed")
         else:
             invert = mode == "after_hours"
@@ -338,7 +405,7 @@ def main():
                     reset_base_image(epd, invert=invert)
                 except Exception:
                     logging.exception("reset_base_image() failed; will recover via re-init")
-                    force_full = True
+                    _on_render_failure()
 
             # Render on mode change or on every 5-minute wall-clock boundary.
             # The 60s tick gives us ~1-minute mode-transition latency without
@@ -349,28 +416,23 @@ def main():
             )
             if should_render:
                 try:
-                    if force_full:
+                    if _needs_recovery:
                         with epd_lock:
                             epd.init()
                         reset_base_image(epd, invert=invert)
-                        force_full = False
                     draw_clock(epd, invert=invert)
-                    consecutive_failures = 0
+                    _on_render_success()
                 except Exception:
-                    consecutive_failures += 1
+                    count, fatal = _on_render_failure()
                     logging.exception(
-                        "draw_clock() failed (%d/%d).",
-                        consecutive_failures, RENDER_RETRY_FATAL,
+                        "draw_clock() failed (%d/%d).", count, RENDER_RETRY_FATAL,
                     )
-                    if consecutive_failures >= RENDER_RETRY_FATAL:
+                    if fatal:
                         logging.critical(
                             "draw_clock() failed %d times consecutively; "
-                            "exiting for systemd to restart us.",
-                            consecutive_failures,
+                            "exiting for systemd to restart us.", count,
                         )
                         break
-                    if consecutive_failures >= RENDER_RETRY_REINIT:
-                        force_full = True
         last_state = mode
 
         _stop_event.wait(timeout=_sleep_to_next_tick(TICK_INTERVAL))
