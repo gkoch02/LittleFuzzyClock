@@ -5,6 +5,7 @@ import signal
 import threading
 import time
 from datetime import UTC, datetime
+from functools import lru_cache
 from subprocess import run
 
 from PIL import Image, ImageDraw
@@ -15,8 +16,16 @@ from fuzzyclock_core import (
     draw_border,
     load_font,
     render_clock,
-    sun_times,
 )
+from fuzzyclock_core import sun_times as _raw_sun_times
+
+
+# The ephemeris is stable for a calendar day, but current_mode() is now
+# evaluated every TICK_INTERVAL (60s). maxsize=4 covers today, yesterday
+# at midnight rollover, and a small buffer; older entries self-evict.
+@lru_cache(maxsize=4)
+def _sun_times_cached(date, latitude, longitude):
+    return _raw_sun_times(date, latitude, longitude)
 
 # Hardware-only deps. Guarded so the module is importable on CI / dev boxes
 # without GPIO + an EPD driver installed; the daemon's main() will refuse to
@@ -146,7 +155,7 @@ def current_mode(now, latitude, longitude, after_hours_enabled,
         return "night"
     if not after_hours_enabled:
         return "day"
-    sunrise, sunset = sun_times(now.date(), latitude, longitude)
+    sunrise, sunset = _sun_times_cached(now.date(), latitude, longitude)
     if sunrise is None or sunset is None:
         return "day"
     now_utc = now.astimezone(UTC)
