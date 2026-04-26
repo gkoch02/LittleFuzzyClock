@@ -132,25 +132,33 @@ def _sleep_to_next_tick(interval, now=None):
     return delay if delay > 0 else interval
 
 
-def current_mode(now=None):
+def current_mode(now, latitude, longitude, after_hours_enabled,
+                 day_start=DAY_START_HOUR, day_end=DAY_END_HOUR):
     """Return one of "day", "after_hours", "night" for the given local time.
 
     Outside the wake window we're always in night/goodnight. Inside it, the sun
-    decides between day (normal ink) and after-hours (inverted ink). When no
-    coordinates are configured, after-hours is disabled and we always return
-    "day" inside the wake window.
+    decides between day (normal ink) and after-hours (inverted ink). When
+    `after_hours_enabled` is False (no coordinates configured), or for polar
+    night / midnight sun where the sun never crosses the horizon, we fall
+    back to plain day inside the wake window.
     """
-    now = now or datetime.now().astimezone()
-    if not (DAY_START_HOUR <= now.hour < DAY_END_HOUR):
+    if not (day_start <= now.hour < day_end):
         return "night"
-    if not AFTER_HOURS_ENABLED:
+    if not after_hours_enabled:
         return "day"
-    sunrise, sunset = sun_times(now.date(), LATITUDE, LONGITUDE)
+    sunrise, sunset = sun_times(now.date(), latitude, longitude)
     if sunrise is None or sunset is None:
-        # Polar night / midnight sun: stick with day mode.
         return "day"
     now_utc = now.astimezone(UTC)
     return "day" if sunrise <= now_utc <= sunset else "after_hours"
+
+
+def _current_mode_now():
+    """`current_mode` evaluated against the module-level config and wall clock."""
+    return current_mode(
+        datetime.now().astimezone(),
+        LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED,
+    )
 
 
 def reset_base_image(epd, invert=False):
@@ -229,7 +237,7 @@ def button_listener(button, epd):
         elif SHORT_PRESS_MIN_SECONDS < duration < SHORT_PRESS_MAX_SECONDS:
             logging.info("Short press — forcing update.")
             try:
-                draw_clock(epd, invert=current_mode() == "after_hours")
+                draw_clock(epd, invert=_current_mode_now() == "after_hours")
             except Exception:
                 logging.exception("draw_clock() failed on button press")
         else:
@@ -293,7 +301,7 @@ def main():
         logging.exception("Failed to initialise GPIO button; continuing without it.")
 
     # Seed the partial-refresh base image to match whichever mode we're starting in.
-    initial_mode = current_mode()
+    initial_mode = _current_mode_now()
     reset_base_image(epd, invert=(initial_mode == "after_hours"))
 
     last_state = None
@@ -301,7 +309,7 @@ def main():
     force_full = False
 
     while not _stop_event.is_set():
-        mode = current_mode()
+        mode = _current_mode_now()
         if mode == "night":
             if last_state != "night":
                 logging.info("Entering night mode.")
