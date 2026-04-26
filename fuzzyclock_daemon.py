@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import signal
-import sys
 import time
 import threading
 from datetime import datetime, timezone
@@ -27,7 +26,14 @@ logging.basicConfig(
 
 # === CONFIGURATION ===
 GPIO_PIN = 3
-UPDATE_INTERVAL = 300  # seconds (5 minutes)
+UPDATE_INTERVAL = 300  # render the clock face every 5 minutes
+TICK_INTERVAL = 60     # main loop wakes every minute to check mode transitions
+
+# Render-failure thresholds. After RENDER_RETRY_REINIT consecutive failures
+# we re-init the EPD and force a base-image reseed; after RENDER_RETRY_FATAL
+# we exit and let systemd restart us cleanly (RestartSec=10 in the unit file).
+RENDER_RETRY_REINIT = 3
+RENDER_RETRY_FATAL = 10
 
 # Day mode runs from DAY_START_HOUR up to (but not including) DAY_END_HOUR.
 DAY_START_HOUR = 7
@@ -93,6 +99,24 @@ font_goodnight = load_font(24)
 
 # === EPD LOCK — protects all SPI writes to the display ===
 epd_lock = threading.Lock()
+
+# Set by the SIGTERM/SIGINT handler so the main loop and the button-thread
+# supervisor can break out of their waits and exit cleanly. Routing shutdown
+# through an Event (instead of acquiring epd_lock inside the signal handler)
+# avoids a deadlock if a signal arrives mid-render.
+_stop_event = threading.Event()
+
+
+def _sleep_to_next_tick(interval, now=None):
+    """Return seconds until the next wall-clock multiple of `interval`.
+
+    The result is always in (0, interval]. Sleeping for this duration keeps
+    the daemon's ticks aligned with wall-clock minutes regardless of how
+    long the previous render took, which eliminates cumulative drift.
+    """
+    now = now if now is not None else time.time()
+    delay = interval - (now % interval)
+    return delay if delay > 0 else interval
 
 
 def current_mode(now=None):
@@ -178,8 +202,10 @@ def shutdown_procedure(epd):
 
 
 def button_listener(button, epd):
-    while True:
+    while not _stop_event.is_set():
         button.wait_for_press()
+        if _stop_event.is_set():
+            return
         start = time.time()
         while button.is_pressed:
             time.sleep(0.01)
@@ -197,10 +223,26 @@ def button_listener(button, epd):
             logging.info("Ignored press (%.2f s)", duration)
 
 
+def _button_supervisor(button, epd):
+    """Run `button_listener` and restart it if it crashes.
+
+    The button thread is daemonic, so a silent crash would leave the daemon
+    running without any button input — and without a systemd restart, since
+    the main process is still alive. The supervisor logs the exception and
+    retries after a short backoff, exiting cleanly when `_stop_event` is set.
+    """
+    while not _stop_event.is_set():
+        try:
+            button_listener(button, epd)
+        except Exception:
+            logging.exception("button listener crashed; restarting in 10s")
+            if _stop_event.wait(10):
+                return
+
+
 def main():
     epd = epd2in13_V4.EPD()
     epd.init()
-    width, height = epd.height, epd.width
 
     if AFTER_HOURS_ENABLED:
         logging.info(
@@ -212,33 +254,43 @@ def main():
             CONFIG_PATH,
         )
 
-    # Graceful shutdown on SIGTERM (systemd stop) or SIGINT (Ctrl-C)
+    # Graceful shutdown on SIGTERM (systemd stop) or SIGINT (Ctrl-C). The
+    # handler does no I/O and acquires no locks; the cleanup path runs in
+    # the main loop below once it observes the event.
     def _handle_signal(signum, frame):
-        logging.info("Signal %d received — sleeping display and exiting.", signum)
-        with epd_lock:
-            epd.sleep()
-        sys.exit(0)
+        logging.info("Signal %d received — exiting after current tick.", signum)
+        _stop_event.set()
 
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    # Create the button in the main thread
-    button = Button(GPIO_PIN, pull_up=True, bounce_time=0.05)
+    # A failure here (missing GPIO, bus busy, running off-Pi for some reason)
+    # shouldn't take down the clock. Log and run without the button.
+    try:
+        button = Button(GPIO_PIN, pull_up=True, bounce_time=0.05)
+        threading.Thread(
+            target=_button_supervisor, args=(button, epd), daemon=True,
+        ).start()
+    except Exception:
+        logging.exception("Failed to initialise GPIO button; continuing without it.")
 
     # Seed the partial-refresh base image to match whichever mode we're starting in.
     initial_mode = current_mode()
     reset_base_image(epd, invert=(initial_mode == "after_hours"))
 
-    # Start button monitoring thread
-    threading.Thread(target=button_listener, args=(button, epd), daemon=True).start()
-
     last_state = None
-    while True:
+    consecutive_failures = 0
+    force_full = False
+
+    while not _stop_event.is_set():
         mode = current_mode()
         if mode == "night":
             if last_state != "night":
                 logging.info("Entering night mode.")
-                display_goodnight(epd)
+                try:
+                    display_goodnight(epd)
+                except Exception:
+                    logging.exception("display_goodnight() failed")
         else:
             invert = mode == "after_hours"
             # Any transition into a clock-displaying mode (or a swap between
@@ -247,14 +299,54 @@ def main():
             # first iteration is already covered by the seed above.
             if last_state is not None and last_state != mode:
                 logging.info("Entering %s mode.", mode.replace("_", "-"))
-                reset_base_image(epd, invert=invert)
-            try:
-                draw_clock(epd, invert=invert)
-            except Exception:
-                logging.exception("draw_clock() failed in main loop")
+                try:
+                    reset_base_image(epd, invert=invert)
+                except Exception:
+                    logging.exception("reset_base_image() failed; will recover via re-init")
+                    force_full = True
+
+            # Render on mode change or on every 5-minute wall-clock boundary.
+            # The 60s tick gives us ~1-minute mode-transition latency without
+            # actually pushing pixels every minute.
+            should_render = (
+                last_state != mode
+                or datetime.now().minute % 5 == 0
+            )
+            if should_render:
+                try:
+                    if force_full:
+                        with epd_lock:
+                            epd.init()
+                        reset_base_image(epd, invert=invert)
+                        force_full = False
+                    draw_clock(epd, invert=invert)
+                    consecutive_failures = 0
+                except Exception:
+                    consecutive_failures += 1
+                    logging.exception(
+                        "draw_clock() failed (%d/%d).",
+                        consecutive_failures, RENDER_RETRY_FATAL,
+                    )
+                    if consecutive_failures >= RENDER_RETRY_FATAL:
+                        logging.critical(
+                            "draw_clock() failed %d times consecutively; "
+                            "exiting for systemd to restart us.",
+                            consecutive_failures,
+                        )
+                        break
+                    if consecutive_failures >= RENDER_RETRY_REINIT:
+                        force_full = True
         last_state = mode
 
-        time.sleep(UPDATE_INTERVAL)
+        _stop_event.wait(timeout=_sleep_to_next_tick(TICK_INTERVAL))
+
+    # Cooperative shutdown: put the panel to sleep so it doesn't burn in.
+    logging.info("Main loop exited; sleeping display.")
+    try:
+        with epd_lock:
+            epd.sleep()
+    except Exception:
+        logging.exception("epd.sleep() failed during shutdown")
 
 
 if __name__ == "__main__":
