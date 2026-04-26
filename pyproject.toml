@@ -1,0 +1,8 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# waveshare_epd/ is vendored upstream; don't lint or reformat it.
+extend-exclude = ["waveshare_epd"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

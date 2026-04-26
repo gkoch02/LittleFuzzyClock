@@ -1,8 +1,9 @@
 import argparse
 from datetime import datetime
+
 from PIL import Image, ImageDraw
 
-from fuzzyclock_core import DIALECTS, DEFAULT_DIALECT, load_font, render_clock
+from fuzzyclock_core import DEFAULT_DIALECT, DIALECTS, load_font, render_clock
 
 # Lazy-import the EPD driver so the script can run in --dry-run mode on
 # machines without the waveshare library — or without Pi hardware. The
@@ -37,7 +38,11 @@ def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALEC
         image = Image.new('1', (width, height), 255)
 
     draw = ImageDraw.Draw(image)
-    render_clock(draw, width, height, datetime.now(), font_large, font_small, font_tiny, dialect=dialect)
+    render_clock(
+        draw, width, height, datetime.now(),
+        font_large, font_small, font_tiny,
+        dialect=dialect,
+    )
 
     if dry_run:
         image.save(output)

@@ -14,7 +14,6 @@ import unittest
 
 from PIL import Image
 
-
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -30,7 +29,8 @@ class DryRunCLITests(unittest.TestCase):
             )
             self.assertEqual(
                 result.returncode, 0,
-                f"--dry-run exited {result.returncode}\nstdout: {result.stdout}\nstderr: {result.stderr}",
+                f"--dry-run exited {result.returncode}\n"
+                f"stdout: {result.stdout}\nstderr: {result.stderr}",
             )
             self.assertTrue(os.path.exists(out_path), "PNG was not written")
             with Image.open(out_path) as img:

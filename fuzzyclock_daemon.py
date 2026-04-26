@@ -2,13 +2,13 @@ import json
 import logging
 import os
 import signal
-import time
 import threading
-from datetime import datetime, timezone
-from PIL import Image, ImageDraw
-from gpiozero import Button
+import time
+from datetime import UTC, datetime
 from subprocess import run
-from waveshare_epd import epd2in13_V4
+
+from gpiozero import Button
+from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
     DEFAULT_DIALECT,
@@ -18,6 +18,7 @@ from fuzzyclock_core import (
     render_clock,
     sun_times,
 )
+from waveshare_epd import epd2in13_V4
 
 logging.basicConfig(
     level=logging.INFO,
@@ -136,7 +137,7 @@ def current_mode(now=None):
     if sunrise is None or sunset is None:
         # Polar night / midnight sun: stick with day mode.
         return "day"
-    now_utc = now.astimezone(timezone.utc)
+    now_utc = now.astimezone(UTC)
     return "day" if sunrise <= now_utc <= sunset else "after_hours"
 
 
