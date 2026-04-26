@@ -9,7 +9,7 @@ Run with: python3 -m unittest test_sun
 """
 
 import unittest
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 
 from fuzzyclock_core import sun_times
 
@@ -32,14 +32,14 @@ class SunTimesTests(unittest.TestCase):
     def test_san_francisco_summer_solstice(self):
         # 2024-06-20 SF: sunrise ~05:48 PDT (12:48 UTC), sunset ~20:34 PDT (03:34 UTC next day).
         sunrise, sunset = sun_times(date(2024, 6, 20), 37.7749, -122.4194)
-        self._assert_close(sunrise, datetime(2024, 6, 20, 12, 48, tzinfo=UTC))
-        self._assert_close(sunset, datetime(2024, 6, 21, 3, 34, tzinfo=UTC))
+        self._assert_close(sunrise, datetime(2024, 6, 20, 12, 48, tzinfo=timezone.utc))
+        self._assert_close(sunset, datetime(2024, 6, 21, 3, 34, tzinfo=timezone.utc))
 
     def test_london_winter_solstice(self):
         # 2024-12-21 London: sunrise ~08:04 UTC, sunset ~15:53 UTC.
         sunrise, sunset = sun_times(date(2024, 12, 21), 51.5074, -0.1278)
-        self._assert_close(sunrise, datetime(2024, 12, 21, 8, 4, tzinfo=UTC))
-        self._assert_close(sunset, datetime(2024, 12, 21, 15, 53, tzinfo=UTC))
+        self._assert_close(sunrise, datetime(2024, 12, 21, 8, 4, tzinfo=timezone.utc))
+        self._assert_close(sunset, datetime(2024, 12, 21, 15, 53, tzinfo=timezone.utc))
 
     def test_equator_equinox_is_roughly_twelve_hours(self):
         sunrise, sunset = sun_times(date(2024, 3, 20), 0.0, 0.0)

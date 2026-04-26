@@ -12,7 +12,7 @@ import json
 import os
 import tempfile
 import unittest
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from unittest import mock
 
 import fuzzyclock_daemon as d
@@ -30,7 +30,7 @@ class CurrentModeTests(unittest.TestCase):
     def _at(self, hour, minute=0, month=4, day=26):
         # 2026-04-26 is the project's notional "today"; specific date only
         # matters when after_hours_enabled is True (sun_times runs).
-        return datetime(2026, month, day, hour, minute, tzinfo=UTC)
+        return datetime(2026, month, day, hour, minute, tzinfo=timezone.utc)
 
     def test_before_wake_window_is_night(self):
         self.assertEqual(d.current_mode(self._at(5), None, None, False), "night")
@@ -53,18 +53,18 @@ class CurrentModeTests(unittest.TestCase):
     def test_after_hours_during_summer_evening_in_london(self):
         # London at June solstice: sunset ~20:21 UTC. 21:00 is past sunset
         # but still inside the 7..23 wake window → after_hours.
-        when = datetime(2024, 6, 21, 21, 0, tzinfo=UTC)
+        when = datetime(2024, 6, 21, 21, 0, tzinfo=timezone.utc)
         self.assertEqual(d.current_mode(when, 51.5074, -0.1278, True), "after_hours")
 
     def test_day_during_summer_afternoon_in_london(self):
         # 14:00 UTC, sun is well up → day.
-        when = datetime(2024, 6, 21, 14, 0, tzinfo=UTC)
+        when = datetime(2024, 6, 21, 14, 0, tzinfo=timezone.utc)
         self.assertEqual(d.current_mode(when, 51.5074, -0.1278, True), "day")
 
     def test_polar_midnight_sun_falls_back_to_day(self):
         # Tromsø in summer: sun never sets → sun_times returns (None, None)
         # and the function falls back to "day" inside the wake window.
-        when = datetime(2024, 6, 21, 12, 0, tzinfo=UTC)
+        when = datetime(2024, 6, 21, 12, 0, tzinfo=timezone.utc)
         self.assertEqual(d.current_mode(when, 69.6492, 18.9553, True), "day")
 
     def test_custom_wake_window_overrides_module_defaults(self):
@@ -79,8 +79,8 @@ class CurrentModeTests(unittest.TestCase):
         # Comparison is inclusive on both ends (sunrise <= now <= sunset).
         # Mock _sun_times_cached so this test doesn't depend on the real
         # ephemeris numbers — we just want to verify the boundary semantics.
-        sunrise = datetime(2024, 6, 21, 5, 0, tzinfo=UTC)
-        sunset = datetime(2024, 6, 21, 20, 0, tzinfo=UTC)
+        sunrise = datetime(2024, 6, 21, 5, 0, tzinfo=timezone.utc)
+        sunset = datetime(2024, 6, 21, 20, 0, tzinfo=timezone.utc)
         with mock.patch.object(d, "_sun_times_cached", return_value=(sunrise, sunset)):
             self.assertEqual(d.current_mode(sunset, 0.0, 0.0, True), "day")
             one_second_later = sunset.replace(second=1)

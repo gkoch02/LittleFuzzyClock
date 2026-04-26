@@ -1,7 +1,7 @@
 """Shared rendering logic for the fuzzy clock."""
 
 import math
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from PIL import ImageFont
 
@@ -196,7 +196,7 @@ def sun_times(date, latitude, longitude):
     sunrise_min = 720 - 4 * (longitude + h_deg) - eqtime
     sunset_min = 720 - 4 * (longitude - h_deg) - eqtime
 
-    base = datetime(date.year, date.month, date.day, tzinfo=UTC)
+    base = datetime(date.year, date.month, date.day, tzinfo=timezone.utc)
     return (
         base + timedelta(minutes=sunrise_min),
         base + timedelta(minutes=sunset_min),

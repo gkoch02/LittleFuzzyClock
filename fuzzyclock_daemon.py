@@ -4,7 +4,7 @@ import os
 import signal
 import threading
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from functools import lru_cache
 from subprocess import run
 
@@ -186,7 +186,7 @@ def current_mode(now, latitude, longitude, after_hours_enabled,
     sunrise, sunset = _sun_times_cached(now.date(), latitude, longitude)
     if sunrise is None or sunset is None:
         return "day"
-    now_utc = now.astimezone(UTC)
+    now_utc = now.astimezone(timezone.utc)
     return "day" if sunrise <= now_utc <= sunset else "after_hours"
 
 
