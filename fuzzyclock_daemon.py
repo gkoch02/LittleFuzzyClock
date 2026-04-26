@@ -7,7 +7,6 @@ import time
 from datetime import UTC, datetime
 from subprocess import run
 
-from gpiozero import Button
 from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
@@ -18,7 +17,20 @@ from fuzzyclock_core import (
     render_clock,
     sun_times,
 )
-from waveshare_epd import epd2in13_V4
+
+# Hardware-only deps. Guarded so the module is importable on CI / dev boxes
+# without GPIO + an EPD driver installed; the daemon's main() will refuse to
+# run if they're missing, but tests can import this file freely. RuntimeError
+# is raised by gpiozero on non-Pi Linux when it can't find a GPIO backend.
+try:
+    from gpiozero import Button
+except (ImportError, RuntimeError):
+    Button = None
+
+try:
+    from waveshare_epd import epd2in13_V4
+except (ImportError, RuntimeError):
+    epd2in13_V4 = None
 
 logging.basicConfig(
     level=logging.INFO,
@@ -242,6 +254,11 @@ def _button_supervisor(button, epd):
 
 
 def main():
+    if epd2in13_V4 is None:
+        raise SystemExit(
+            "waveshare_epd is not installed; the fuzzy-clock daemon requires the "
+            "EPD driver. Use fuzzyClock2.py --dry-run for hardware-free testing."
+        )
     epd = epd2in13_V4.EPD()
     epd.init()
 
