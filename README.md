@@ -47,7 +47,7 @@ python3 fuzzyClock2.py --dry-run --output preview.png
 
 ## Phrasing personalities
 
-The clock ships with five phrasings: `classic` (default), `shakespeare` (e.g. `'tis half past nine of the clock`), `klingon` (e.g. `half past Hut rep`, using actual tlhIngan Hol numerals), `belter` (e.g. `quarter to da / ten bell, ya` — Lang Belta creole from *The Expanse*), and `german` (e.g. `halb zehn` for 9:30 — standard German fuzzy time, where "halb" anchors on the *next* hour). Pick one with `--dialect`:
+The clock ships with six phrasings: `classic` (default), `shakespeare` (e.g. `'tis half past nine of the clock`), `klingon` (e.g. `half past Hut rep`, using actual tlhIngan Hol numerals), `belter` (e.g. `quarter to da / ten bell, ya` — Lang Belta creole from *The Expanse*), `german` (e.g. `halb zehn` for 9:30 — standard German fuzzy time, where "halb" anchors on the *next* hour), and `hal` (e.g. `MIDPOINT / NINE HUNDRED` — HAL 9000 mission-control monotone). Pick one with `--dialect`:
 
 ```bash
 python3 fuzzyClock2.py --dry-run --dialect shakespeare --output preview.png

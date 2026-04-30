@@ -191,6 +191,33 @@ class GermanDialectTests(unittest.TestCase):
         self.assertEqual(fuzzy_time(23, 58, "german"), ("kurz vor", "zwölf"))
 
 
+class HalDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "hal"), ("ON THE MARK", "NINE HUNDRED"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15, "hal"), ("T+15 MINUTES", "NINE HUNDRED"))
+
+    def test_midpoint_keeps_current_hour(self):
+        # HAL marks the half-hour as the still-anchored midpoint, so 9:30
+        # reports nine hundred (default hour_advance_at=7 still applies).
+        self.assertEqual(fuzzy_time(9, 30, "hal"), ("MIDPOINT", "NINE HUNDRED"))
+
+    def test_thirty_five_past_advances_hour(self):
+        self.assertEqual(fuzzy_time(9, 35, "hal"), ("T-25 MINUTES", "TEN HUNDRED"))
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(fuzzy_time(9, 45, "hal"), ("T-15 MINUTES", "TEN HUNDRED"))
+
+    def test_imminent_does_not_wrap(self):
+        # Cap-at-11 protection: 9:58 must read IMMINENT against the next
+        # hour, not wrap back to ON THE MARK against the current one.
+        self.assertEqual(fuzzy_time(9, 58, "hal"), ("IMMINENT", "TEN HUNDRED"))
+
+    def test_midnight_rollover(self):
+        self.assertEqual(fuzzy_time(23, 58, "hal"), ("IMMINENT", "TWELVE HUNDRED"))
+
+
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
         # Every dialect must produce a valid phrase from its own table for

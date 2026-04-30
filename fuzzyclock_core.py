@@ -87,6 +87,19 @@ DIALECTS = {
         "hour_advance_at": 5,
         "format_hour": lambda hour_word, is_pm: hour_word,
     },
+    "hal": {
+        # HAL 9000 — terse, all-caps, mission-control T-minus cadence.
+        # "MIDPOINT" and "IMMINENT" replace the T±N readout at the half-hour
+        # and top-of-hour for the same reason HAL drops into clipped
+        # declaratives in 2001: it sounds more inevitable that way.
+        "phrases": [
+            "ON THE MARK", "T+5 MINUTES", "T+10 MINUTES", "T+15 MINUTES",
+            "T+20 MINUTES", "T+25 MINUTES", "MIDPOINT", "T-25 MINUTES",
+            "T-20 MINUTES", "T-15 MINUTES", "T-10 MINUTES", "IMMINENT",
+        ],
+        "hours": HOUR_WORDS,
+        "format_hour": lambda hour_word, is_pm: f"{hour_word.upper()} HUNDRED",
+    },
 }
 
 DEFAULT_DIALECT = "classic"
