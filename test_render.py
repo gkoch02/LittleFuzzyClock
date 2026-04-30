@@ -107,6 +107,18 @@ class RenderClockTests(unittest.TestCase):
         )
         self.assertGreater(_count_black_pixels(image), 200)
 
+    def test_german_dialect_renders(self):
+        # German is the only dialect with non-ASCII glyphs (ä, ö, ü). If the
+        # font fallback ever lands on a face missing them we'd render tofu
+        # boxes; this asserts real ink lands on canvas.
+        image = Image.new("1", (WIDTH, HEIGHT), 255)
+        render_clock(
+            ImageDraw.Draw(image), WIDTH, HEIGHT,
+            datetime(2026, 4, 25, 9, 30), *self.fonts,
+            dialect="german",
+        )
+        self.assertGreater(_count_black_pixels(image), 200)
+
 
 if __name__ == "__main__":
     unittest.main()

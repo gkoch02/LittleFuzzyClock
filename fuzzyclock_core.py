@@ -66,11 +66,14 @@ DIALECTS = {
         "format_hour": lambda hour_word, is_pm: f"{hour_word} bell, ya",
     },
     "german": {
-        # Standard German fuzzy time. "halb [hour]" means "half-to [hour]" —
-        # 9:30 reads "halb zehn" (half ten), referencing the *next* hour. The
-        # 25-past and 35-past slots ("fünf vor halb", "fünf nach halb") share
-        # the same anchor, so this dialect bumps `hour_advance_at` down to 5
-        # to advance the displayed hour starting at index 5 instead of 7.
+        # Standard High German fuzzy time. "halb [hour]" means "half-to
+        # [hour]" — 9:30 reads "halb zehn" (half ten), referencing the *next*
+        # hour. The 25-past and 35-past slots ("fünf vor halb", "fünf nach
+        # halb") share the same anchor, so this dialect bumps
+        # `hour_advance_at` down to 5 to advance the displayed hour starting
+        # at index 5 instead of 7.
+        # Regional variants (Swiss "viertel ab", Austrian etc.) intentionally
+        # not applied — keep this entry as the de-DE/standard form.
         "phrases": [
             "kurz nach", "fünf nach", "zehn nach", "viertel nach",
             "zwanzig nach", "fünf vor halb", "halb", "fünf nach halb",
@@ -87,6 +90,20 @@ DIALECTS = {
 }
 
 DEFAULT_DIALECT = "classic"
+
+
+# `hour_advance_at` controls when the displayed hour flips from current to
+# next. It must stay <= 11 so the index-11 ("almost") slot still advances —
+# otherwise minutes 57-59 wrap back to "almost [current hour]" via % 12,
+# which is the bug the min(..., 11) cap in fuzzy_time exists to prevent.
+for _name, _spec in DIALECTS.items():
+    _adv = _spec.get("hour_advance_at", 7)
+    if not 1 <= _adv <= 11:
+        raise ValueError(
+            f"Dialect {_name!r} has invalid hour_advance_at={_adv}; "
+            "must be in 1..11 to preserve the almost-next-hour invariant."
+        )
+del _name, _spec, _adv
 
 
 def load_font(size):

@@ -155,6 +155,12 @@ class GermanDialectTests(unittest.TestCase):
     def test_twenty_past_keeps_current_hour(self):
         self.assertEqual(fuzzy_time(9, 20, "german"), ("zwanzig nach", "neun"))
 
+    def test_rounding_cliff_at_twenty_three_past(self):
+        # The 5-minute bucket cliff sits at minute 23 (round(23/5) = 5), not
+        # 25. Pin both sides so the boundary stays where Germans expect.
+        self.assertEqual(fuzzy_time(9, 22, "german"), ("zwanzig nach", "neun"))
+        self.assertEqual(fuzzy_time(9, 23, "german"), ("fünf vor halb", "zehn"))
+
     def test_twenty_five_past_advances_to_next_hour(self):
         # "fünf vor halb zehn" = five before half-ten = 9:25.
         self.assertEqual(fuzzy_time(9, 25, "german"), ("fünf vor halb", "zehn"))
@@ -164,7 +170,7 @@ class GermanDialectTests(unittest.TestCase):
         # German time and the reason for the hour_advance_at=5 hook.
         self.assertEqual(fuzzy_time(9, 30, "german"), ("halb", "zehn"))
 
-    def test_thirty_five_past_anchors_on_next_hour(self):
+    def test_thirty_five_past_phrasing(self):
         self.assertEqual(fuzzy_time(9, 35, "german"), ("fünf nach halb", "zehn"))
 
     def test_quarter_to_advances_hour(self):
@@ -176,6 +182,10 @@ class GermanDialectTests(unittest.TestCase):
     def test_half_past_eleven_rolls_into_twelve(self):
         # 11:30 is "halb zwölf" — uses the German word for twelve.
         self.assertEqual(fuzzy_time(11, 30, "german"), ("halb", "zwölf"))
+
+    def test_half_past_midnight_rolls_into_one(self):
+        # 0:30 is "halb eins" — symmetric to the 23:30 → "halb zwölf" case.
+        self.assertEqual(fuzzy_time(0, 30, "german"), ("halb", "eins"))
 
     def test_midnight_rollover(self):
         self.assertEqual(fuzzy_time(23, 58, "german"), ("kurz vor", "zwölf"))
