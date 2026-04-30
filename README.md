@@ -1,5 +1,7 @@
 # Little Fuzzy Clock
 
+[![Tests](https://github.com/gkoch02/littlefuzzyclock/actions/workflows/test.yml/badge.svg)](https://github.com/gkoch02/littlefuzzyclock/actions/workflows/test.yml)
+
 A fuzzy clock for a Raspberry Pi Zero driving a [Waveshare 2.13" e-ink display (V4)](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT_%28E%29).
 
 Instead of showing an exact time, it displays natural-language phrases like "quarter past nine am" or "twenty to three pm", with the date as a footer and a small Bauhaus-inspired border.
