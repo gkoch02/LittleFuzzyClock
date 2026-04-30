@@ -2,7 +2,10 @@
 
 Covers `current_mode` (across the day/night/after-hours branch table),
 `_sleep_to_next_tick` (boundary math), `_load_coordinates` (config-file
-error paths), and `_resolve_dialect` (environment-variable handling).
+error paths), `_resolve_dialect` (environment-variable handling), the
+button thread's press classification and supervisor restart logic, the
+shutdown procedure's independent guards, the cross-thread render counter,
+and the EPD-touching helpers via a fake panel.
 
 The daemon's hardware imports are guarded (see fuzzyclock_daemon top-of-file),
 so this test file imports the module directly without stubbing GPIO/EPD.
@@ -11,8 +14,9 @@ so this test file imports the module directly without stubbing GPIO/EPD.
 import json
 import os
 import tempfile
+import threading
 import unittest
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from unittest import mock
 
 import fuzzyclock_daemon as d
@@ -196,6 +200,413 @@ class ResolveDialectTests(unittest.TestCase):
             with self.assertLogs("root", level="WARNING") as cm:
                 self.assertEqual(d._resolve_dialect(), d.DEFAULT_DIALECT)
             self.assertTrue(any("pirate" in line for line in cm.output))
+
+
+class _FakeButton:
+    """Minimal `gpiozero.Button` substitute for `button_listener` tests.
+
+    The listener calls `wait_for_press()` once per iteration, then `time.time()`
+    twice (start/end) bracketing a `while button.is_pressed: ...` poll loop.
+    By keeping `is_pressed` False and feeding paired (start, end) values into
+    a mocked `time.time`, we control the computed press duration exactly. After
+    the configured durations are exhausted, `wait_for_press()` sets the daemon's
+    stop event so the listener exits cleanly instead of looping forever.
+    """
+
+    def __init__(self, durations):
+        self._remaining = list(durations)
+        self.is_pressed = False
+        self.time_queue = []
+        for dur in durations:
+            self.time_queue.extend([0.0, dur])
+
+    def wait_for_press(self):
+        if not self._remaining:
+            d._stop_event.set()
+            return
+        self._remaining.pop(0)
+
+
+def _make_time_fn(queue):
+    """Pop from `queue` until exhausted, then return the last popped value.
+
+    The fallthrough matters because `logging` calls `time.time()` to stamp
+    every record and we don't want a "pop from empty list" blowup mid-test.
+    """
+    state = {"last": 0.0}
+
+    def t():
+        if queue:
+            state["last"] = queue.pop(0)
+        return state["last"]
+
+    return t
+
+
+class ButtonListenerTests(unittest.TestCase):
+    """Press classification: long → shutdown, short → render, else ignored."""
+
+    def setUp(self):
+        d._stop_event.clear()
+        d._on_render_success()
+
+    def tearDown(self):
+        d._stop_event.clear()
+        d._on_render_success()
+
+    def _run_listener(self, durations, mode="day"):
+        button = _FakeButton(durations)
+        epd = mock.Mock()
+        with (
+            mock.patch.object(d.time, "time", side_effect=_make_time_fn(button.time_queue)),
+            mock.patch.object(d, "shutdown_procedure") as shutdown,
+            mock.patch.object(d, "draw_clock") as draw,
+            mock.patch.object(d, "_current_mode_now", return_value=mode),
+        ):
+            d.button_listener(button, epd)
+        return shutdown, draw
+
+    def test_long_press_triggers_shutdown(self):
+        shutdown, draw = self._run_listener([d.LONG_PRESS_SECONDS])
+        shutdown.assert_called_once()
+        draw.assert_not_called()
+
+    def test_long_press_overshoot_still_triggers_shutdown(self):
+        shutdown, _ = self._run_listener([d.LONG_PRESS_SECONDS + 2.0])
+        shutdown.assert_called_once()
+
+    def test_short_press_forces_render(self):
+        # 0.5s sits in the SHORT_PRESS window (0.05, 2.0).
+        shutdown, draw = self._run_listener([0.5])
+        draw.assert_called_once()
+        shutdown.assert_not_called()
+
+    def test_short_press_passes_invert_for_after_hours_mode(self):
+        _shutdown, draw = self._run_listener([0.5], mode="after_hours")
+        draw.assert_called_once()
+        _args, kwargs = draw.call_args
+        self.assertTrue(kwargs.get("invert"))
+
+    def test_debounce_noise_is_ignored(self):
+        # Anything <= SHORT_PRESS_MIN_SECONDS (0.05) is below the noise floor.
+        shutdown, draw = self._run_listener([0.01])
+        shutdown.assert_not_called()
+        draw.assert_not_called()
+
+    def test_mid_range_press_is_ignored(self):
+        # Between SHORT_PRESS_MAX (2.0) and LONG_PRESS (5.0) is the deliberate
+        # dead zone — long enough to be intentional, short enough not to be a
+        # shutdown hold.
+        shutdown, draw = self._run_listener([3.0])
+        shutdown.assert_not_called()
+        draw.assert_not_called()
+
+    def test_render_failure_increments_counter(self):
+        button = _FakeButton([0.5])
+        with (
+            mock.patch.object(d.time, "time", side_effect=_make_time_fn(button.time_queue)),
+            mock.patch.object(d, "draw_clock", side_effect=RuntimeError("SPI")),
+            mock.patch.object(d, "_current_mode_now", return_value="day"),
+        ):
+            d.button_listener(button, mock.Mock())
+        self.assertEqual(d._consecutive_failures, 1)
+
+    def test_fatal_render_failure_sets_stop_event(self):
+        # Pre-bump the counter to one short of fatal so a single failure here
+        # crosses the threshold and signals main to exit.
+        for _ in range(d.RENDER_RETRY_FATAL - 1):
+            d._on_render_failure()
+        button = _FakeButton([0.5])
+        with (
+            mock.patch.object(d.time, "time", side_effect=_make_time_fn(button.time_queue)),
+            mock.patch.object(d, "draw_clock", side_effect=RuntimeError("SPI")),
+            mock.patch.object(d, "_current_mode_now", return_value="day"),
+        ):
+            d.button_listener(button, mock.Mock())
+        self.assertTrue(d._stop_event.is_set())
+
+    def test_stop_event_set_during_wait_aborts_iteration(self):
+        # If _stop_event flips between wait_for_press() and the early-return
+        # check, the listener must exit without firing any action.
+        class StopOnWait:
+            is_pressed = False
+
+            def wait_for_press(self_inner):
+                d._stop_event.set()
+
+        with (
+            mock.patch.object(d, "shutdown_procedure") as shutdown,
+            mock.patch.object(d, "draw_clock") as draw,
+        ):
+            d.button_listener(StopOnWait(), mock.Mock())
+        shutdown.assert_not_called()
+        draw.assert_not_called()
+
+
+class ButtonSupervisorTests(unittest.TestCase):
+    """`_button_supervisor` must restart on crash and exit cleanly on stop."""
+
+    def setUp(self):
+        d._stop_event.clear()
+
+    def tearDown(self):
+        d._stop_event.clear()
+
+    def test_restarts_listener_after_crash(self):
+        calls = []
+
+        def fake_listener(button, epd):
+            calls.append(1)
+            if len(calls) == 1:
+                raise RuntimeError("listener crashed")
+            # Second invocation: signal clean exit so the supervisor returns.
+            d._stop_event.set()
+
+        with (
+            mock.patch.object(d, "button_listener", fake_listener),
+            mock.patch.object(d._stop_event, "wait", return_value=False),
+        ):
+            d._button_supervisor(mock.Mock(), mock.Mock())
+        self.assertEqual(len(calls), 2)
+
+    def test_stop_event_during_backoff_exits_cleanly(self):
+        # Listener always crashes; supervisor must NOT loop forever — when
+        # _stop_event.wait() returns True (event set), it exits.
+        def fake_listener(button, epd):
+            raise RuntimeError("permanent crash")
+
+        with (
+            mock.patch.object(d, "button_listener", fake_listener),
+            mock.patch.object(d._stop_event, "wait", return_value=True) as wait_mock,
+        ):
+            d._button_supervisor(mock.Mock(), mock.Mock())
+        wait_mock.assert_called_once_with(10)
+
+
+class ShutdownProcedureTests(unittest.TestCase):
+    """The three steps must be independently guarded — a goodnight or sleep
+    failure must not prevent `shutdown -h now` from running."""
+
+    def test_invokes_shutdown_command(self):
+        epd = mock.Mock()
+        with (
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(d, "run") as run_mock,
+        ):
+            d.shutdown_procedure(epd)
+        epd.sleep.assert_called_once()
+        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+
+    def test_goodnight_failure_still_sleeps_and_shuts_down(self):
+        epd = mock.Mock()
+        with (
+            mock.patch.object(d, "display_goodnight", side_effect=RuntimeError("panel hang")),
+            mock.patch.object(d, "run") as run_mock,
+        ):
+            d.shutdown_procedure(epd)
+        epd.sleep.assert_called_once()
+        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+
+    def test_sleep_failure_still_shuts_down(self):
+        epd = mock.Mock()
+        epd.sleep.side_effect = RuntimeError("SPI gone")
+        with (
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(d, "run") as run_mock,
+        ):
+            d.shutdown_procedure(epd)
+        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+
+    def test_both_failures_still_shut_down(self):
+        epd = mock.Mock()
+        epd.sleep.side_effect = RuntimeError("SPI gone")
+        with (
+            mock.patch.object(d, "display_goodnight", side_effect=RuntimeError("panel hang")),
+            mock.patch.object(d, "run") as run_mock,
+        ):
+            d.shutdown_procedure(epd)
+        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+
+
+class ConcurrentRenderCounterTests(unittest.TestCase):
+    """The counter is shared between the main loop and button thread, so the
+    lock must keep increments atomic under contention."""
+
+    def setUp(self):
+        d._on_render_success()
+
+    def tearDown(self):
+        d._on_render_success()
+
+    def test_concurrent_failures_are_counted_atomically(self):
+        per_thread = 100
+        n_threads = 8
+
+        def worker():
+            for _ in range(per_thread):
+                d._on_render_failure()
+
+        threads = [threading.Thread(target=worker) for _ in range(n_threads)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(d._consecutive_failures, per_thread * n_threads)
+        self.assertTrue(d._needs_recovery)
+
+
+class SunTimesCacheTests(unittest.TestCase):
+    """`_sun_times_cached` is an LRU on top of the pure NOAA helper; it must
+    return identical objects on a hit and recompute on a miss."""
+
+    def setUp(self):
+        d._sun_times_cached.cache_clear()
+
+    def test_cache_hits_for_repeated_args(self):
+        args = (date(2024, 6, 21), 51.5074, -0.1278)
+        first = d._sun_times_cached(*args)
+        second = d._sun_times_cached(*args)
+        info = d._sun_times_cached.cache_info()
+        self.assertEqual(info.hits, 1)
+        self.assertEqual(info.misses, 1)
+        # tuple identity confirms the cached object was returned, not recomputed.
+        self.assertIs(first, second)
+
+    def test_cache_miss_for_new_date(self):
+        d._sun_times_cached(date(2024, 6, 21), 51.5074, -0.1278)
+        d._sun_times_cached(date(2024, 6, 22), 51.5074, -0.1278)
+        info = d._sun_times_cached.cache_info()
+        self.assertEqual(info.misses, 2)
+        self.assertEqual(info.hits, 0)
+
+    def test_cache_clear_resets_stats(self):
+        d._sun_times_cached(date(2024, 6, 21), 51.5074, -0.1278)
+        d._sun_times_cached.cache_clear()
+        info = d._sun_times_cached.cache_info()
+        self.assertEqual(info.hits, 0)
+        self.assertEqual(info.misses, 0)
+        self.assertEqual(info.currsize, 0)
+
+
+class _FakeEPD:
+    """Test double for the Waveshare EPD — records every SPI-shaped call.
+
+    Mirrors the small surface that `reset_base_image`, `display_goodnight`,
+    and `draw_clock` actually touch: width/height (the panel is portrait, so
+    landscape callers swap to epd.height/epd.width), getbuffer (opaque blob),
+    and the four display/init/sleep methods.
+    """
+
+    def __init__(self):
+        self.width = 122
+        self.height = 250
+        self.calls = []
+        self.last_part_base = None
+        self.last_partial = None
+        self.last_display = None
+
+    def getbuffer(self, image):
+        return ("buf", image.size, image.mode)
+
+    def displayPartBaseImage(self, buf):
+        self.calls.append(("part_base", buf))
+        self.last_part_base = buf
+
+    def displayPartial(self, buf):
+        self.calls.append(("partial", buf))
+        self.last_partial = buf
+
+    def display(self, buf):
+        self.calls.append(("display", buf))
+        self.last_display = buf
+
+    def init(self):
+        self.calls.append(("init",))
+
+    def sleep(self):
+        self.calls.append(("sleep",))
+
+
+class ResetBaseImageTests(unittest.TestCase):
+    def test_seeds_base_image_with_white_background(self):
+        epd = _FakeEPD()
+        d.reset_base_image(epd, invert=False)
+        self.assertEqual([c[0] for c in epd.calls], ["part_base"])
+        # getbuffer was handed an image of (width, height) == (epd.height, epd.width).
+        _tag, size, mode = epd.last_part_base
+        self.assertEqual(size, (epd.height, epd.width))
+        self.assertEqual(mode, "1")
+
+    def test_inverted_base_image_uses_black_background(self):
+        epd = _FakeEPD()
+        d.reset_base_image(epd, invert=True)
+        # Same SPI shape; the difference (background colour) is internal to
+        # the rendered buffer. Asserting the call shape is what we can test
+        # at this seam without a pixel comparator.
+        self.assertEqual([c[0] for c in epd.calls], ["part_base"])
+
+
+class _FontFixtureMixin:
+    """Tests that exercise a real render path need fonts populated. The
+    daemon defers font loading to main(); tests do it explicitly."""
+
+    @classmethod
+    def setUpClass(cls):
+        d._init_fonts()
+
+    @classmethod
+    def tearDownClass(cls):
+        d.font_large = None
+        d.font_small = None
+        d.font_tiny = None
+        d.font_goodnight = None
+
+
+class DisplayGoodnightTests(_FontFixtureMixin, unittest.TestCase):
+    def test_uses_full_display_call_not_partial(self):
+        epd = _FakeEPD()
+        # display() blocks on a 2s sleep at the end; skip it.
+        with mock.patch.object(d.time, "sleep"):
+            d.display_goodnight(epd)
+        kinds = [c[0] for c in epd.calls]
+        self.assertIn("display", kinds)
+        self.assertNotIn("partial", kinds)
+
+
+class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
+    def test_uses_partial_refresh(self):
+        epd = _FakeEPD()
+        d.draw_clock(epd, invert=False)
+        self.assertEqual([c[0] for c in epd.calls], ["partial"])
+
+    def test_inverted_render_still_uses_partial(self):
+        epd = _FakeEPD()
+        d.draw_clock(epd, invert=True)
+        self.assertEqual([c[0] for c in epd.calls], ["partial"])
+
+
+class RequireFontsTests(unittest.TestCase):
+    """`_require_fonts` exists so a missed `_init_fonts()` fails loudly
+    instead of letting PIL silently fall back to its default bitmap font."""
+
+    def test_raises_when_fonts_uninitialized(self):
+        saved = d.font_large
+        d.font_large = None
+        try:
+            with self.assertRaises(AssertionError):
+                d._require_fonts()
+        finally:
+            d.font_large = saved
+
+    def test_passes_when_fonts_initialized(self):
+        d._init_fonts()
+        try:
+            d._require_fonts()  # must not raise
+        finally:
+            d.font_large = None
+            d.font_small = None
+            d.font_tiny = None
+            d.font_goodnight = None
 
 
 if __name__ == "__main__":

@@ -363,5 +363,52 @@ class AllDialectsRoundtripTests(unittest.TestCase):
             fuzzy_time(9, 0, "esperanto")
 
 
+class DialectValidatorTests(unittest.TestCase):
+    """The module-load guard against an out-of-range `hour_advance_at`. The
+    bound exists because values outside 1..11 silently break the cap-at-11
+    "almost [next hour]" invariant via % 12 — exactly the failure mode that
+    the min(..., 11) in fuzzy_time was added to prevent."""
+
+    def _spec(self, advance):
+        return {
+            "phrases": ["x"] * 12,
+            "hours": {i: str(i) for i in range(1, 13)},
+            "format_hour": lambda h, p: h,
+            "hour_advance_at": advance,
+        }
+
+    def test_advance_below_one_is_rejected(self):
+        from fuzzyclock_core import _validate_dialects
+
+        with self.assertRaises(ValueError):
+            _validate_dialects({"bad": self._spec(0)})
+
+    def test_advance_above_eleven_is_rejected(self):
+        from fuzzyclock_core import _validate_dialects
+
+        with self.assertRaises(ValueError):
+            _validate_dialects({"bad": self._spec(12)})
+
+    def test_advance_at_boundaries_is_accepted(self):
+        from fuzzyclock_core import _validate_dialects
+
+        _validate_dialects({"a": self._spec(1), "b": self._spec(11)})  # must not raise
+
+    def test_default_advance_is_accepted(self):
+        from fuzzyclock_core import _validate_dialects
+
+        spec = self._spec(7)
+        del spec["hour_advance_at"]  # exercise the default-fallback branch
+        _validate_dialects({"a": spec})
+
+    def test_shipped_dialects_pass_validation(self):
+        # Belt-and-braces: every entry in the real DIALECTS table satisfies
+        # the invariant. Catches a regression where someone adds a dialect
+        # but forgets to keep hour_advance_at in 1..11.
+        from fuzzyclock_core import _validate_dialects
+
+        _validate_dialects(DIALECTS)
+
+
 if __name__ == "__main__":
     unittest.main()

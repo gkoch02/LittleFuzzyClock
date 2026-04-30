@@ -268,18 +268,24 @@ DIALECTS = {
 DEFAULT_DIALECT = "classic"
 
 
-# `hour_advance_at` controls when the displayed hour flips from current to
-# next. It must stay <= 11 so the index-11 ("almost") slot still advances —
-# otherwise minutes 57-59 wrap back to "almost [current hour]" via % 12,
-# which is the bug the min(..., 11) cap in fuzzy_time exists to prevent.
-for _name, _spec in DIALECTS.items():
-    _adv = _spec.get("hour_advance_at", 7)
-    if not 1 <= _adv <= 11:
-        raise ValueError(
-            f"Dialect {_name!r} has invalid hour_advance_at={_adv}; "
-            "must be in 1..11 to preserve the almost-next-hour invariant."
-        )
-del _name, _spec, _adv
+def _validate_dialects(dialects):
+    """Reject dialects with an out-of-range `hour_advance_at`.
+
+    `hour_advance_at` controls when the displayed hour flips from current to
+    next. It must stay <= 11 so the index-11 ("almost") slot still advances —
+    otherwise minutes 57-59 wrap back to "almost [current hour]" via % 12,
+    which is the bug the min(..., 11) cap in fuzzy_time exists to prevent.
+    """
+    for name, spec in dialects.items():
+        adv = spec.get("hour_advance_at", 7)
+        if not 1 <= adv <= 11:
+            raise ValueError(
+                f"Dialect {name!r} has invalid hour_advance_at={adv}; "
+                "must be in 1..11 to preserve the almost-next-hour invariant."
+            )
+
+
+_validate_dialects(DIALECTS)
 
 
 def load_font(size):
