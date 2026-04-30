@@ -15,9 +15,12 @@ jobs:
           python-version: "3.12"
       - name: Install ruff
         run: pip install ruff
-      - name: Run ruff
+      - name: Run ruff check
         # Config (line length, rule selection, exclusions) lives in pyproject.toml.
         run: ruff check .
+      - name: Run ruff format --check
+        # Enforces the canonical formatting; run `ruff format .` locally to fix.
+        run: ruff format --check .
 
   test:
     runs-on: ubuntu-latest

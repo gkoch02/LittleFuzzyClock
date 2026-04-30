@@ -50,9 +50,18 @@ class FuzzyTimeTests(unittest.TestCase):
         # Smoke test: every minute of every hour should produce a valid
         # (phrase, hour) tuple with no exceptions and known vocabulary.
         valid_phrases = {
-            "just after", "a little past", "ten past", "quarter past",
-            "twenty past", "twenty-five past", "half past",
-            "twenty-five to", "twenty to", "quarter to", "ten to", "almost",
+            "just after",
+            "a little past",
+            "ten past",
+            "quarter past",
+            "twenty past",
+            "twenty-five past",
+            "half past",
+            "twenty-five to",
+            "twenty to",
+            "quarter to",
+            "ten to",
+            "almost",
         }
         for h in range(24):
             for m in range(60):
@@ -235,22 +244,26 @@ class HalDialectTests(unittest.TestCase):
 class CthulhuDialectTests(unittest.TestCase):
     def test_on_the_hour(self):
         self.assertEqual(
-            fuzzy_time(9, 0, "cthulhu"), ("newly woken", "the ninth hour"),
+            fuzzy_time(9, 0, "cthulhu"),
+            ("newly woken", "the ninth hour"),
         )
 
     def test_quarter_past(self):
         self.assertEqual(
-            fuzzy_time(9, 15, "cthulhu"), ("quarter past", "the ninth hour"),
+            fuzzy_time(9, 15, "cthulhu"),
+            ("quarter past", "the ninth hour"),
         )
 
     def test_half_past(self):
         self.assertEqual(
-            fuzzy_time(9, 30, "cthulhu"), ("the half-hour", "the ninth hour"),
+            fuzzy_time(9, 30, "cthulhu"),
+            ("the half-hour", "the ninth hour"),
         )
 
     def test_quarter_to_advances_hour(self):
         self.assertEqual(
-            fuzzy_time(9, 45, "cthulhu"), ("quarter 'fore", "the tenth hour"),
+            fuzzy_time(9, 45, "cthulhu"),
+            ("quarter 'fore", "the tenth hour"),
         )
 
     def test_stars_are_right_does_not_wrap(self):
@@ -291,7 +304,8 @@ class LatinDialectTests(unittest.TestCase):
 
     def test_quarter_past(self):
         self.assertEqual(
-            fuzzy_time(9, 15, "latin"), ("quadrans post", "hora IX a.m."),
+            fuzzy_time(9, 15, "latin"),
+            ("quadrans post", "hora IX a.m."),
         )
 
     def test_half_past(self):
@@ -299,7 +313,8 @@ class LatinDialectTests(unittest.TestCase):
 
     def test_quarter_to_advances_hour(self):
         self.assertEqual(
-            fuzzy_time(9, 45, "latin"), ("quadrans ante", "hora X a.m."),
+            fuzzy_time(9, 45, "latin"),
+            ("quadrans ante", "hora X a.m."),
         )
 
     def test_fere_does_not_wrap(self):
@@ -309,7 +324,8 @@ class LatinDialectTests(unittest.TestCase):
     def test_post_meridiem_for_pm_hours(self):
         # The "post meridiem" origin gets a real workout for PM hours.
         self.assertEqual(
-            fuzzy_time(15, 30, "latin"), ("media post", "hora III p.m."),
+            fuzzy_time(15, 30, "latin"),
+            ("media post", "hora III p.m."),
         )
 
     def test_noon_is_pm(self):

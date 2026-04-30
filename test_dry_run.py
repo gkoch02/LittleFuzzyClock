@@ -28,7 +28,8 @@ class DryRunCLITests(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(
-                result.returncode, 0,
+                result.returncode,
+                0,
                 f"--dry-run exited {result.returncode}\n"
                 f"stdout: {result.stdout}\nstderr: {result.stderr}",
             )

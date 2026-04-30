@@ -25,7 +25,8 @@ class SunTimesTests(unittest.TestCase):
 
     def _assert_close(self, predicted, expected_utc):
         self.assertLessEqual(
-            _minutes_diff(predicted, expected_utc), self.TOLERANCE_MIN,
+            _minutes_diff(predicted, expected_utc),
+            self.TOLERANCE_MIN,
             f"predicted {predicted.isoformat()} vs expected {expected_utc.isoformat()}",
         )
 

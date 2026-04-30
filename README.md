@@ -14,6 +14,12 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 - Waveshare 2.13" e-Paper HAT V4 (122×250, black/white)
 - Push button between GPIO 3 (BCM, physical pin 5) and ground — used for manual refresh and shutdown. GPIO 3 doubles as the Pi's wake-from-halt pin, so the same button can also power the clock back on after a long-press shutdown.
 
+## Tested environment
+
+- **OS:** Raspberry Pi OS Bookworm (Debian 12). The `deploy.sh` script targets Bookworm's PEP 668 model (system Python via `apt`, no `pip install`). Should work on both 32-bit and 64-bit Pi OS, but only 32-bit on a Pi Zero is regularly exercised.
+- **Python:** 3.11 (Bookworm system Python). CI also runs on 3.12.
+- **Waveshare driver:** `waveshare_epd/` is vendored from [waveshare/e-Paper](https://github.com/waveshare/e-Paper) (`RaspberryPi_JetsonNano/python/lib/waveshare_epd/`), `epd2in13_V4.py` V1.0 dated 2023-06-25 and `epdconfig.py` V1.2. To resync, copy those two files plus `__init__.py` from upstream — don't edit them in place; ruff is configured to skip the directory in `pyproject.toml`.
+
 ## Behaviour
 
 - **Day mode (sunrise – sunset, within 7 AM – 10:59 PM):** display updates every 5 minutes via partial refresh, black ink on white
