@@ -17,6 +17,7 @@ Notes for Claude Code sessions on this repo. Keep it short — the README covers
 
 - Run everything: `python3 -m unittest discover`. Single file: `python3 -m unittest test_fuzzy_time` (or `-v` for verbose). Single test: `python3 -m unittest test_daemon.CurrentModeTests.test_polar_midnight_sun_falls_back_to_day`.
 - Lint: `ruff check .` (CI runs this; config is in `pyproject.toml`, `target-version = "py39"` — don't bump it without checking that UP017 doesn't rewrite `timezone.utc` → `UTC`, which breaks 3.9/3.10).
+- Format: `ruff format .` is enforced via `ruff format --check .` in CI. Run it locally before pushing if you've touched any non-vendored Python.
 - PIL is needed (transitively via `fuzzyclock_core`); install with `pip install Pillow` or apt's `python3-pil`. DejaVu fonts must be present too (`fonts-dejavu-core`) or `load_font()` will exit.
 - `test_fuzzy_time.py` — pure-logic cases for `fuzzy_time()`, including dialect tables. Add cases here when touching the phrasing logic.
 - `test_render.py` — smoke tests for `draw_border` and `render_clock`. Asserts ink-on-canvas, not pixel-exact output, to stay font-version stable.
@@ -30,6 +31,7 @@ Notes for Claude Code sessions on this repo. Keep it short — the README covers
 ## Deploy path
 
 - `deploy.sh` installs Python deps via `apt` (`python3-pil`, `python3-gpiozero`, …), **not** pip. Bookworm's PEP 668 blocks pip against the system Python. `requirements.txt` is for off-Pi dev environments only.
+- `deploy.sh` is idempotent: re-running re-renders the unit file (atomic `install` to a temp path) and `systemctl restart`s the service, so it picks up edits to `fuzzyclock.service` or pulled-in code. It re-execs under sudo if not root, and on failure dumps `journalctl -n 50` + `systemctl status` to stderr and exits non-zero.
 - The systemd service file uses `__REPO_DIR__` and `__USER__` sentinels; `deploy.sh` substitutes them via `sed` using the invoking user (`${SUDO_USER:-$USER}`) and the repo's actual location. Don't hardcode `/home/pi` or `User=pi` back in.
 - There is intentionally no `.timer` file — the unit has `Restart=always` (`RestartSec=10`, `StartLimitBurst=5`/`StartLimitIntervalSec=300`) and the daemon handles day/night internally.
 
@@ -44,7 +46,7 @@ Notes for Claude Code sessions on this repo. Keep it short — the README covers
 
 ## Gotchas
 
-- Fonts: `fuzzyclock_core.load_font()` tries a Pi path then macOS fallbacks. It raises `SystemExit` if no candidate is found, so it must not run at module scope — `fuzzyclock_daemon._init_fonts()` is called from `main()` to populate the font globals, and `fuzzyClock2.draw_fuzzy_clock()` loads them locally. If you add a new font size, plumb it through one of those entry points; never call `ImageFont.truetype()` or `load_font()` at module scope.
+- Fonts: `fuzzyclock_core.load_font()` tries a Pi path then macOS fallbacks. It raises `SystemExit` if no candidate is found, so it must not run at module scope — `fuzzyclock_daemon._init_fonts()` is called from `main()` to populate the font globals, and `fuzzyClock2.draw_fuzzy_clock()` loads them locally. If you add a new font size, plumb it through one of those entry points; never call `ImageFont.truetype()` or `load_font()` at module scope. `draw_clock`/`display_goodnight` call `_require_fonts()` first — PIL silently falls back to a default bitmap font when handed `None`, which would mask a missed `_init_fonts()` with a subtly-wrong render.
 - E-ink display is mounted upside down; all writes are `.rotate(180)`'d just before `epd.display*()`. Keep that at the SPI boundary, not inside `render_clock`.
 - `epd_lock` guards every SPI write in the daemon. If you add a new path that talks to `epd`, wrap it. The signal handler does no I/O and acquires no locks — it just sets `_stop_event` so the main loop can exit cleanly without deadlocking against an in-flight render.
 - `fuzzy_time()` caps the 5-minute bucket at 11 on purpose — minutes 57–59 must read "almost [next hour]", not wrap back to "just after [current hour]". There's a test for this in every dialect; don't "simplify" the `min(..., 11)`.
