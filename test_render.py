@@ -77,7 +77,8 @@ class RenderClockTests(unittest.TestCase):
             for minute in (0, 15, 30, 45, 58):
                 image = self._render(datetime(2026, 4, 25, hour, minute))
                 self.assertGreater(
-                    _count_black_pixels(image), 100,
+                    _count_black_pixels(image),
+                    100,
                     f"render produced too little ink at {hour:02d}:{minute:02d}",
                 )
 
@@ -88,8 +89,11 @@ class RenderClockTests(unittest.TestCase):
         normal = self._render(datetime(2026, 4, 25, 9, 15))
         inverted = Image.new("1", (WIDTH, HEIGHT), 0)
         render_clock(
-            ImageDraw.Draw(inverted), WIDTH, HEIGHT,
-            datetime(2026, 4, 25, 9, 15), *self.fonts,
+            ImageDraw.Draw(inverted),
+            WIDTH,
+            HEIGHT,
+            datetime(2026, 4, 25, 9, 15),
+            *self.fonts,
             invert=True,
         )
         normal_black = _count_black_pixels(normal)
@@ -101,8 +105,11 @@ class RenderClockTests(unittest.TestCase):
         # branch that switches to font_small. Confirm it puts ink on canvas.
         image = Image.new("1", (WIDTH, HEIGHT), 255)
         render_clock(
-            ImageDraw.Draw(image), WIDTH, HEIGHT,
-            datetime(2026, 4, 25, 9, 15), *self.fonts,
+            ImageDraw.Draw(image),
+            WIDTH,
+            HEIGHT,
+            datetime(2026, 4, 25, 9, 15),
+            *self.fonts,
             dialect="shakespeare",
         )
         self.assertGreater(_count_black_pixels(image), 200)
@@ -113,8 +120,11 @@ class RenderClockTests(unittest.TestCase):
         # boxes; this asserts real ink lands on canvas.
         image = Image.new("1", (WIDTH, HEIGHT), 255)
         render_clock(
-            ImageDraw.Draw(image), WIDTH, HEIGHT,
-            datetime(2026, 4, 25, 9, 30), *self.fonts,
+            ImageDraw.Draw(image),
+            WIDTH,
+            HEIGHT,
+            datetime(2026, 4, 25, 9, 30),
+            *self.fonts,
             dialect="german",
         )
         self.assertGreater(_count_black_pixels(image), 200)

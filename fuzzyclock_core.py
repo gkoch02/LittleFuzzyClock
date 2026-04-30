@@ -7,32 +7,59 @@ from PIL import ImageFont
 
 FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Raspberry Pi / Debian
-    "/Library/Fonts/Arial Bold.ttf",                          # macOS
-    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",      # macOS (Ventura+)
-    "/System/Library/Fonts/Helvetica.ttc",                    # macOS fallback
+    "/Library/Fonts/Arial Bold.ttf",  # macOS
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",  # macOS (Ventura+)
+    "/System/Library/Fonts/Helvetica.ttc",  # macOS fallback
 ]
 
 HOUR_WORDS = {
-    1: "one", 2: "two", 3: "three", 4: "four",
-    5: "five", 6: "six", 7: "seven", 8: "eight",
-    9: "nine", 10: "ten", 11: "eleven", 12: "twelve",
+    1: "one",
+    2: "two",
+    3: "three",
+    4: "four",
+    5: "five",
+    6: "six",
+    7: "seven",
+    8: "eight",
+    9: "nine",
+    10: "ten",
+    11: "eleven",
+    12: "twelve",
 }
 
 DIALECTS = {
     "classic": {
         "phrases": [
-            "just after", "a little past", "ten past", "quarter past",
-            "twenty past", "twenty-five past", "half past",
-            "twenty-five to", "twenty to", "quarter to", "ten to", "almost",
+            "just after",
+            "a little past",
+            "ten past",
+            "quarter past",
+            "twenty past",
+            "twenty-five past",
+            "half past",
+            "twenty-five to",
+            "twenty to",
+            "quarter to",
+            "ten to",
+            "almost",
         ],
         "hours": HOUR_WORDS,
         "format_hour": lambda hour_word, is_pm: f"{hour_word} {'pm' if is_pm else 'am'}",
     },
     "shakespeare": {
         "phrases": [
-            "'tis just past", "a moment past", "ten past", "'tis a quarter past",
-            "twenty past", "twenty-five past", "'tis half past",
-            "twenty-five 'fore", "twenty 'fore", "a quarter 'fore", "ten 'fore", "almost",
+            "'tis just past",
+            "a moment past",
+            "ten past",
+            "'tis a quarter past",
+            "twenty past",
+            "twenty-five past",
+            "'tis half past",
+            "twenty-five 'fore",
+            "twenty 'fore",
+            "a quarter 'fore",
+            "ten 'fore",
+            "almost",
         ],
         "hours": HOUR_WORDS,
         # AM/PM is anachronistic; "of the clock" reads right at any hour.
@@ -40,16 +67,33 @@ DIALECTS = {
     },
     "klingon": {
         "phrases": [
-            "newly forged", "moments past", "ten past", "quarter past",
-            "twenty past", "twenty-five past", "half past",
-            "twenty-five 'til", "twenty 'til", "quarter 'til", "ten 'til",
+            "newly forged",
+            "moments past",
+            "ten past",
+            "quarter past",
+            "twenty past",
+            "twenty-five past",
+            "half past",
+            "twenty-five 'til",
+            "twenty 'til",
+            "quarter 'til",
+            "ten 'til",
             "battle nears",
         ],
         # Actual tlhIngan Hol numerals; "rep" is Klingon for "hour".
         "hours": {
-            1: "wa'", 2: "cha'", 3: "wej", 4: "loS",
-            5: "vagh", 6: "jav", 7: "Soch", 8: "chorgh",
-            9: "Hut", 10: "wa'maH", 11: "wa'maH wa'", 12: "wa'maH cha'",
+            1: "wa'",
+            2: "cha'",
+            3: "wej",
+            4: "loS",
+            5: "vagh",
+            6: "jav",
+            7: "Soch",
+            8: "chorgh",
+            9: "Hut",
+            10: "wa'maH",
+            11: "wa'maH wa'",
+            12: "wa'maH cha'",
         },
         "format_hour": lambda hour_word, is_pm: f"{hour_word} rep",
     },
@@ -57,9 +101,17 @@ DIALECTS = {
         # Lang Belta creole: "to da" for "to the", "ke" as a sentence tag,
         # "savvy" for "you understand?". Belters keep maritime "bell" for time.
         "phrases": [
-            "just past", "showxa pasa", "ten past", "quarter past",
-            "twenty past", "twenty-five past", "half past",
-            "twenty-five to da", "twenty to da", "quarter to da", "ten to da",
+            "just past",
+            "showxa pasa",
+            "ten past",
+            "quarter past",
+            "twenty past",
+            "twenty-five past",
+            "half past",
+            "twenty-five to da",
+            "twenty to da",
+            "quarter to da",
+            "ten to da",
             "almost, ke",
         ],
         "hours": HOUR_WORDS,
@@ -75,14 +127,32 @@ DIALECTS = {
         # Regional variants (Swiss "viertel ab", Austrian etc.) intentionally
         # not applied — keep this entry as the de-DE/standard form.
         "phrases": [
-            "kurz nach", "fünf nach", "zehn nach", "viertel nach",
-            "zwanzig nach", "fünf vor halb", "halb", "fünf nach halb",
-            "zwanzig vor", "viertel vor", "zehn vor", "kurz vor",
+            "kurz nach",
+            "fünf nach",
+            "zehn nach",
+            "viertel nach",
+            "zwanzig nach",
+            "fünf vor halb",
+            "halb",
+            "fünf nach halb",
+            "zwanzig vor",
+            "viertel vor",
+            "zehn vor",
+            "kurz vor",
         ],
         "hours": {
-            1: "eins", 2: "zwei", 3: "drei", 4: "vier",
-            5: "fünf", 6: "sechs", 7: "sieben", 8: "acht",
-            9: "neun", 10: "zehn", 11: "elf", 12: "zwölf",
+            1: "eins",
+            2: "zwei",
+            3: "drei",
+            4: "vier",
+            5: "fünf",
+            6: "sechs",
+            7: "sieben",
+            8: "acht",
+            9: "neun",
+            10: "zehn",
+            11: "elf",
+            12: "zwölf",
         },
         "hour_advance_at": 5,
         "format_hour": lambda hour_word, is_pm: hour_word,
@@ -97,9 +167,18 @@ DIALECTS = {
         # silently dropped — important for a dialect that's explicitly
         # military timekeeping.
         "phrases": [
-            "ON THE MARK", "T+5 MINUTES", "T+10 MINUTES", "T+15 MINUTES",
-            "T+20 MINUTES", "T+25 MINUTES", "MIDPOINT", "T-25 MINUTES",
-            "T-20 MINUTES", "T-15 MINUTES", "T-10 MINUTES", "IMMINENT",
+            "ON THE MARK",
+            "T+5 MINUTES",
+            "T+10 MINUTES",
+            "T+15 MINUTES",
+            "T+20 MINUTES",
+            "T+25 MINUTES",
+            "MIDPOINT",
+            "T-25 MINUTES",
+            "T-20 MINUTES",
+            "T-15 MINUTES",
+            "T-10 MINUTES",
+            "IMMINENT",
         ],
         "hours": {i: str(i) for i in range(1, 13)},
         "format_hour": lambda hour_word, is_pm: (
@@ -116,15 +195,32 @@ DIALECTS = {
         # they matter; "the eleventh hour" doubles as the idiom for "too
         # late" on every 10:30+ reading.
         "phrases": [
-            "newly woken", "moments past", "ten past", "quarter past",
-            "twenty past", "twenty-five past", "the half-hour",
-            "twenty-five 'fore", "twenty 'fore", "quarter 'fore",
-            "ten 'fore", "the stars are right",
+            "newly woken",
+            "moments past",
+            "ten past",
+            "quarter past",
+            "twenty past",
+            "twenty-five past",
+            "the half-hour",
+            "twenty-five 'fore",
+            "twenty 'fore",
+            "quarter 'fore",
+            "ten 'fore",
+            "the stars are right",
         ],
         "hours": {
-            1: "first", 2: "second", 3: "third", 4: "fourth",
-            5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth",
-            9: "ninth", 10: "tenth", 11: "eleventh", 12: "twelfth",
+            1: "first",
+            2: "second",
+            3: "third",
+            4: "fourth",
+            5: "fifth",
+            6: "sixth",
+            7: "seventh",
+            8: "eighth",
+            9: "ninth",
+            10: "tenth",
+            11: "eleventh",
+            12: "twelfth",
         },
         "format_hour": lambda hour_word, is_pm: f"the {hour_word} hour",
     },
@@ -138,14 +234,32 @@ DIALECTS = {
         # (We use IV not IIII; the latter is a clock-face convention, not a
         # general Roman numeral one.)
         "phrases": [
-            "modo post", "quinque post", "decem post", "quadrans post",
-            "viginti post", "viginti quinque post", "media post",
-            "viginti quinque ante", "viginti ante", "quadrans ante",
-            "decem ante", "fere",
+            "modo post",
+            "quinque post",
+            "decem post",
+            "quadrans post",
+            "viginti post",
+            "viginti quinque post",
+            "media post",
+            "viginti quinque ante",
+            "viginti ante",
+            "quadrans ante",
+            "decem ante",
+            "fere",
         ],
         "hours": {
-            1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI",
-            7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII",
+            1: "I",
+            2: "II",
+            3: "III",
+            4: "IV",
+            5: "V",
+            6: "VI",
+            7: "VII",
+            8: "VIII",
+            9: "IX",
+            10: "X",
+            11: "XI",
+            12: "XII",
         },
         "format_hour": lambda hw, is_pm: f"hora {hw} {'p.m.' if is_pm else 'a.m.'}",
     },
@@ -210,8 +324,17 @@ def draw_border(draw, width, height, margin=4, invert=False):
     draw.rectangle((br[0], br[1], br[0] + r, br[1] + r), outline=ink)
 
 
-def render_clock(draw, width, height, now, font_large, font_small, font_tiny,
-                 dialect=DEFAULT_DIALECT, invert=False):
+def render_clock(
+    draw,
+    width,
+    height,
+    now,
+    font_large,
+    font_small,
+    font_tiny,
+    dialect=DEFAULT_DIALECT,
+    invert=False,
+):
     """Draw the full clock face (border + phrase + hour + day line) onto `draw`.
 
     When `invert` is True the foreground is white (255) instead of black; the
@@ -229,26 +352,32 @@ def render_clock(draw, width, height, now, font_large, font_small, font_tiny,
     day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
 
     total_height = (
-        (phrase_bbox[3] - phrase_bbox[1]) +
-        (hour_bbox[3] - hour_bbox[1]) +
-        (day_bbox[3] - day_bbox[1]) + 10
+        (phrase_bbox[3] - phrase_bbox[1])
+        + (hour_bbox[3] - hour_bbox[1])
+        + (day_bbox[3] - day_bbox[1])
+        + 10
     )
     y = (height - total_height) // 2
 
     draw_border(draw, width, height, invert=invert)
     draw.text(
         ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, y),
-        phrase, font=phrase_font, fill=ink,
+        phrase,
+        font=phrase_font,
+        fill=ink,
     )
     draw.text(
-        ((width - (hour_bbox[2] - hour_bbox[0])) // 2,
-         y + (phrase_bbox[3] - phrase_bbox[1]) + 4),
-        hour_str, font=hour_font, fill=ink,
+        ((width - (hour_bbox[2] - hour_bbox[0])) // 2, y + (phrase_bbox[3] - phrase_bbox[1]) + 4),
+        hour_str,
+        font=hour_font,
+        fill=ink,
     )
     # Day line is pinned to the bottom edge as a fixed footer.
     draw.text(
         ((width - (day_bbox[2] - day_bbox[0])) // 2, height - day_bbox[3] - 6),
-        day_line, font=font_tiny, fill=ink,
+        day_line,
+        font=font_tiny,
+        fill=ink,
     )
 
 
@@ -286,10 +415,9 @@ def sun_times(date, latitude, longitude):
     )
     lat_rad = math.radians(latitude)
     # 90.833° accounts for atmospheric refraction + the sun's apparent radius.
-    cos_h = (
-        math.cos(math.radians(90.833)) / (math.cos(lat_rad) * math.cos(decl))
-        - math.tan(lat_rad) * math.tan(decl)
-    )
+    cos_h = math.cos(math.radians(90.833)) / (math.cos(lat_rad) * math.cos(decl)) - math.tan(
+        lat_rad
+    ) * math.tan(decl)
     if cos_h > 1 or cos_h < -1:
         return None, None
     h_deg = math.degrees(math.acos(cos_h))

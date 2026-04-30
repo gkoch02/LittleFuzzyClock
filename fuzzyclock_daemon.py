@@ -41,7 +41,7 @@ logging.basicConfig(
 # === CONFIGURATION ===
 GPIO_PIN = 3
 UPDATE_INTERVAL = 300  # render the clock face every 5 minutes
-TICK_INTERVAL = 60     # main loop wakes every minute to check mode transitions
+TICK_INTERVAL = 60  # main loop wakes every minute to check mode transitions
 
 # Render-failure thresholds. After RENDER_RETRY_REINIT consecutive failures
 # we re-init the EPD and force a base-image reseed; after RENDER_RETRY_FATAL
@@ -54,9 +54,9 @@ DAY_START_HOUR = 7
 DAY_END_HOUR = 23
 
 # Button press classification (seconds).
-LONG_PRESS_SECONDS = 5.0        # hold this long → shutdown
+LONG_PRESS_SECONDS = 5.0  # hold this long → shutdown
 SHORT_PRESS_MIN_SECONDS = 0.05  # anything shorter is debounce noise
-SHORT_PRESS_MAX_SECONDS = 2.0   # anything between MAX and LONG_PRESS is ignored
+SHORT_PRESS_MAX_SECONDS = 2.0  # anything between MAX and LONG_PRESS is ignored
 
 
 def _resolve_dialect():
@@ -64,7 +64,9 @@ def _resolve_dialect():
     if requested not in DIALECTS:
         logging.warning(
             "Unknown FUZZYCLOCK_DIALECT=%r; falling back to %r. Valid: %s",
-            requested, DEFAULT_DIALECT, sorted(DIALECTS.keys()),
+            requested,
+            DEFAULT_DIALECT,
+            sorted(DIALECTS.keys()),
         )
         return DEFAULT_DIALECT
     return requested
@@ -92,8 +94,9 @@ def _load_coordinates(path=CONFIG_PATH):
         return float(cfg["latitude"]), float(cfg["longitude"])
     except (KeyError, TypeError, ValueError) as exc:
         logging.warning(
-            "Config file %s missing/invalid latitude or longitude (%s); "
-            "after-hours mode disabled.", path, exc,
+            "Config file %s missing/invalid latitude or longitude (%s); after-hours mode disabled.",
+            path,
+            exc,
         )
         return None, None
 
@@ -124,6 +127,7 @@ def _init_fonts():
     font_small = load_font(22)
     font_tiny = load_font(14)
     font_goodnight = load_font(24)
+
 
 # === EPD LOCK — protects all SPI writes to the display ===
 epd_lock = threading.Lock()
@@ -181,8 +185,9 @@ def _sun_times_cached(date, latitude, longitude):
     return _raw_sun_times(date, latitude, longitude)
 
 
-def current_mode(now, latitude, longitude, after_hours_enabled,
-                 day_start=DAY_START_HOUR, day_end=DAY_END_HOUR):
+def current_mode(
+    now, latitude, longitude, after_hours_enabled, day_start=DAY_START_HOUR, day_end=DAY_END_HOUR
+):
     """Return one of "day", "after_hours", "night" for the given local time.
 
     Outside the wake window we're always in night/goodnight. Inside it, the sun
@@ -206,7 +211,9 @@ def _current_mode_now():
     """`current_mode` evaluated against the module-level config and wall clock."""
     return current_mode(
         datetime.now().astimezone(),
-        LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED,
+        LATITUDE,
+        LONGITUDE,
+        AFTER_HOURS_ENABLED,
     )
 
 
@@ -219,14 +226,14 @@ def reset_base_image(epd, invert=False):
     """
     bg = 0 if invert else 255
     with epd_lock:
-        base = Image.new('1', (epd.height, epd.width), bg)
+        base = Image.new("1", (epd.height, epd.width), bg)
         draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert)
         epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
 
 
 def display_goodnight(epd):
     width, height = epd.height, epd.width
-    image = Image.new('1', (width, height), 255)
+    image = Image.new("1", (width, height), 255)
     draw = ImageDraw.Draw(image)
 
     text = "Goodnight"
@@ -250,13 +257,19 @@ def display_goodnight(epd):
 def draw_clock(epd, invert=False):
     width, height = epd.height, epd.width
     bg = 0 if invert else 255
-    image = Image.new('1', (width, height), bg)
+    image = Image.new("1", (width, height), bg)
     draw = ImageDraw.Draw(image)
 
     render_clock(
-        draw, width, height, datetime.now(),
-        font_large, font_small, font_tiny,
-        dialect=DIALECT, invert=invert,
+        draw,
+        width,
+        height,
+        datetime.now(),
+        font_large,
+        font_small,
+        font_tiny,
+        dialect=DIALECT,
+        invert=invert,
     )
 
     with epd_lock:
@@ -304,7 +317,8 @@ def button_listener(button, epd):
                 count, fatal = _on_render_failure()
                 logging.exception(
                     "draw_clock() failed on button press (%d/%d).",
-                    count, RENDER_RETRY_FATAL,
+                    count,
+                    RENDER_RETRY_FATAL,
                 )
                 # Recovery itself happens in the main loop's render path,
                 # but if we've crossed the fatal threshold here we signal
@@ -355,7 +369,9 @@ def main():
 
     if AFTER_HOURS_ENABLED:
         logging.info(
-            "After-hours mode enabled at lat=%.4f lon=%.4f.", LATITUDE, LONGITUDE,
+            "After-hours mode enabled at lat=%.4f lon=%.4f.",
+            LATITUDE,
+            LONGITUDE,
         )
     else:
         logging.info(
@@ -378,7 +394,9 @@ def main():
     try:
         button = Button(GPIO_PIN, pull_up=True, bounce_time=0.05)
         threading.Thread(
-            target=_button_supervisor, args=(button, epd), daemon=True,
+            target=_button_supervisor,
+            args=(button, epd),
+            daemon=True,
         ).start()
     except Exception:
         logging.exception("Failed to initialise GPIO button; continuing without it.")
@@ -423,10 +441,7 @@ def main():
             # Render on mode change or on every 5-minute wall-clock boundary.
             # The 60s tick gives us ~1-minute mode-transition latency without
             # actually pushing pixels every minute.
-            should_render = (
-                last_state != mode
-                or datetime.now().minute % 5 == 0
-            )
+            should_render = last_state != mode or datetime.now().minute % 5 == 0
             if should_render:
                 try:
                     if _needs_recovery:
@@ -438,12 +453,15 @@ def main():
                 except Exception:
                     count, fatal = _on_render_failure()
                     logging.exception(
-                        "draw_clock() failed (%d/%d).", count, RENDER_RETRY_FATAL,
+                        "draw_clock() failed (%d/%d).",
+                        count,
+                        RENDER_RETRY_FATAL,
                     )
                     if fatal:
                         logging.critical(
                             "draw_clock() failed %d times consecutively; "
-                            "exiting for systemd to restart us.", count,
+                            "exiting for systemd to restart us.",
+                            count,
                         )
                         break
         last_state = mode

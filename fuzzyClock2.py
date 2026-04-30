@@ -11,6 +11,7 @@ from fuzzyclock_core import DEFAULT_DIALECT, DIALECTS, load_font, render_clock
 # can't find the GPIO backend, so catch that too.
 try:
     from waveshare_epd import epd2in13_V4
+
     EPD_AVAILABLE = True
 except (ImportError, RuntimeError):
     EPD_AVAILABLE = False
@@ -26,7 +27,7 @@ def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALEC
     if dry_run:
         # 2.13" V4 display is 122×250 in portrait; landscape = 250×122
         width, height = 250, 122
-        image = Image.new('1', (width, height), 255)
+        image = Image.new("1", (width, height), 255)
     else:
         if not EPD_AVAILABLE:
             raise SystemExit(
@@ -37,12 +38,17 @@ def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALEC
         # Swapped intentionally: the 2.13" display is 122×250 in portrait;
         # we use it in landscape, so logical width = physical height and vice versa.
         width, height = epd.height, epd.width
-        image = Image.new('1', (width, height), 255)
+        image = Image.new("1", (width, height), 255)
 
     draw = ImageDraw.Draw(image)
     render_clock(
-        draw, width, height, datetime.now(),
-        font_large, font_small, font_tiny,
+        draw,
+        width,
+        height,
+        datetime.now(),
+        font_large,
+        font_small,
+        font_tiny,
         dialect=dialect,
     )
 
@@ -59,16 +65,21 @@ def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALEC
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fuzzy clock for Waveshare e-ink display")
     parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Render to a PNG instead of the e-ink display (no hardware required)"
+        "--dry-run",
+        action="store_true",
+        help="Render to a PNG instead of the e-ink display (no hardware required)",
     )
     parser.add_argument(
-        "--output", default="dry_run.png", metavar="FILE",
-        help="Output PNG path for --dry-run (default: dry_run.png)"
+        "--output",
+        default="dry_run.png",
+        metavar="FILE",
+        help="Output PNG path for --dry-run (default: dry_run.png)",
     )
     parser.add_argument(
-        "--dialect", default=DEFAULT_DIALECT, choices=sorted(DIALECTS.keys()),
-        help=f"Phrasing personality (default: {DEFAULT_DIALECT})"
+        "--dialect",
+        default=DEFAULT_DIALECT,
+        choices=sorted(DIALECTS.keys()),
+        help=f"Phrasing personality (default: {DEFAULT_DIALECT})",
     )
     args = parser.parse_args()
     draw_fuzzy_clock(dry_run=args.dry_run, output=args.output, dialect=args.dialect)
