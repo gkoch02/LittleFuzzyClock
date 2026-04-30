@@ -16,7 +16,7 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 
 ## Tested environment
 
-- **OS:** Raspberry Pi OS Bookworm (Debian 12), 64-bit and 32-bit. The `deploy.sh` script targets Bookworm's PEP 668 model (system Python via `apt`, no `pip install`).
+- **OS:** Raspberry Pi OS Bookworm (Debian 12). The `deploy.sh` script targets Bookworm's PEP 668 model (system Python via `apt`, no `pip install`). Should work on both 32-bit and 64-bit Pi OS, but only 32-bit on a Pi Zero is regularly exercised.
 - **Python:** 3.11 (Bookworm system Python). CI also runs on 3.12.
 - **Waveshare driver:** `waveshare_epd/` is vendored from [waveshare/e-Paper](https://github.com/waveshare/e-Paper) (`RaspberryPi_JetsonNano/python/lib/waveshare_epd/`), `epd2in13_V4.py` V1.0 dated 2023-06-25 and `epdconfig.py` V1.2. To resync, copy those two files plus `__init__.py` from upstream — don't edit them in place; ruff is configured to skip the directory in `pyproject.toml`.
 
