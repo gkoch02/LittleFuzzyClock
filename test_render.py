@@ -10,10 +10,11 @@ Run with: python3 -m unittest test_render
 
 import unittest
 from datetime import datetime
+from unittest import mock
 
 from PIL import Image, ImageDraw
 
-from fuzzyclock_core import draw_border, load_font, render_clock
+from fuzzyclock_core import DIALECTS, draw_border, load_font, render_clock
 
 WIDTH, HEIGHT = 250, 122  # landscape orientation of the 2.13" V4 panel
 
@@ -128,6 +129,53 @@ class RenderClockTests(unittest.TestCase):
             dialect="german",
         )
         self.assertGreater(_count_black_pixels(image), 200)
+
+
+class AllDialectsRenderTests(unittest.TestCase):
+    """Sweep every registered dialect through render_clock at a few times of
+    day. Catches dialect-specific glyph or layout regressions (e.g. a new
+    dialect with characters DejaVu doesn't have, or a hour_str so long that
+    it overflows the canvas). Every dialect's "almost X" slot has a long-ish
+    hour string, which trips the >12-char small-font branch differently."""
+
+    def setUp(self):
+        self.fonts = (load_font(28), load_font(22), load_font(14))
+
+    def test_every_dialect_renders_at_several_times(self):
+        sample_times = [
+            datetime(2026, 4, 25, 9, 0),  # on-the-hour slot
+            datetime(2026, 4, 25, 9, 30),  # half-hour slot
+            datetime(2026, 4, 25, 9, 58),  # "almost"/cap-at-11 slot
+            datetime(2026, 4, 25, 21, 15),  # PM slot (HAL/Latin handle this differently)
+        ]
+        for dialect in sorted(DIALECTS):
+            for when in sample_times:
+                with self.subTest(dialect=dialect, when=when.isoformat(timespec="minutes")):
+                    image = Image.new("1", (WIDTH, HEIGHT), 255)
+                    render_clock(
+                        ImageDraw.Draw(image),
+                        WIDTH,
+                        HEIGHT,
+                        when,
+                        *self.fonts,
+                        dialect=dialect,
+                    )
+                    self.assertGreater(
+                        _count_black_pixels(image),
+                        100,
+                        f"{dialect} produced too little ink at {when}",
+                    )
+
+
+class LoadFontFailureTests(unittest.TestCase):
+    def test_no_candidate_paths_raises_systemexit(self):
+        # The clearest failure mode for a missing font: SystemExit with a
+        # message listing every path tried. Ensures the daemon fails loud
+        # rather than rendering with PIL's default bitmap fallback.
+        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=OSError("nope")):
+            with self.assertRaises(SystemExit) as cm:
+                load_font(20)
+        self.assertIn("No usable font", str(cm.exception))
 
 
 if __name__ == "__main__":
