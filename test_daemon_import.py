@@ -19,6 +19,17 @@ class DaemonImportTests(unittest.TestCase):
         self.assertIsNotNone(fuzzyclock_daemon.epd_lock)
         self.assertIsNotNone(fuzzyclock_daemon._stop_event)
 
+    def test_fonts_are_not_loaded_at_import(self):
+        # load_font() raises SystemExit on hosts without DejaVu; importing the
+        # daemon must not trigger that. Fonts are populated by _init_fonts()
+        # from main().
+        import fuzzyclock_daemon as d
+
+        self.assertIsNone(d.font_large)
+        self.assertIsNone(d.font_small)
+        self.assertIsNone(d.font_tiny)
+        self.assertIsNone(d.font_goodnight)
+
 
 if __name__ == "__main__":
     unittest.main()

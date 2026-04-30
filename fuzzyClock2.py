@@ -15,12 +15,14 @@ try:
 except (ImportError, RuntimeError):
     EPD_AVAILABLE = False
 
-font_large = load_font(28)
-font_small = load_font(22)
-font_tiny  = load_font(14)
-
 
 def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT):
+    # Fonts are loaded inside the entry function (rather than at module import)
+    # so `import fuzzyClock2` doesn't SystemExit on hosts without DejaVu.
+    font_large = load_font(28)
+    font_small = load_font(22)
+    font_tiny = load_font(14)
+
     if dry_run:
         # 2.13" V4 display is 122×250 in portrait; landscape = 250×122
         width, height = 250, 122

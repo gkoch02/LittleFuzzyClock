@@ -44,10 +44,10 @@ Notes for Claude Code sessions on this repo. Keep it short — the README covers
 
 ## Gotchas
 
-- Fonts: `fuzzyclock_core.load_font()` tries a Pi path then macOS fallbacks. If you add a new font size, use `load_font()` — never call `ImageFont.truetype()` directly at module scope (that's what made the daemon crash on import before).
+- Fonts: `fuzzyclock_core.load_font()` tries a Pi path then macOS fallbacks. It raises `SystemExit` if no candidate is found, so it must not run at module scope — `fuzzyclock_daemon._init_fonts()` is called from `main()` to populate the font globals, and `fuzzyClock2.draw_fuzzy_clock()` loads them locally. If you add a new font size, plumb it through one of those entry points; never call `ImageFont.truetype()` or `load_font()` at module scope.
 - E-ink display is mounted upside down; all writes are `.rotate(180)`'d just before `epd.display*()`. Keep that at the SPI boundary, not inside `render_clock`.
 - `epd_lock` guards every SPI write in the daemon. If you add a new path that talks to `epd`, wrap it. The signal handler does no I/O and acquires no locks — it just sets `_stop_event` so the main loop can exit cleanly without deadlocking against an in-flight render.
 - `fuzzy_time()` caps the 5-minute bucket at 11 on purpose — minutes 57–59 must read "almost [next hour]", not wrap back to "just after [current hour]". There's a test for this in every dialect; don't "simplify" the `min(..., 11)`.
 - Dialect `hour_advance_at` must stay in `1..11`. There's a module-load-time guard in `fuzzyclock_core.py` that raises `ValueError` if a dialect violates this — it'd silently break the "almost [next hour]" invariant via `% 12`. If you add a new dialect that needs an early advance (like German's `5`), keep it within the range.
 - Hardware imports (`gpiozero`, `waveshare_epd`) catch both `ImportError` *and* `RuntimeError` — gpiozero raises `RuntimeError` on non-Pi Linux when it can't find a GPIO backend. Don't narrow the except clause.
-- Daemon module-level config (`DIALECT`, `LATITUDE`, `LONGITUDE`, `AFTER_HOURS_ENABLED`) is populated in `main()`, not at import time, so `import fuzzyclock_daemon` in tests doesn't trigger filesystem reads or warning logs. Keep it that way.
+- Daemon module-level state (`DIALECT`, `LATITUDE`, `LONGITUDE`, `AFTER_HOURS_ENABLED`, the four font globals) is populated in `main()`, not at import time, so `import fuzzyclock_daemon` in tests doesn't trigger filesystem reads, warning logs, or a SystemExit on a font-less host. Keep it that way.

@@ -108,10 +108,22 @@ LONGITUDE = None
 AFTER_HOURS_ENABLED = False
 
 # === FONTS ===
-font_large = load_font(28)
-font_small = load_font(22)
-font_tiny  = load_font(14)
-font_goodnight = load_font(24)
+# Populated by _init_fonts() from main(), not at import time, so test code can
+# `import fuzzyclock_daemon` on a host without DejaVu installed (load_font()
+# raises SystemExit when no candidate is found). Same rationale as the config
+# globals above.
+font_large = None
+font_small = None
+font_tiny = None
+font_goodnight = None
+
+
+def _init_fonts():
+    global font_large, font_small, font_tiny, font_goodnight
+    font_large = load_font(28)
+    font_small = load_font(22)
+    font_tiny = load_font(14)
+    font_goodnight = load_font(24)
 
 # === EPD LOCK — protects all SPI writes to the display ===
 epd_lock = threading.Lock()
@@ -336,6 +348,7 @@ def main():
     DIALECT = _resolve_dialect()
     LATITUDE, LONGITUDE = _load_coordinates()
     AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
+    _init_fonts()
 
     epd = epd2in13_V4.EPD()
     epd.init()
