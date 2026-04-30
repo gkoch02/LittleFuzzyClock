@@ -119,6 +119,29 @@ DIALECTS = {
         },
         "format_hour": lambda hour_word, is_pm: f"the {hour_word} hour",
     },
+    "latin": {
+        # Latin-inspired fuzzy time. Hours render as Roman numerals — the
+        # iconic clock-face form — with the literal "a.m."/"p.m." (ante/post
+        # meridiem) abbreviations as an etymology Easter egg. Phrases use
+        # Latin time prepositions: "post" (after), "ante" (before), "fere"
+        # (almost), "modo" (just/recently). Grammar is loose because Latin
+        # word order resists the phrase/hour split, but every word is real.
+        # (We use IV not IIII; the latter is a clock-face convention, not a
+        # general Roman numeral one.)
+        "phrases": [
+            "modo post", "quinque post", "decem post", "quadrans post",
+            "viginti post", "viginti quinque post", "media post",
+            "viginti quinque ante", "viginti ante", "quadrans ante",
+            "decem ante", "fere",
+        ],
+        "hours": {
+            1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI",
+            7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII",
+        },
+        "format_hour": lambda hour_word, is_pm: (
+            f"hora {hour_word} {'p.m.' if is_pm else 'a.m.'}"
+        ),
+    },
 }
 
 DEFAULT_DIALECT = "classic"

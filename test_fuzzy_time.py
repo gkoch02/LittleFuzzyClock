@@ -263,6 +263,51 @@ class CthulhuDialectTests(unittest.TestCase):
         )
 
 
+class LatinDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "latin"), ("modo post", "hora IX a.m."))
+
+    def test_quarter_past(self):
+        self.assertEqual(
+            fuzzy_time(9, 15, "latin"), ("quadrans post", "hora IX a.m."),
+        )
+
+    def test_half_past(self):
+        self.assertEqual(fuzzy_time(9, 30, "latin"), ("media post", "hora IX a.m."))
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(
+            fuzzy_time(9, 45, "latin"), ("quadrans ante", "hora X a.m."),
+        )
+
+    def test_fere_does_not_wrap(self):
+        # Cap-at-11: minute 58 stays "fere" against the next hour.
+        self.assertEqual(fuzzy_time(9, 58, "latin"), ("fere", "hora X a.m."))
+
+    def test_post_meridiem_for_pm_hours(self):
+        # The "post meridiem" origin gets a real workout for PM hours.
+        self.assertEqual(
+            fuzzy_time(15, 30, "latin"), ("media post", "hora III p.m."),
+        )
+
+    def test_noon_is_pm(self):
+        # 12:00 is post meridiem by convention (display_hour=12 → is_pm).
+        self.assertEqual(fuzzy_time(12, 0, "latin"), ("modo post", "hora XII p.m."))
+
+    def test_midnight_rollover_stays_am(self):
+        # 23:58 rolls to display_hour=0, hour_12=12, is_pm=False — so the
+        # "almost midnight" reading lands on a.m., matching the convention
+        # that the small hours after midnight are ante meridiem.
+        self.assertEqual(fuzzy_time(23, 58, "latin"), ("fere", "hora XII a.m."))
+
+    def test_roman_numerals_are_pinned(self):
+        # IV vs IIII is a real horological choice; we use IV. Pin a few
+        # entries so a future "fix" doesn't silently rewrite the table.
+        self.assertEqual(DIALECTS["latin"]["hours"][4], "IV")
+        self.assertEqual(DIALECTS["latin"]["hours"][9], "IX")
+        self.assertEqual(DIALECTS["latin"]["hours"][12], "XII")
+
+
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
         # Every dialect must produce a valid phrase from its own table for
