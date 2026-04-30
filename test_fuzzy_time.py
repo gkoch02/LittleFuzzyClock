@@ -142,6 +142,45 @@ class BelterDialectTests(unittest.TestCase):
         self.assertEqual(fuzzy_time(23, 58, "belter"), ("almost, ke", "twelve bell, ya"))
 
 
+class GermanDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(fuzzy_time(9, 0, "german"), ("kurz nach", "neun"))
+
+    def test_five_past(self):
+        self.assertEqual(fuzzy_time(9, 5, "german"), ("fünf nach", "neun"))
+
+    def test_quarter_past(self):
+        self.assertEqual(fuzzy_time(9, 15, "german"), ("viertel nach", "neun"))
+
+    def test_twenty_past_keeps_current_hour(self):
+        self.assertEqual(fuzzy_time(9, 20, "german"), ("zwanzig nach", "neun"))
+
+    def test_twenty_five_past_advances_to_next_hour(self):
+        # "fünf vor halb zehn" = five before half-ten = 9:25.
+        self.assertEqual(fuzzy_time(9, 25, "german"), ("fünf vor halb", "zehn"))
+
+    def test_half_advances_to_next_hour(self):
+        # "halb zehn" = half-to-ten = 9:30; this is the defining quirk of
+        # German time and the reason for the hour_advance_at=5 hook.
+        self.assertEqual(fuzzy_time(9, 30, "german"), ("halb", "zehn"))
+
+    def test_thirty_five_past_anchors_on_next_hour(self):
+        self.assertEqual(fuzzy_time(9, 35, "german"), ("fünf nach halb", "zehn"))
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(fuzzy_time(9, 45, "german"), ("viertel vor", "zehn"))
+
+    def test_almost_next_hour_does_not_wrap(self):
+        self.assertEqual(fuzzy_time(9, 58, "german"), ("kurz vor", "zehn"))
+
+    def test_half_past_eleven_rolls_into_twelve(self):
+        # 11:30 is "halb zwölf" — uses the German word for twelve.
+        self.assertEqual(fuzzy_time(11, 30, "german"), ("halb", "zwölf"))
+
+    def test_midnight_rollover(self):
+        self.assertEqual(fuzzy_time(23, 58, "german"), ("kurz vor", "zwölf"))
+
+
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
         # Every dialect must produce a valid phrase from its own table for

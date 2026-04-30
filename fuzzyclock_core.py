@@ -65,6 +65,25 @@ DIALECTS = {
         "hours": HOUR_WORDS,
         "format_hour": lambda hour_word, is_pm: f"{hour_word} bell, ya",
     },
+    "german": {
+        # Standard German fuzzy time. "halb [hour]" means "half-to [hour]" —
+        # 9:30 reads "halb zehn" (half ten), referencing the *next* hour. The
+        # 25-past and 35-past slots ("fünf vor halb", "fünf nach halb") share
+        # the same anchor, so this dialect bumps `hour_advance_at` down to 5
+        # to advance the displayed hour starting at index 5 instead of 7.
+        "phrases": [
+            "kurz nach", "fünf nach", "zehn nach", "viertel nach",
+            "zwanzig nach", "fünf vor halb", "halb", "fünf nach halb",
+            "zwanzig vor", "viertel vor", "zehn vor", "kurz vor",
+        ],
+        "hours": {
+            1: "eins", 2: "zwei", 3: "drei", 4: "vier",
+            5: "fünf", 6: "sechs", 7: "sieben", 8: "acht",
+            9: "neun", 10: "zehn", 11: "elf", 12: "zwölf",
+        },
+        "hour_advance_at": 5,
+        "format_hour": lambda hour_word, is_pm: hour_word,
+    },
 }
 
 DEFAULT_DIALECT = "classic"
@@ -87,7 +106,11 @@ def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     # wrapping back to index 0 ("just after [current hour]") via % 12.
     rounded = min(int(round(minute / 5.0)), 11)
     word = spec["phrases"][rounded]
-    display_hour = hour if rounded <= 6 else (hour + 1) % 24
+    # Most dialects flip to the next hour at 35-past ("twenty-five to ten");
+    # German flips at 25-past so "halb zehn" / "fünf vor halb zehn" anchor on
+    # the upcoming hour as native speakers expect.
+    advance_at = spec.get("hour_advance_at", 7)
+    display_hour = hour if rounded < advance_at else (hour + 1) % 24
     hour_12 = display_hour % 12 or 12
     is_pm = display_hour >= 12
     return word, spec["format_hour"](spec["hours"][hour_12], is_pm)
