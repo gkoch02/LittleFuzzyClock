@@ -193,29 +193,43 @@ class GermanDialectTests(unittest.TestCase):
 
 class HalDialectTests(unittest.TestCase):
     def test_on_the_hour(self):
-        self.assertEqual(fuzzy_time(9, 0, "hal"), ("ON THE MARK", "NINE HUNDRED"))
+        self.assertEqual(fuzzy_time(9, 0, "hal"), ("ON THE MARK", "0900 HOURS"))
 
     def test_quarter_past(self):
-        self.assertEqual(fuzzy_time(9, 15, "hal"), ("T+15 MINUTES", "NINE HUNDRED"))
+        self.assertEqual(fuzzy_time(9, 15, "hal"), ("T+15 MINUTES", "0900 HOURS"))
 
     def test_midpoint_keeps_current_hour(self):
         # HAL marks the half-hour as the still-anchored midpoint, so 9:30
-        # reports nine hundred (default hour_advance_at=7 still applies).
-        self.assertEqual(fuzzy_time(9, 30, "hal"), ("MIDPOINT", "NINE HUNDRED"))
+        # reports 0900 hours (default hour_advance_at=7 still applies).
+        self.assertEqual(fuzzy_time(9, 30, "hal"), ("MIDPOINT", "0900 HOURS"))
 
     def test_thirty_five_past_advances_hour(self):
-        self.assertEqual(fuzzy_time(9, 35, "hal"), ("T-25 MINUTES", "TEN HUNDRED"))
+        self.assertEqual(fuzzy_time(9, 35, "hal"), ("T-25 MINUTES", "1000 HOURS"))
 
     def test_quarter_to_advances_hour(self):
-        self.assertEqual(fuzzy_time(9, 45, "hal"), ("T-15 MINUTES", "TEN HUNDRED"))
+        self.assertEqual(fuzzy_time(9, 45, "hal"), ("T-15 MINUTES", "1000 HOURS"))
 
     def test_imminent_does_not_wrap(self):
         # Cap-at-11 protection: 9:58 must read IMMINENT against the next
         # hour, not wrap back to ON THE MARK against the current one.
-        self.assertEqual(fuzzy_time(9, 58, "hal"), ("IMMINENT", "TEN HUNDRED"))
+        self.assertEqual(fuzzy_time(9, 58, "hal"), ("IMMINENT", "1000 HOURS"))
 
-    def test_midnight_rollover(self):
-        self.assertEqual(fuzzy_time(23, 58, "hal"), ("IMMINENT", "TWELVE HUNDRED"))
+    def test_pm_hours_render_as_24h(self):
+        # The whole point of the 24h numeric format: 9 PM and 9 AM must
+        # render distinctly so the AM/PM signal isn't silently dropped.
+        self.assertEqual(fuzzy_time(21, 0, "hal"), ("ON THE MARK", "2100 HOURS"))
+        self.assertEqual(fuzzy_time(15, 30, "hal"), ("MIDPOINT", "1500 HOURS"))
+
+    def test_noon_renders_as_1200(self):
+        self.assertEqual(fuzzy_time(12, 0, "hal"), ("ON THE MARK", "1200 HOURS"))
+
+    def test_midnight_rollover_wraps_to_zero(self):
+        # 23:58 rolls past midnight to display_hour=0, which in 24h numeric
+        # is 0000 — the correct mission-control reading for "almost midnight".
+        self.assertEqual(fuzzy_time(23, 58, "hal"), ("IMMINENT", "0000 HOURS"))
+
+    def test_midnight_renders_as_zero(self):
+        self.assertEqual(fuzzy_time(0, 0, "hal"), ("ON THE MARK", "0000 HOURS"))
 
 
 class CthulhuDialectTests(unittest.TestCase):
@@ -226,8 +240,7 @@ class CthulhuDialectTests(unittest.TestCase):
 
     def test_quarter_past(self):
         self.assertEqual(
-            fuzzy_time(9, 15, "cthulhu"),
-            ("quarter past, dread", "the ninth hour"),
+            fuzzy_time(9, 15, "cthulhu"), ("quarter past", "the ninth hour"),
         )
 
     def test_half_past(self):
@@ -261,6 +274,15 @@ class CthulhuDialectTests(unittest.TestCase):
             fuzzy_time(23, 58, "cthulhu"),
             ("the stars are right", "the twelfth hour"),
         )
+
+    def test_ordinal_hour_table_is_pinned(self):
+        # Symmetric to Latin's IV/IX/XII pin: lock the ordinals so a future
+        # "fix" doesn't quietly rewrite "ninth" → "9th" or similar.
+        hours = DIALECTS["cthulhu"]["hours"]
+        self.assertEqual(hours[1], "first")
+        self.assertEqual(hours[9], "ninth")
+        self.assertEqual(hours[11], "eleventh")
+        self.assertEqual(hours[12], "twelfth")
 
 
 class LatinDialectTests(unittest.TestCase):

@@ -92,25 +92,34 @@ DIALECTS = {
         # "MIDPOINT" and "IMMINENT" replace the T±N readout at the half-hour
         # and top-of-hour for the same reason HAL drops into clipped
         # declaratives in 2001: it sounds more inevitable that way.
+        # Hours render as 24h numeric ("0900 HOURS" / "2100 HOURS") so the
+        # mission-control voice stays consistent and the AM/PM signal isn't
+        # silently dropped — important for a dialect that's explicitly
+        # military timekeeping.
         "phrases": [
             "ON THE MARK", "T+5 MINUTES", "T+10 MINUTES", "T+15 MINUTES",
             "T+20 MINUTES", "T+25 MINUTES", "MIDPOINT", "T-25 MINUTES",
             "T-20 MINUTES", "T-15 MINUTES", "T-10 MINUTES", "IMMINENT",
         ],
-        "hours": HOUR_WORDS,
-        "format_hour": lambda hour_word, is_pm: f"{hour_word.upper()} HUNDRED",
+        "hours": {i: str(i) for i in range(1, 13)},
+        "format_hour": lambda hour_word, is_pm: (
+            f"{((int(hour_word) % 12) + (12 if is_pm else 0)):02d}00 HOURS"
+        ),
     },
     "cthulhu": {
-        # Lovecraftian dread. "the stars are right" is the iconic precursor
-        # to Cthulhu's awakening from R'lyeh, so it gets the top-of-hour
-        # slot where minutes 53-59 build to the next hour. Hours render as
-        # ordinals ("the ninth hour") in keeping with the ritualistic
-        # register; "the eleventh hour" doubles as the idiom for "too late".
+        # Lovecraftian dread. The atmosphere lives on the hour line — every
+        # reading is "the [ordinal] hour" — and on two flavor phrases:
+        # "newly woken" / "moments past" at the start of an hour, and the
+        # iconic "the stars are right" at the top of the next one (the
+        # Lovecraft phrase precedes Cthulhu's awakening from R'lyeh).
+        # The middle indices stay generic so the dread accents land where
+        # they matter; "the eleventh hour" doubles as the idiom for "too
+        # late" on every 10:30+ reading.
         "phrases": [
-            "newly woken", "moments past", "ten past, dreaming",
-            "quarter past, dread", "twenty past, doomed", "twenty-five past",
-            "the half-hour", "twenty-five 'fore", "twenty 'fore doom",
-            "quarter 'fore", "ten 'fore awakening", "the stars are right",
+            "newly woken", "moments past", "ten past", "quarter past",
+            "twenty past", "twenty-five past", "the half-hour",
+            "twenty-five 'fore", "twenty 'fore", "quarter 'fore",
+            "ten 'fore", "the stars are right",
         ],
         "hours": {
             1: "first", 2: "second", 3: "third", 4: "fourth",
@@ -138,9 +147,7 @@ DIALECTS = {
             1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI",
             7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII",
         },
-        "format_hour": lambda hour_word, is_pm: (
-            f"hora {hour_word} {'p.m.' if is_pm else 'a.m.'}"
-        ),
+        "format_hour": lambda hw, is_pm: f"hora {hw} {'p.m.' if is_pm else 'a.m.'}",
     },
 }
 
