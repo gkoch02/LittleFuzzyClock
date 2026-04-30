@@ -218,6 +218,51 @@ class HalDialectTests(unittest.TestCase):
         self.assertEqual(fuzzy_time(23, 58, "hal"), ("IMMINENT", "TWELVE HUNDRED"))
 
 
+class CthulhuDialectTests(unittest.TestCase):
+    def test_on_the_hour(self):
+        self.assertEqual(
+            fuzzy_time(9, 0, "cthulhu"), ("newly woken", "the ninth hour"),
+        )
+
+    def test_quarter_past(self):
+        self.assertEqual(
+            fuzzy_time(9, 15, "cthulhu"),
+            ("quarter past, dread", "the ninth hour"),
+        )
+
+    def test_half_past(self):
+        self.assertEqual(
+            fuzzy_time(9, 30, "cthulhu"), ("the half-hour", "the ninth hour"),
+        )
+
+    def test_quarter_to_advances_hour(self):
+        self.assertEqual(
+            fuzzy_time(9, 45, "cthulhu"), ("quarter 'fore", "the tenth hour"),
+        )
+
+    def test_stars_are_right_does_not_wrap(self):
+        # Cap-at-11: minute 58 must read "the stars are right" against the
+        # next hour, not wrap back to "newly woken" against the current one.
+        self.assertEqual(
+            fuzzy_time(9, 58, "cthulhu"),
+            ("the stars are right", "the tenth hour"),
+        )
+
+    def test_eleventh_hour_idiom(self):
+        # 10:45 advances to "the eleventh hour" — literal idiom for "almost
+        # too late", which fits the cosmic-doom register.
+        self.assertEqual(
+            fuzzy_time(10, 45, "cthulhu"),
+            ("quarter 'fore", "the eleventh hour"),
+        )
+
+    def test_midnight_rollover(self):
+        self.assertEqual(
+            fuzzy_time(23, 58, "cthulhu"),
+            ("the stars are right", "the twelfth hour"),
+        )
+
+
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
         # Every dialect must produce a valid phrase from its own table for

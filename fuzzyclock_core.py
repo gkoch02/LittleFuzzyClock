@@ -100,6 +100,25 @@ DIALECTS = {
         "hours": HOUR_WORDS,
         "format_hour": lambda hour_word, is_pm: f"{hour_word.upper()} HUNDRED",
     },
+    "cthulhu": {
+        # Lovecraftian dread. "the stars are right" is the iconic precursor
+        # to Cthulhu's awakening from R'lyeh, so it gets the top-of-hour
+        # slot where minutes 53-59 build to the next hour. Hours render as
+        # ordinals ("the ninth hour") in keeping with the ritualistic
+        # register; "the eleventh hour" doubles as the idiom for "too late".
+        "phrases": [
+            "newly woken", "moments past", "ten past, dreaming",
+            "quarter past, dread", "twenty past, doomed", "twenty-five past",
+            "the half-hour", "twenty-five 'fore", "twenty 'fore doom",
+            "quarter 'fore", "ten 'fore awakening", "the stars are right",
+        ],
+        "hours": {
+            1: "first", 2: "second", 3: "third", 4: "fourth",
+            5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth",
+            9: "ninth", 10: "tenth", 11: "eleventh", 12: "twelfth",
+        },
+        "format_hour": lambda hour_word, is_pm: f"the {hour_word} hour",
+    },
 }
 
 DEFAULT_DIALECT = "classic"
