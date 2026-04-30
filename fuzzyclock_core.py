@@ -65,9 +65,107 @@ DIALECTS = {
         "hours": HOUR_WORDS,
         "format_hour": lambda hour_word, is_pm: f"{hour_word} bell, ya",
     },
+    "german": {
+        # Standard High German fuzzy time. "halb [hour]" means "half-to
+        # [hour]" — 9:30 reads "halb zehn" (half ten), referencing the *next*
+        # hour. The 25-past and 35-past slots ("fünf vor halb", "fünf nach
+        # halb") share the same anchor, so this dialect bumps
+        # `hour_advance_at` down to 5 to advance the displayed hour starting
+        # at index 5 instead of 7.
+        # Regional variants (Swiss "viertel ab", Austrian etc.) intentionally
+        # not applied — keep this entry as the de-DE/standard form.
+        "phrases": [
+            "kurz nach", "fünf nach", "zehn nach", "viertel nach",
+            "zwanzig nach", "fünf vor halb", "halb", "fünf nach halb",
+            "zwanzig vor", "viertel vor", "zehn vor", "kurz vor",
+        ],
+        "hours": {
+            1: "eins", 2: "zwei", 3: "drei", 4: "vier",
+            5: "fünf", 6: "sechs", 7: "sieben", 8: "acht",
+            9: "neun", 10: "zehn", 11: "elf", 12: "zwölf",
+        },
+        "hour_advance_at": 5,
+        "format_hour": lambda hour_word, is_pm: hour_word,
+    },
+    "hal": {
+        # HAL 9000 — terse, all-caps, mission-control T-minus cadence.
+        # "MIDPOINT" and "IMMINENT" replace the T±N readout at the half-hour
+        # and top-of-hour for the same reason HAL drops into clipped
+        # declaratives in 2001: it sounds more inevitable that way.
+        # Hours render as 24h numeric ("0900 HOURS" / "2100 HOURS") so the
+        # mission-control voice stays consistent and the AM/PM signal isn't
+        # silently dropped — important for a dialect that's explicitly
+        # military timekeeping.
+        "phrases": [
+            "ON THE MARK", "T+5 MINUTES", "T+10 MINUTES", "T+15 MINUTES",
+            "T+20 MINUTES", "T+25 MINUTES", "MIDPOINT", "T-25 MINUTES",
+            "T-20 MINUTES", "T-15 MINUTES", "T-10 MINUTES", "IMMINENT",
+        ],
+        "hours": {i: str(i) for i in range(1, 13)},
+        "format_hour": lambda hour_word, is_pm: (
+            f"{((int(hour_word) % 12) + (12 if is_pm else 0)):02d}00 HOURS"
+        ),
+    },
+    "cthulhu": {
+        # Lovecraftian dread. The atmosphere lives on the hour line — every
+        # reading is "the [ordinal] hour" — and on two flavor phrases:
+        # "newly woken" / "moments past" at the start of an hour, and the
+        # iconic "the stars are right" at the top of the next one (the
+        # Lovecraft phrase precedes Cthulhu's awakening from R'lyeh).
+        # The middle indices stay generic so the dread accents land where
+        # they matter; "the eleventh hour" doubles as the idiom for "too
+        # late" on every 10:30+ reading.
+        "phrases": [
+            "newly woken", "moments past", "ten past", "quarter past",
+            "twenty past", "twenty-five past", "the half-hour",
+            "twenty-five 'fore", "twenty 'fore", "quarter 'fore",
+            "ten 'fore", "the stars are right",
+        ],
+        "hours": {
+            1: "first", 2: "second", 3: "third", 4: "fourth",
+            5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth",
+            9: "ninth", 10: "tenth", 11: "eleventh", 12: "twelfth",
+        },
+        "format_hour": lambda hour_word, is_pm: f"the {hour_word} hour",
+    },
+    "latin": {
+        # Latin-inspired fuzzy time. Hours render as Roman numerals — the
+        # iconic clock-face form — with the literal "a.m."/"p.m." (ante/post
+        # meridiem) abbreviations as an etymology Easter egg. Phrases use
+        # Latin time prepositions: "post" (after), "ante" (before), "fere"
+        # (almost), "modo" (just/recently). Grammar is loose because Latin
+        # word order resists the phrase/hour split, but every word is real.
+        # (We use IV not IIII; the latter is a clock-face convention, not a
+        # general Roman numeral one.)
+        "phrases": [
+            "modo post", "quinque post", "decem post", "quadrans post",
+            "viginti post", "viginti quinque post", "media post",
+            "viginti quinque ante", "viginti ante", "quadrans ante",
+            "decem ante", "fere",
+        ],
+        "hours": {
+            1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI",
+            7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII",
+        },
+        "format_hour": lambda hw, is_pm: f"hora {hw} {'p.m.' if is_pm else 'a.m.'}",
+    },
 }
 
 DEFAULT_DIALECT = "classic"
+
+
+# `hour_advance_at` controls when the displayed hour flips from current to
+# next. It must stay <= 11 so the index-11 ("almost") slot still advances —
+# otherwise minutes 57-59 wrap back to "almost [current hour]" via % 12,
+# which is the bug the min(..., 11) cap in fuzzy_time exists to prevent.
+for _name, _spec in DIALECTS.items():
+    _adv = _spec.get("hour_advance_at", 7)
+    if not 1 <= _adv <= 11:
+        raise ValueError(
+            f"Dialect {_name!r} has invalid hour_advance_at={_adv}; "
+            "must be in 1..11 to preserve the almost-next-hour invariant."
+        )
+del _name, _spec, _adv
 
 
 def load_font(size):
@@ -87,7 +185,11 @@ def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     # wrapping back to index 0 ("just after [current hour]") via % 12.
     rounded = min(int(round(minute / 5.0)), 11)
     word = spec["phrases"][rounded]
-    display_hour = hour if rounded <= 6 else (hour + 1) % 24
+    # Most dialects flip to the next hour at 35-past ("twenty-five to ten");
+    # German flips at 25-past so "halb zehn" / "fünf vor halb zehn" anchor on
+    # the upcoming hour as native speakers expect.
+    advance_at = spec.get("hour_advance_at", 7)
+    display_hour = hour if rounded < advance_at else (hour + 1) % 24
     hour_12 = display_hour % 12 or 12
     is_pm = display_hour >= 12
     return word, spec["format_hour"](spec["hours"][hour_12], is_pm)

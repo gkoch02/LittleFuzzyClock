@@ -47,7 +47,20 @@ python3 fuzzyClock2.py --dry-run --output preview.png
 
 ## Phrasing personalities
 
-The clock ships with four phrasings: `classic` (default), `shakespeare` (e.g. `'tis half past nine of the clock`), `klingon` (e.g. `half past Hut rep`, using actual tlhIngan Hol numerals), and `belter` (e.g. `quarter to da / ten bell, ya` — Lang Belta creole from *The Expanse*). Pick one with `--dialect`:
+Eight phrasings ship in the box. Examples below all show 9:30 so you can compare across dialects:
+
+| Dialect                | 9:30 reading                       | Notes                                                              |
+| ---------------------- | ---------------------------------- | ------------------------------------------------------------------ |
+| `classic` (default)    | `half past / nine am`              | Plain English fuzzy time.                                          |
+| `shakespeare`          | `'tis half past / nine of the clock` | Archaic English; drops AM/PM (anachronistic).                    |
+| `klingon`              | `half past / Hut rep`              | Real tlhIngan Hol numerals; "rep" is Klingon for *hour*.           |
+| `belter`               | `half past / nine bell, ya`        | Lang Belta creole from *The Expanse*; nautical "bell" for time.    |
+| `german`               | `halb / zehn`                      | Standard High German; "halb" anchors on the *next* hour.           |
+| `hal`                  | `MIDPOINT / 0900 HOURS`            | HAL 9000 mission-control patter; 24h numeric for AM/PM clarity.    |
+| `cthulhu`              | `the half-hour / the ninth hour`   | Lovecraftian dread; ordinal hours; climaxes with "the stars are right". |
+| `latin`                | `media post / hora IX a.m.`        | Roman-numeral hours; real Latin prepositions; *a.m.*/*p.m.* etymology Easter egg. |
+
+Pick one with `--dialect`:
 
 ```bash
 python3 fuzzyClock2.py --dry-run --dialect shakespeare --output preview.png
