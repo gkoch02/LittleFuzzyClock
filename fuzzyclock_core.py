@@ -532,18 +532,46 @@ def draw_border(draw, width, height, margin=4, invert=False):
     draw.rectangle((br[0], br[1], br[0] + r, br[1] + r), outline=ink)
 
 
+_TINY_SIZE = 14
+_BODY_MAX_SIZE = 40
+_BODY_MIN_SIZE = 14
+
+
+def _fit_body_font(draw, phrase, hour_str, variant, available_w, available_h):
+    """Return the largest font where both text lines fit within the constraints.
+
+    Tries sizes from _BODY_MAX_SIZE down to _BODY_MIN_SIZE. Both the width of
+    each line and the total two-line ink height are checked, so the chosen size
+    fits on the e-ink canvas regardless of phrase length or font metrics.
+    """
+    for size in range(_BODY_MAX_SIZE, _BODY_MIN_SIZE - 1, -1):
+        font = load_font(size, variant=variant)
+        if (
+            draw.textlength(phrase, font=font) <= available_w
+            and draw.textlength(hour_str, font=font) <= available_w
+        ):
+            pb = draw.textbbox((0, 0), phrase, font=font)
+            hb = draw.textbbox((0, 0), hour_str, font=font)
+            if (pb[3] - pb[1]) + 4 + (hb[3] - hb[1]) <= available_h:
+                return font
+    return load_font(_BODY_MIN_SIZE, variant=variant)
+
+
 def render_clock(
     draw,
     width,
     height,
     now,
-    font_large,
-    font_small,
-    font_tiny,
+    font_variant=DEFAULT_FONT,
     dialect=DEFAULT_DIALECT,
     invert=False,
 ):
     """Draw the full clock face (border + phrase + hour + day line) onto `draw`.
+
+    Body font size is chosen automatically: the largest size (up to
+    _BODY_MAX_SIZE pt) at which both text lines fit within the canvas width and
+    the two-line block fits above the footer. Short phrases like "almost" render
+    noticeably larger than long ones like "twenty-five past".
 
     When `invert` is True the foreground is white (255) instead of black; the
     caller is responsible for filling the canvas with the matching background
@@ -553,19 +581,30 @@ def render_clock(
     phrase, hour_str = fuzzy_time(now.hour, now.minute, dialect)
     day_line = now.strftime("%A, %b %d")
 
-    phrase_font = font_small if len(phrase) > 12 else font_large
-    hour_font = font_small if len(hour_str) > 12 else font_large
-    phrase_bbox = draw.textbbox((0, 0), phrase, font=phrase_font)
-    hour_bbox = draw.textbbox((0, 0), hour_str, font=hour_font)
+    font_tiny = load_font(_TINY_SIZE, variant=font_variant)
     day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
-
-    # Visual ink heights (excludes internal font leading stored in bbox[1]).
-    phrase_ink_h = phrase_bbox[3] - phrase_bbox[1]
-    hour_ink_h = hour_bbox[3] - hour_bbox[1]
 
     # Footer: pin ink bottom 6 px above canvas bottom, regardless of font metrics.
     day_draw_y = height - 6 - day_bbox[3]
     footer_ink_top = day_draw_y + day_bbox[1]
+
+    # Auto-size the body font: fit within canvas width (8 px side padding) and
+    # the space above the footer (leaving 8 px of breathing room at the top).
+    body_font = _fit_body_font(
+        draw,
+        phrase,
+        hour_str,
+        font_variant,
+        available_w=width - 16,
+        available_h=footer_ink_top - 8,
+    )
+
+    phrase_bbox = draw.textbbox((0, 0), phrase, font=body_font)
+    hour_bbox = draw.textbbox((0, 0), hour_str, font=body_font)
+
+    # Visual ink heights (excludes internal font leading stored in bbox[1]).
+    phrase_ink_h = phrase_bbox[3] - phrase_bbox[1]
+    hour_ink_h = hour_bbox[3] - hour_bbox[1]
 
     # Phrase + hour block: center their ink in the space above the footer.
     # Working in ink coordinates avoids bbox[1] artefacts shifting the visual
@@ -583,13 +622,13 @@ def render_clock(
     draw.text(
         ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, phrase_draw_y),
         phrase,
-        font=phrase_font,
+        font=body_font,
         fill=ink,
     )
     draw.text(
         ((width - (hour_bbox[2] - hour_bbox[0])) // 2, hour_draw_y),
         hour_str,
-        font=hour_font,
+        font=body_font,
         fill=ink,
     )
     draw.text(

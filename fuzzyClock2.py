@@ -8,7 +8,6 @@ from fuzzyclock_core import (
     DEFAULT_FONT,
     DIALECTS,
     FONT_VARIANTS,
-    load_font,
     render_clock,
 )
 
@@ -27,12 +26,6 @@ except (ImportError, RuntimeError):
 def draw_fuzzy_clock(
     dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT, font=DEFAULT_FONT, now=None
 ):
-    # Fonts are loaded inside the entry function (rather than at module import)
-    # so `import fuzzyClock2` doesn't SystemExit on hosts without DejaVu.
-    font_large = load_font(28, variant=font)
-    font_small = load_font(22, variant=font)
-    font_tiny = load_font(14, variant=font)
-
     if dry_run:
         # 2.13" V4 display is 122×250 in portrait; landscape = 250×122
         width, height = 250, 122
@@ -55,9 +48,7 @@ def draw_fuzzy_clock(
         width,
         height,
         now if now is not None else datetime.now(),
-        font_large,
-        font_small,
-        font_tiny,
+        font_variant=font,
         dialect=dialect,
     )
 

@@ -15,6 +15,10 @@ from unittest import mock
 from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
+    _BODY_MAX_SIZE,
+    _BODY_MIN_SIZE,
+    _TINY_SIZE,
+    DEFAULT_DIALECT,
     DEFAULT_FONT,
     DIALECTS,
     FONT_CANDIDATES,
@@ -36,7 +40,9 @@ def _count_black_pixels(image):
 
 class LoadFontTests(unittest.TestCase):
     def test_returns_font_for_each_size_used_by_the_app(self):
-        for size in (14, 22, 24, 28):
+        # Body font ranges from _BODY_MIN_SIZE to _BODY_MAX_SIZE; tiny and
+        # goodnight are fixed at _TINY_SIZE and 24 respectively.
+        for size in (_BODY_MIN_SIZE, _BODY_MAX_SIZE, _TINY_SIZE, 24):
             self.assertIsNotNone(load_font(size))
 
     def test_default_variant_walks_legacy_font_candidates(self):
@@ -105,12 +111,10 @@ class DrawBorderTests(unittest.TestCase):
 
 
 class RenderClockTests(unittest.TestCase):
-    def setUp(self):
-        self.fonts = (load_font(28), load_font(22), load_font(14))
-
-    def _render(self, when):
-        image = Image.new("1", (WIDTH, HEIGHT), 255)
-        render_clock(ImageDraw.Draw(image), WIDTH, HEIGHT, when, *self.fonts)
+    def _render(self, when, dialect=DEFAULT_DIALECT, invert=False):
+        bg = 0 if invert else 255
+        image = Image.new("1", (WIDTH, HEIGHT), bg)
+        render_clock(ImageDraw.Draw(image), WIDTH, HEIGHT, when, dialect=dialect, invert=invert)
         return image
 
     def test_produces_text_and_border(self):
@@ -118,11 +122,19 @@ class RenderClockTests(unittest.TestCase):
         # Border + phrase + hour + day line should leave plenty of black ink.
         self.assertGreater(_count_black_pixels(image), 200)
 
-    def test_long_phrase_path_does_not_crash(self):
-        # Phrases like "twenty-five past" trip the >12-char branch that
-        # switches to the smaller font; make sure that path renders.
+    def test_long_phrase_renders(self):
+        # Long phrases like "twenty-five past" auto-size to a smaller font;
+        # confirm they render without error and produce ink.
         for minute in (25, 27, 32, 35):
             self._render(datetime(2026, 4, 25, 9, minute))
+
+    def test_short_phrase_renders_larger(self):
+        # Short phrases like "almost" should use a larger auto-sized font than
+        # long ones; both must produce ink on canvas.
+        short = self._render(datetime(2026, 4, 25, 8, 58))  # "almost"
+        long_ = self._render(datetime(2026, 4, 25, 9, 27))  # "twenty-five past"
+        self.assertGreater(_count_black_pixels(short), 100)
+        self.assertGreater(_count_black_pixels(long_), 100)
 
     def test_renders_every_hour_at_known_minute_marks(self):
         for hour in range(24):
@@ -139,46 +151,20 @@ class RenderClockTests(unittest.TestCase):
         # the count of black pixels in one should roughly equal the count of
         # white pixels in the other, since invert just swaps fill colours.
         normal = self._render(datetime(2026, 4, 25, 9, 15))
-        inverted = Image.new("1", (WIDTH, HEIGHT), 0)
-        render_clock(
-            ImageDraw.Draw(inverted),
-            WIDTH,
-            HEIGHT,
-            datetime(2026, 4, 25, 9, 15),
-            *self.fonts,
-            invert=True,
-        )
+        inverted = self._render(datetime(2026, 4, 25, 9, 15), invert=True)
         normal_black = _count_black_pixels(normal)
         inverted_white = WIDTH * HEIGHT - _count_black_pixels(inverted)
         self.assertEqual(normal_black, inverted_white)
 
     def test_shakespeare_dialect_renders(self):
-        # Shakespeare phrases like "'tis a quarter past" trip the long-phrase
-        # branch that switches to font_small. Confirm it puts ink on canvas.
-        image = Image.new("1", (WIDTH, HEIGHT), 255)
-        render_clock(
-            ImageDraw.Draw(image),
-            WIDTH,
-            HEIGHT,
-            datetime(2026, 4, 25, 9, 15),
-            *self.fonts,
-            dialect="shakespeare",
-        )
+        image = self._render(datetime(2026, 4, 25, 9, 15), dialect="shakespeare")
         self.assertGreater(_count_black_pixels(image), 200)
 
     def test_german_dialect_renders(self):
         # German is the only dialect with non-ASCII glyphs (ä, ö, ü). If the
         # font fallback ever lands on a face missing them we'd render tofu
         # boxes; this asserts real ink lands on canvas.
-        image = Image.new("1", (WIDTH, HEIGHT), 255)
-        render_clock(
-            ImageDraw.Draw(image),
-            WIDTH,
-            HEIGHT,
-            datetime(2026, 4, 25, 9, 30),
-            *self.fonts,
-            dialect="german",
-        )
+        image = self._render(datetime(2026, 4, 25, 9, 30), dialect="german")
         self.assertGreater(_count_black_pixels(image), 200)
 
 
@@ -186,11 +172,7 @@ class AllDialectsRenderTests(unittest.TestCase):
     """Sweep every registered dialect through render_clock at a few times of
     day. Catches dialect-specific glyph or layout regressions (e.g. a new
     dialect with characters DejaVu doesn't have, or a hour_str so long that
-    it overflows the canvas). Every dialect's "almost X" slot has a long-ish
-    hour string, which trips the >12-char small-font branch differently."""
-
-    def setUp(self):
-        self.fonts = (load_font(28), load_font(22), load_font(14))
+    it overflows the canvas)."""
 
     def test_every_dialect_renders_at_several_times(self):
         sample_times = [
@@ -208,7 +190,6 @@ class AllDialectsRenderTests(unittest.TestCase):
                         WIDTH,
                         HEIGHT,
                         when,
-                        *self.fonts,
                         dialect=dialect,
                     )
                     self.assertGreater(

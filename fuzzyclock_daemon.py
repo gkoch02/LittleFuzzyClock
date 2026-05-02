@@ -148,22 +148,16 @@ AFTER_HOURS_ENABLED = False
 # `import fuzzyclock_daemon` on a host without DejaVu installed (load_font()
 # raises SystemExit when no candidate is found). Same rationale as the config
 # globals above.
-font_large = None
-font_small = None
-font_tiny = None
 font_goodnight = None
 
 
 def _init_fonts():
     """Populate the font globals. Must run before any render path is invoked.
 
-    Reads FONT_VARIANT (set by main() from _resolve_font()) so all four sized
-    fonts come from the user-selected variant.
+    render_clock auto-sizes its body fonts at render time, so only the
+    goodnight font needs to be pre-loaded here.
     """
-    global font_large, font_small, font_tiny, font_goodnight
-    font_large = load_font(28, variant=FONT_VARIANT)
-    font_small = load_font(22, variant=FONT_VARIANT)
-    font_tiny = load_font(14, variant=FONT_VARIANT)
+    global font_goodnight
     font_goodnight = load_font(24, variant=FONT_VARIANT)
 
 
@@ -176,7 +170,7 @@ def _require_fonts():
     failure mode loud, matching the pre-refactor behaviour where load_font()
     raised SystemExit at import.
     """
-    assert font_large is not None, "_init_fonts() must run before any render path"
+    assert font_goodnight is not None, "_init_fonts() must run before any render path"
 
 
 # === EPD LOCK — protects all SPI writes to the display ===
@@ -317,9 +311,7 @@ def draw_clock(epd, invert=False):
         width,
         height,
         datetime.now(),
-        font_large,
-        font_small,
-        font_tiny,
+        font_variant=FONT_VARIANT,
         dialect=DIALECT,
         invert=invert,
     )
