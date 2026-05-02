@@ -45,6 +45,14 @@ These ship in the `fonts/` directory and work on any machine without an apt inst
 | `literata` | ![literata](preview-literata.png) | OFL | Variable font; `fonts/Literata-Bold.ttf` (Google Fonts / Google Books). Optically sized book serif; refined and even-toned. |
 | `libertinus` | ![libertinus](preview-libertinus.png) | OFL | Static OTF; `fonts/LibertinusSerif-Bold.otf` (v7.051). Open successor to Linux Libertine — classical book serif with broad glyph coverage. |
 | `charis-sil` | ![charis-sil](preview-charis-sil.png) | SIL OFL | Static TTF; `fonts/CharisSIL-Bold.ttf` (SIL International). Warm humanist serif with generous x-height; also installable via `fonts-sil-charis`. |
+| `playfair` | ![playfair](preview-playfair.png) | OFL | Variable font; `fonts/PlayfairDisplay-Bold.ttf` (Google Fonts). High-contrast display serif — dramatic stroke variation, elegant and legible at large sizes. |
+| `pacifico` | ![pacifico](preview-pacifico.png) | OFL | Static TTF; `fonts/Pacifico-Regular.ttf` (Google Fonts). Casual brush-script — maximally playful, reads beautifully when the display shows just a handful of words. |
+| `lilita-one` | ![lilita-one](preview-lilita-one.png) | OFL | Static TTF; `fonts/LilitaOne-Regular.ttf` (Google Fonts). Chunky Latin display face — very bold, almost cartoonish in the best way. |
+| `righteous` | ![righteous](preview-righteous.png) | OFL | Static TTF; `fonts/Righteous-Regular.ttf` (Google Fonts). Art Deco geometric sans — retro-modern personality with even strokes. |
+| `comfortaa` | ![comfortaa](preview-comfortaa.png) | OFL | Variable font; `fonts/Comfortaa-Bold.ttf` (Google Fonts). Rounded geometric sans — warm and friendly; also installable as `fonts-comfortaa` (static Bold used as system fallback). |
+| `nunito` | ![nunito](preview-nunito.png) | OFL | Variable font; `fonts/Nunito-Bold.ttf` (Google Fonts). Rounded sans with a generous x-height — approachable and legible at any display size. |
+| `jost` | ![jost](preview-jost.png) | OFL | Variable font; `fonts/Jost-Bold.ttf` (Google Fonts). Geometric sans inspired by Futura — clean and modern with subtle character in the `a` and `t`. |
+| `bangers` | ![bangers](preview-bangers.png) | OFL | Static TTF; `fonts/Bangers-Regular.ttf` (Google Fonts). Comic-book display font — bold, condensed, pop-art energy. The narrow width fits longer phrases like "twenty-five past" comfortably. |
 
 ---
 

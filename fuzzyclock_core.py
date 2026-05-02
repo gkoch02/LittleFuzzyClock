@@ -138,6 +138,47 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
         "/Library/Fonts/Georgia Bold.ttf",
     ],
+    # Playful / display fonts — all OFL, vendored in fonts/
+    "playfair": [
+        os.path.join(_VENDORED_FONT_DIR, "PlayfairDisplay-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "pacifico": [
+        os.path.join(_VENDORED_FONT_DIR, "Pacifico-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "lilita-one": [
+        os.path.join(_VENDORED_FONT_DIR, "LilitaOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+    ],
+    "righteous": [
+        os.path.join(_VENDORED_FONT_DIR, "Righteous-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "comfortaa": [
+        # Variable font vendored first; apt static Bold used as fallback.
+        os.path.join(_VENDORED_FONT_DIR, "Comfortaa-Bold.ttf"),
+        "/usr/share/fonts/truetype/comfortaa/Comfortaa-Bold.ttf",  # fonts-comfortaa
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "nunito": [
+        os.path.join(_VENDORED_FONT_DIR, "Nunito-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "jost": [
+        os.path.join(_VENDORED_FONT_DIR, "Jost-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "bangers": [
+        os.path.join(_VENDORED_FONT_DIR, "Bangers-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
