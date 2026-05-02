@@ -14,7 +14,15 @@ from unittest import mock
 
 from PIL import Image, ImageDraw
 
-from fuzzyclock_core import DIALECTS, draw_border, load_font, render_clock
+from fuzzyclock_core import (
+    DEFAULT_FONT,
+    DIALECTS,
+    FONT_CANDIDATES,
+    FONT_VARIANTS,
+    draw_border,
+    load_font,
+    render_clock,
+)
 
 WIDTH, HEIGHT = 250, 122  # landscape orientation of the 2.13" V4 panel
 
@@ -30,6 +38,49 @@ class LoadFontTests(unittest.TestCase):
     def test_returns_font_for_each_size_used_by_the_app(self):
         for size in (14, 22, 24, 28):
             self.assertIsNotNone(load_font(size))
+
+    def test_default_variant_walks_legacy_font_candidates(self):
+        # variant=None and variant="dejavu" must attempt the same paths in
+        # the same order so the legacy fallback chain isn't accidentally
+        # broken when callers start passing a variant explicitly.
+        attempted_default = []
+        attempted_dejavu = []
+
+        def fake_truetype_default(path, size):
+            attempted_default.append(path)
+            raise OSError("nope")
+
+        def fake_truetype_dejavu(path, size):
+            attempted_dejavu.append(path)
+            raise OSError("nope")
+
+        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=fake_truetype_default):
+            with self.assertRaises(SystemExit):
+                load_font(20)
+        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=fake_truetype_dejavu):
+            with self.assertRaises(SystemExit):
+                load_font(20, variant="dejavu")
+        self.assertEqual(attempted_default, FONT_CANDIDATES)
+        self.assertEqual(attempted_dejavu, FONT_CANDIDATES)
+
+    def test_each_variant_attempts_its_registered_paths(self):
+        # Mock truetype so we can assert the right candidate list is walked
+        # for each variant without requiring every font to be installed.
+        for variant, paths in FONT_VARIANTS.items():
+            with self.subTest(variant=variant):
+                attempted = []
+
+                def fake_truetype(path, size, _attempted=attempted):
+                    _attempted.append(path)
+                    raise OSError("nope")
+
+                with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=fake_truetype):
+                    with self.assertRaises(SystemExit):
+                        load_font(20, variant=variant)
+                self.assertEqual(attempted, list(paths))
+
+    def test_default_font_constant_is_a_registered_variant(self):
+        self.assertIn(DEFAULT_FONT, FONT_VARIANTS)
 
 
 class DrawBorderTests(unittest.TestCase):
@@ -176,6 +227,24 @@ class LoadFontFailureTests(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 load_font(20)
         self.assertIn("No usable font", str(cm.exception))
+
+    def test_unknown_variant_raises_keyerror(self):
+        # The daemon validates user input upstream; a KeyError here indicates
+        # a programming bug (caller passed an unregistered variant directly).
+        with self.assertRaises(KeyError):
+            load_font(20, variant="comic-sans")
+
+    def test_failure_message_lists_variant_paths(self):
+        # When a specific variant fails to load, the SystemExit message must
+        # name the variant and list its tried paths — not the global default
+        # candidates — so the user can see what was attempted.
+        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=OSError("nope")):
+            with self.assertRaises(SystemExit) as cm:
+                load_font(20, variant="roboto-slab")
+        message = str(cm.exception)
+        self.assertIn("roboto-slab", message)
+        for path in FONT_VARIANTS["roboto-slab"]:
+            self.assertIn(path, message)
 
 
 if __name__ == "__main__":
