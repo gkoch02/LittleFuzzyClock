@@ -1,9 +1,14 @@
 """Shared rendering logic for the fuzzy clock."""
 
 import math
+import os
 from datetime import datetime, timedelta, timezone
 
 from PIL import ImageFont
+
+# Repo-vendored fonts live under <repo>/fonts/. Variants can prefix this onto
+# their candidate list to let users drop a custom .ttf in without touching apt.
+_VENDORED_FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 
 FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Raspberry Pi / Debian
@@ -11,6 +16,57 @@ FONT_CANDIDATES = [
     "/System/Library/Fonts/Supplemental/Arial Bold.ttf",  # macOS (Ventura+)
     "/System/Library/Fonts/Helvetica.ttc",  # macOS fallback
 ]
+
+# Selectable display fonts. Each variant maps to an ordered list of candidate
+# paths: load_font() walks them and uses the first that PIL can open. Pi-side
+# paths come first; macOS fallbacks (the closest stock equivalent) keep dev
+# renders working off-Pi for every variant. The `dejavu` variant aliases the
+# legacy `FONT_CANDIDATES` list so existing imports stay byte-identical.
+FONT_VARIANTS = {
+    "dejavu": FONT_CANDIDATES,
+    "dejavu-serif": [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",  # fonts-dejavu
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "liberation-serif": [
+        "/usr/share/fonts/truetype/liberation2/LiberationSerif-Bold.ttf",  # fonts-liberation2
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",  # older Debian layout
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+    ],
+    "roboto-slab": [
+        # fonts-roboto-slab Ubuntu/recent path (.otf), Bookworm path (.ttf), older layout
+        "/usr/share/fonts/opentype/roboto/slab/RobotoSlab-Bold.otf",
+        "/usr/share/fonts/truetype/roboto/slab/RobotoSlab-Bold.ttf",
+        "/usr/share/fonts/truetype/roboto-slab/RobotoSlab-Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Courier New Bold.ttf",
+    ],
+    "cantarell": [
+        "/usr/share/fonts/opentype/cantarell/Cantarell-Bold.otf",  # fonts-cantarell (Ubuntu/recent)
+        "/usr/share/fonts/cantarell/Cantarell-Bold.otf",  # fonts-cantarell (older Debian)
+        "/System/Library/Fonts/Supplemental/Verdana Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "ubuntu": [
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",  # fonts-ubuntu
+        "/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf",
+    ],
+    "jetbrains-mono": [
+        "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",  # fonts-jetbrains-mono
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    "fredoka": [
+        # Vendored first so users can drop a custom Fredoka.ttf under fonts/
+        # without waiting on apt or upstream variants.
+        os.path.join(_VENDORED_FONT_DIR, "Fredoka.ttf"),
+        "/usr/share/fonts/truetype/fredoka/Fredoka-VariableFont_wdth,wght.ttf",  # fonts-fredoka
+        "/usr/share/fonts/truetype/fredoka-one/FredokaOne-Regular.ttf",  # fonts-fredoka-one (older)
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+    ],
+}
+
+DEFAULT_FONT = "dejavu"
 
 HOUR_WORDS = {
     1: "one",
@@ -288,14 +344,33 @@ def _validate_dialects(dialects):
 _validate_dialects(DIALECTS)
 
 
-def load_font(size):
-    for path in FONT_CANDIDATES:
+def load_font(size, variant=None):
+    """Load a TrueType/OpenType font at `size` from a registered variant.
+
+    `variant=None` walks the legacy FONT_CANDIDATES list (DejaVu Sans Bold +
+    macOS fallbacks) — preserved for backward compat with code that doesn't
+    care which variant. A named variant must exist in FONT_VARIANTS; unknown
+    keys raise KeyError (programming-bug guard — the daemon validates upstream
+    via _resolve_font and falls back gracefully on user input).
+
+    Raises SystemExit listing the variant's tried paths when none load. We
+    fail loud rather than letting PIL silently fall back to its default
+    bitmap font, which would render a subtly-wrong clock face.
+    """
+    if variant is None:
+        candidates = FONT_CANDIDATES
+        label = "default"
+    else:
+        candidates = FONT_VARIANTS[variant]
+        label = variant
+    for path in candidates:
         try:
             return ImageFont.truetype(path, size)
         except OSError:
             continue
     raise SystemExit(
-        "No usable font found. Tried:\n" + "\n".join(f"  {p}" for p in FONT_CANDIDATES)
+        f"No usable font found for variant {label!r}. Tried:\n"
+        + "\n".join(f"  {p}" for p in candidates)
     )
 
 

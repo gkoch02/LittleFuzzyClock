@@ -3,7 +3,14 @@ from datetime import datetime
 
 from PIL import Image, ImageDraw
 
-from fuzzyclock_core import DEFAULT_DIALECT, DIALECTS, load_font, render_clock
+from fuzzyclock_core import (
+    DEFAULT_DIALECT,
+    DEFAULT_FONT,
+    DIALECTS,
+    FONT_VARIANTS,
+    load_font,
+    render_clock,
+)
 
 # Lazy-import the EPD driver so the script can run in --dry-run mode on
 # machines without the waveshare library — or without Pi hardware. The
@@ -17,12 +24,14 @@ except (ImportError, RuntimeError):
     EPD_AVAILABLE = False
 
 
-def draw_fuzzy_clock(dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT):
+def draw_fuzzy_clock(
+    dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT, font=DEFAULT_FONT
+):
     # Fonts are loaded inside the entry function (rather than at module import)
     # so `import fuzzyClock2` doesn't SystemExit on hosts without DejaVu.
-    font_large = load_font(28)
-    font_small = load_font(22)
-    font_tiny = load_font(14)
+    font_large = load_font(28, variant=font)
+    font_small = load_font(22, variant=font)
+    font_tiny = load_font(14, variant=font)
 
     if dry_run:
         # 2.13" V4 display is 122×250 in portrait; landscape = 250×122
@@ -81,5 +90,16 @@ if __name__ == "__main__":
         choices=sorted(DIALECTS.keys()),
         help=f"Phrasing personality (default: {DEFAULT_DIALECT})",
     )
+    parser.add_argument(
+        "--font",
+        default=DEFAULT_FONT,
+        choices=sorted(FONT_VARIANTS.keys()),
+        help=f"Display font variant (default: {DEFAULT_FONT})",
+    )
     args = parser.parse_args()
-    draw_fuzzy_clock(dry_run=args.dry_run, output=args.output, dialect=args.dialect)
+    draw_fuzzy_clock(
+        dry_run=args.dry_run,
+        output=args.output,
+        dialect=args.dialect,
+        font=args.font,
+    )

@@ -30,6 +30,13 @@ echo "==> Installing system packages..."
 apt-get update -qq
 apt-get install -y \
     fonts-dejavu-core \
+    fonts-dejavu \
+    fonts-liberation2 \
+    fonts-roboto-slab \
+    fonts-cantarell \
+    fonts-ubuntu \
+    fonts-jetbrains-mono \
+    fonts-fredoka \
     python3-pil \
     python3-gpiozero \
     python3-spidev \

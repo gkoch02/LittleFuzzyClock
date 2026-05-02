@@ -81,6 +81,38 @@ Environment=FUZZYCLOCK_DIALECT=shakespeare
 
 Unknown values fall back to `classic` with a warning in the daemon log.
 
+## Fonts
+
+Eight display fonts ship pre-installed by `deploy.sh`, all chosen for legibility on a 122×250 e-ink panel. Each preview shows the same scene (`9:15` in the `classic` dialect) so you can compare side by side:
+
+| Variant            | Preview                                                                                  | Package                | Character                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------- |
+| `dejavu` (default) | ![dejavu preview](docs/preview-dejavu.png)                                               | `fonts-dejavu-core`    | Clean humanist sans — high x-height, broad Unicode.        |
+| `dejavu-serif`     | ![dejavu-serif preview](docs/preview-dejavu-serif.png)                                   | `fonts-dejavu`         | Elegant transitional serif companion to DejaVu Sans.       |
+| `liberation-serif` | ![liberation-serif preview](docs/preview-liberation-serif.png)                           | `fonts-liberation2`    | Times-metric serif — newspaper feel.                       |
+| `roboto-slab`      | ![roboto-slab preview](docs/preview-roboto-slab.png)                                     | `fonts-roboto-slab`    | Chunky slab serif; renders especially crisply on e-ink.    |
+| `cantarell`        | ![cantarell preview](docs/preview-cantarell.png)                                         | `fonts-cantarell`      | GNOME's humanist sans; tall x-height, friendly curves.     |
+| `ubuntu`           | ![ubuntu preview](docs/preview-ubuntu.png)                                               | `fonts-ubuntu`         | Distinctive warm sans with subtle calligraphic terminals.  |
+| `jetbrains-mono`   | ![jetbrains-mono preview](docs/preview-jetbrains-mono.png)                               | `fonts-jetbrains-mono` | Modern monospaced typewriter look.                         |
+| `fredoka`          | ![fredoka preview](docs/preview-fredoka.png)                                             | `fonts-fredoka` (or vendored `fonts/Fredoka.ttf`) | Rounded display font — soft, friendly geometric shapes. |
+
+Pick one with `--font`:
+
+```bash
+python3 fuzzyClock2.py --dry-run --font roboto-slab --output preview.png
+```
+
+The daemon reads the same setting from the `FUZZYCLOCK_FONT` environment variable:
+
+```ini
+[Service]
+Environment=FUZZYCLOCK_FONT=roboto-slab
+```
+
+Unknown values fall back to `dejavu` with a warning in the daemon log. On macOS the dev script falls back to the nearest stock equivalent (Times for the serif variants, Menlo for the mono, Arial Rounded for `fredoka`); the actual variant only renders authentically on the Pi.
+
+To use a font that isn't packaged for apt, drop a TTF into a `fonts/` directory at the repo root — the `fredoka` variant looks for `fonts/Fredoka.ttf` first, before its apt path.
+
 ## After-hours mode
 
 After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.json`:

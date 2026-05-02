@@ -202,6 +202,23 @@ class ResolveDialectTests(unittest.TestCase):
             self.assertTrue(any("pirate" in line for line in cm.output))
 
 
+class ResolveFontTests(unittest.TestCase):
+    def test_unset_env_var_falls_back_to_default(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("FUZZYCLOCK_FONT", None)
+            self.assertEqual(d._resolve_font(), d.DEFAULT_FONT)
+
+    def test_known_font_is_returned(self):
+        with mock.patch.dict(os.environ, {"FUZZYCLOCK_FONT": "roboto-slab"}):
+            self.assertEqual(d._resolve_font(), "roboto-slab")
+
+    def test_unknown_font_falls_back_with_warning(self):
+        with mock.patch.dict(os.environ, {"FUZZYCLOCK_FONT": "comic-sans"}):
+            with self.assertLogs("root", level="WARNING") as cm:
+                self.assertEqual(d._resolve_font(), d.DEFAULT_FONT)
+            self.assertTrue(any("comic-sans" in line for line in cm.output))
+
+
 class _FakeButton:
     """Minimal `gpiozero.Button` substitute for `button_listener` tests.
 

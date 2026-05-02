@@ -12,7 +12,9 @@ from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
     DEFAULT_DIALECT,
+    DEFAULT_FONT,
     DIALECTS,
+    FONT_VARIANTS,
     draw_border,
     load_font,
     render_clock,
@@ -72,6 +74,19 @@ def _resolve_dialect():
     return requested
 
 
+def _resolve_font():
+    requested = os.environ.get("FUZZYCLOCK_FONT", DEFAULT_FONT)
+    if requested not in FONT_VARIANTS:
+        logging.warning(
+            "Unknown FUZZYCLOCK_FONT=%r; falling back to %r. Valid: %s",
+            requested,
+            DEFAULT_FONT,
+            sorted(FONT_VARIANTS.keys()),
+        )
+        return DEFAULT_FONT
+    return requested
+
+
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.json")
 
 
@@ -106,6 +121,7 @@ def _load_coordinates(path=CONFIG_PATH):
 # read or warning logs. _current_mode_now() and draw_clock() read them, but
 # they're only ever called from inside main()'s control flow.
 DIALECT = DEFAULT_DIALECT
+FONT_VARIANT = DEFAULT_FONT
 LATITUDE = None
 LONGITUDE = None
 AFTER_HOURS_ENABLED = False
@@ -122,12 +138,16 @@ font_goodnight = None
 
 
 def _init_fonts():
-    """Populate the font globals. Must run before any render path is invoked."""
+    """Populate the font globals. Must run before any render path is invoked.
+
+    Reads FONT_VARIANT (set by main() from _resolve_font()) so all four sized
+    fonts come from the user-selected variant.
+    """
     global font_large, font_small, font_tiny, font_goodnight
-    font_large = load_font(28)
-    font_small = load_font(22)
-    font_tiny = load_font(14)
-    font_goodnight = load_font(24)
+    font_large = load_font(28, variant=FONT_VARIANT)
+    font_small = load_font(22, variant=FONT_VARIANT)
+    font_tiny = load_font(14, variant=FONT_VARIANT)
+    font_goodnight = load_font(24, variant=FONT_VARIANT)
 
 
 def _require_fonts():
@@ -373,8 +393,9 @@ def main():
     # mode is location-driven via fuzzyclock_config.json next to this file;
     # if it's missing or malformed, the feature stays off and we fall back
     # to plain day/night.
-    global DIALECT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
+    global DIALECT, FONT_VARIANT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
     DIALECT = _resolve_dialect()
+    FONT_VARIANT = _resolve_font()
     LATITUDE, LONGITUDE = _load_coordinates()
     AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
     _init_fonts()
