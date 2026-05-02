@@ -517,9 +517,16 @@ def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     return word, spec["format_hour"](spec["hours"][hour_12], is_pm)
 
 
-def draw_border(draw, width, height, margin=4, invert=False):
+_BORDER_MARGIN = 4  # border rectangle inset from canvas edge
+_CORNER_R = 6  # corner decoration radius / side length
+# Inner content boundary: one pixel beyond the corner decorations plus 2 px breathing room.
+# Text must stay within this padding on all four sides so it never overlaps the decorations.
+_CONTENT_PAD = _BORDER_MARGIN + 2 + _CORNER_R + 2  # = 14
+
+
+def draw_border(draw, width, height, margin=_BORDER_MARGIN, invert=False):
     ink = 255 if invert else 0
-    r = 6
+    r = _CORNER_R
     draw.rectangle((margin, margin, width - margin, height - margin), outline=ink, width=1)
     # Corner brackets: top corners are circles, bottom corners are squares.
     tl = (margin + 2, margin + 2)
@@ -584,19 +591,20 @@ def render_clock(
     font_tiny = load_font(_TINY_SIZE, variant=font_variant)
     day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
 
-    # Footer: pin ink bottom 6 px above canvas bottom, regardless of font metrics.
-    day_draw_y = height - 6 - day_bbox[3]
+    # Footer: pin ink bottom at _CONTENT_PAD above canvas bottom so it clears
+    # the corner decorations (which extend _CONTENT_PAD - 2 px from each edge).
+    day_draw_y = height - _CONTENT_PAD - day_bbox[3]
     footer_ink_top = day_draw_y + day_bbox[1]
 
-    # Auto-size the body font: fit within canvas width (8 px side padding) and
-    # the space above the footer (leaving 8 px of breathing room at the top).
+    # Auto-size the body font: keep all text within _CONTENT_PAD on every side
+    # so neither the phrase nor hour line overlaps the corner decorations.
     body_font = _fit_body_font(
         draw,
         phrase,
         hour_str,
         font_variant,
-        available_w=width - 16,
-        available_h=footer_ink_top - 8,
+        available_w=width - 2 * _CONTENT_PAD,
+        available_h=footer_ink_top - _CONTENT_PAD,
     )
 
     phrase_bbox = draw.textbbox((0, 0), phrase, font=body_font)
