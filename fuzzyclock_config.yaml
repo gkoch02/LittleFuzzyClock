@@ -2,9 +2,12 @@
 # Options: classic, shakespeare, klingon, belter, german, hal, cthulhu, latin
 dialect: classic
 
-# Font variant.
-# Options: dejavu, dejavu-serif, liberation-serif, roboto-slab,
-#          cantarell, ubuntu, jetbrains-mono, fredoka
+# Font variant. For the full list and previews see docs/fonts.md.
+# Apt-installed: dejavu (default), dejavu-serif, liberation-serif, roboto-slab,
+#                cantarell, ubuntu, jetbrains-mono
+# Vendored OFL:  fredoka, bitter, literata, libertinus, charis-sil, playfair,
+#                pacifico, lilita-one, righteous, comfortaa, nunito, jost, bangers
+# Commercial:    bookerly, minion, livory, chaparral, arno, malabar, pigeonette
 font: dejavu
 
 # Coordinates for after-hours mode (display inverts after sunset).

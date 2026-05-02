@@ -82,7 +82,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## Fonts
 
-Nineteen font variants are available — seven installed automatically by `deploy.sh`, five open-source fonts vendored in `fonts/`, and seven commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
+Twenty-seven font variants are available — seven installed automatically by `deploy.sh`, thirteen open-source fonts vendored in `fonts/`, and seven commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
 
 Pick one with `--font`:
 
@@ -134,7 +134,7 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | `test_sun.py` | Unit tests for the sunrise/sunset approximation used by after-hours mode |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
-| `fuzzyclock_config.json` | Latitude/longitude for the after-hours sunset/sunrise calculation |
+| `fuzzyclock_config.yaml` | Dialect, font, and latitude/longitude for the after-hours sunset/sunrise calculation |
 | `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
 | `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |
 | `waveshare_epd/` | Waveshare e-Paper Python library (MIT, from [Waveshare's e-Paper repo](https://github.com/waveshare/e-Paper)) |
