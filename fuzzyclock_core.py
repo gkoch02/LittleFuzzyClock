@@ -353,6 +353,13 @@ def load_font(size, variant=None):
     keys raise KeyError (programming-bug guard — the daemon validates upstream
     via _resolve_font and falls back gracefully on user input).
 
+    For variable fonts (e.g. Fredoka.ttf, which carries a wght axis), we
+    activate the "Bold" named instance so weight matches the static-Bold
+    static fonts the other variants ship as — otherwise PIL renders at the
+    default axis values (Light/Regular), which looks wispy on e-ink and
+    hides the variant's character. Static fonts raise OSError on the call
+    and we silently skip it.
+
     Raises SystemExit listing the variant's tried paths when none load. We
     fail loud rather than letting PIL silently fall back to its default
     bitmap font, which would render a subtly-wrong clock face.
@@ -365,9 +372,14 @@ def load_font(size, variant=None):
         label = variant
     for path in candidates:
         try:
-            return ImageFont.truetype(path, size)
+            font = ImageFont.truetype(path, size)
         except OSError:
             continue
+        try:
+            font.set_variation_by_name("Bold")
+        except (OSError, AttributeError):
+            pass
+        return font
     raise SystemExit(
         f"No usable font found for variant {label!r}. Tried:\n"
         + "\n".join(f"  {p}" for p in candidates)
