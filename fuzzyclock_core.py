@@ -85,9 +85,10 @@ FONT_VARIANTS = {
         "/Library/Fonts/Georgia Bold.ttf",
     ],
     "libertinus": [
+        # Vendored v7.051 OTF ships in fonts/; apt path kept as system fallback.
+        os.path.join(_VENDORED_FONT_DIR, "LibertinusSerif-Bold.otf"),
         "/usr/share/fonts/opentype/libertinus/LibertinusSerif-Bold.otf",  # fonts-libertinus
         "/usr/share/fonts/opentype/libertinus-font/LibertinusSerif-Bold.otf",
-        os.path.join(_VENDORED_FONT_DIR, "LibertinusSerif-Bold.otf"),
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
         "/Library/Fonts/Times New Roman Bold.ttf",
     ],
@@ -120,6 +121,12 @@ FONT_VARIANTS = {
         os.path.join(_VENDORED_FONT_DIR, "ArnoPro-Regular.otf"),
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
         "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "malabar": [
+        os.path.join(_VENDORED_FONT_DIR, "Malabar-Bold.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "Malabar-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
     ],
 }
 
