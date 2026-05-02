@@ -25,7 +25,7 @@ except (ImportError, RuntimeError):
 
 
 def draw_fuzzy_clock(
-    dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT, font=DEFAULT_FONT
+    dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT, font=DEFAULT_FONT, now=None
 ):
     # Fonts are loaded inside the entry function (rather than at module import)
     # so `import fuzzyClock2` doesn't SystemExit on hosts without DejaVu.
@@ -54,7 +54,7 @@ def draw_fuzzy_clock(
         draw,
         width,
         height,
-        datetime.now(),
+        now if now is not None else datetime.now(),
         font_large,
         font_small,
         font_tiny,
@@ -96,10 +96,20 @@ if __name__ == "__main__":
         choices=sorted(FONT_VARIANTS.keys()),
         help=f"Display font variant (default: {DEFAULT_FONT})",
     )
+    parser.add_argument(
+        "--time",
+        default=None,
+        metavar="HH:MM",
+        help="Pin the clock to a fixed time for --dry-run previews (e.g. 09:15)",
+    )
     args = parser.parse_args()
+    now = None
+    if args.time is not None:
+        now = datetime.strptime(args.time, "%H:%M")
     draw_fuzzy_clock(
         dry_run=args.dry_run,
         output=args.output,
         dialect=args.dialect,
         font=args.font,
+        now=now,
     )
