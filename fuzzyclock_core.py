@@ -128,6 +128,16 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
         "/Library/Fonts/Georgia Bold.ttf",
     ],
+    "pigeonette": [
+        os.path.join(_VENDORED_FONT_DIR, "Pigeonette-Bold.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "Pigeonette-Bold.ttf"),
+        os.path.join(_VENDORED_FONT_DIR, "Pigeonette-Regular.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "Pigeonette-Regular.ttf"),
+        os.path.join(_VENDORED_FONT_DIR, "Pigeonette.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "Pigeonette.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
