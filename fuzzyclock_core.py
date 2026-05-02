@@ -64,6 +64,63 @@ FONT_VARIANTS = {
         "/usr/share/fonts/truetype/fredoka-one/FredokaOne-Regular.ttf",  # fonts-fredoka-one (older)
         "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
     ],
+    # Proprietary fonts with no apt package: drop the Bold .ttf/.otf into
+    # fonts/ and it will be found ahead of the macOS system fallback.
+    "bookerly": [
+        os.path.join(_VENDORED_FONT_DIR, "Bookerly-Bold.ttf"),
+        os.path.join(_VENDORED_FONT_DIR, "Bookerly.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "minion": [
+        os.path.join(_VENDORED_FONT_DIR, "MinionPro-Bold.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "MinionPro-Regular.otf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "livory": [
+        os.path.join(_VENDORED_FONT_DIR, "Livory-Bold.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "Livory-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "libertinus": [
+        "/usr/share/fonts/opentype/libertinus/LibertinusSerif-Bold.otf",  # fonts-libertinus
+        "/usr/share/fonts/opentype/libertinus-font/LibertinusSerif-Bold.otf",
+        os.path.join(_VENDORED_FONT_DIR, "LibertinusSerif-Bold.otf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "chaparral": [
+        os.path.join(_VENDORED_FONT_DIR, "ChaparralPro-Bold.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "ChaparralPro-Regular.otf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "charis-sil": [
+        "/usr/share/fonts/truetype/charis/CharisSIL-Bold.ttf",  # fonts-sil-charis
+        os.path.join(_VENDORED_FONT_DIR, "CharisSIL-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "bitter": [
+        os.path.join(_VENDORED_FONT_DIR, "Bitter-Bold.ttf"),
+        os.path.join(_VENDORED_FONT_DIR, "Bitter-Bold.otf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "literata": [
+        os.path.join(_VENDORED_FONT_DIR, "Literata-Bold.ttf"),
+        os.path.join(_VENDORED_FONT_DIR, "Literata-Bold.otf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "arno": [
+        os.path.join(_VENDORED_FONT_DIR, "ArnoPro-Bold.otf"),
+        os.path.join(_VENDORED_FONT_DIR, "ArnoPro-Regular.otf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
