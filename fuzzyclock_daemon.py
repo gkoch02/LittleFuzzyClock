@@ -151,19 +151,23 @@ AFTER_HOURS_ENABLED = False
 font_large = None
 font_small = None
 font_tiny = None
+font_phrase = None
 font_goodnight = None
 
 
 def _init_fonts():
     """Populate the font globals. Must run before any render path is invoked.
 
-    Reads FONT_VARIANT (set by main() from _resolve_font()) so all four sized
-    fonts come from the user-selected variant.
+    Reads FONT_VARIANT (set by main() from _resolve_font()) so all five sized
+    fonts come from the user-selected variant. `font_phrase` is the kicker
+    above the focal hour line; sized below `font_small` so the hour clearly
+    dominates the visual hierarchy.
     """
-    global font_large, font_small, font_tiny, font_goodnight
+    global font_large, font_small, font_tiny, font_phrase, font_goodnight
     font_large = load_font(28, variant=FONT_VARIANT)
     font_small = load_font(22, variant=FONT_VARIANT)
     font_tiny = load_font(14, variant=FONT_VARIANT)
+    font_phrase = load_font(18, variant=FONT_VARIANT)
     font_goodnight = load_font(24, variant=FONT_VARIANT)
 
 
@@ -235,6 +239,25 @@ def _sun_times_cached(date, latitude, longitude):
     return _raw_sun_times(date, latitude, longitude)
 
 
+def _current_progress():
+    """Return the day-progress fraction in [0, 1] or None.
+
+    None when after-hours mode is disabled (no coordinates configured), the
+    sun never crosses the horizon (polar night / midnight sun), or the
+    sunrise/sunset pair is degenerate. Before sunrise: 0.0. After sunset: 1.0.
+    """
+    if not AFTER_HOURS_ENABLED:
+        return None
+    now = datetime.now().astimezone()
+    sunrise, sunset = _sun_times_cached(now.date(), LATITUDE, LONGITUDE)
+    if sunrise is None or sunset is None or sunset <= sunrise:
+        return None
+    now_utc = now.astimezone(timezone.utc)
+    span = (sunset - sunrise).total_seconds()
+    elapsed = (now_utc - sunrise).total_seconds()
+    return max(0.0, min(1.0, elapsed / span))
+
+
 def current_mode(
     now, latitude, longitude, after_hours_enabled, day_start=DAY_START_HOUR, day_end=DAY_END_HOUR
 ):
@@ -292,12 +315,7 @@ def display_goodnight(epd):
     x = (width - (text_bbox[2] - text_bbox[0])) // 2
     y = (height - (text_bbox[3] - text_bbox[1])) // 2
 
-    draw.rounded_rectangle(
-        (10, 10, width - 10, height - 10),
-        radius=15,
-        outline=0,
-        width=2,
-    )
+    draw_border(draw, width, height)
     draw.text((x, y), text, font=font_goodnight, fill=0)
 
     with epd_lock:
@@ -322,6 +340,8 @@ def draw_clock(epd, invert=False):
         font_tiny,
         dialect=DIALECT,
         invert=invert,
+        font_phrase=font_phrase,
+        progress=_current_progress(),
     )
 
     with epd_lock:

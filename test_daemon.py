@@ -543,6 +543,88 @@ class SunTimesCacheTests(unittest.TestCase):
         self.assertEqual(info.currsize, 0)
 
 
+class CurrentProgressTests(unittest.TestCase):
+    """`_current_progress` produces the day-fraction the renderer needs.
+
+    None when after-hours is disabled, when the sun never crosses the horizon
+    (polar night/midnight sun), or when sunrise/sunset are degenerate. The
+    return must always be in [0, 1] when not None: 0.0 before sunrise, 1.0
+    after sunset, sliding linearly through the day.
+    """
+
+    def setUp(self):
+        d._sun_times_cached.cache_clear()
+        # Snapshot module globals so each test can swap in its own values.
+        self._saved = (d.AFTER_HOURS_ENABLED, d.LATITUDE, d.LONGITUDE)
+
+    def tearDown(self):
+        d.AFTER_HOURS_ENABLED, d.LATITUDE, d.LONGITUDE = self._saved
+        d._sun_times_cached.cache_clear()
+
+    def _patch_now(self, when):
+        # `_current_progress` reads datetime.now() from the daemon's namespace.
+        return mock.patch.object(d, "datetime", _FrozenDatetime(when))
+
+    def test_disabled_when_after_hours_off(self):
+        d.AFTER_HOURS_ENABLED = False
+        with self._patch_now(datetime(2024, 6, 21, 12, 0, tzinfo=timezone.utc)):
+            self.assertIsNone(d._current_progress())
+
+    def test_returns_fraction_during_daylight_in_london(self):
+        d.AFTER_HOURS_ENABLED = True
+        d.LATITUDE, d.LONGITUDE = 51.5074, -0.1278
+        # London at June solstice: sunrise ~03:43 UTC, sunset ~20:21 UTC.
+        # 12:00 UTC is roughly the midpoint of that ~16h window.
+        with self._patch_now(datetime(2024, 6, 21, 12, 0, tzinfo=timezone.utc)):
+            progress = d._current_progress()
+        self.assertIsNotNone(progress)
+        self.assertGreater(progress, 0.4)
+        self.assertLess(progress, 0.6)
+
+    def test_clamps_to_zero_before_sunrise(self):
+        d.AFTER_HOURS_ENABLED = True
+        d.LATITUDE, d.LONGITUDE = 51.5074, -0.1278
+        # 02:00 UTC is well before London's June sunrise.
+        with self._patch_now(datetime(2024, 6, 21, 2, 0, tzinfo=timezone.utc)):
+            self.assertEqual(d._current_progress(), 0.0)
+
+    def test_clamps_to_one_after_sunset(self):
+        d.AFTER_HOURS_ENABLED = True
+        d.LATITUDE, d.LONGITUDE = 51.5074, -0.1278
+        # 22:30 UTC is past London's June sunset.
+        with self._patch_now(datetime(2024, 6, 21, 22, 30, tzinfo=timezone.utc)):
+            self.assertEqual(d._current_progress(), 1.0)
+
+    def test_polar_midnight_sun_returns_none(self):
+        # Tromsø in summer: sun_times returns (None, None); the helper must
+        # propagate that as no-progress rather than crashing.
+        d.AFTER_HOURS_ENABLED = True
+        d.LATITUDE, d.LONGITUDE = 69.6492, 18.9553
+        with self._patch_now(datetime(2024, 6, 21, 12, 0, tzinfo=timezone.utc)):
+            self.assertIsNone(d._current_progress())
+
+
+class _FrozenDatetime:
+    """Minimal datetime stand-in that returns a fixed `now()` for tests.
+
+    `_current_progress` calls `datetime.now().astimezone()`; everything else
+    in the helper goes through the module's normal `datetime` symbols, so we
+    only intercept `now`. Other classmethods/constructors fall through to the
+    real datetime so date arithmetic still works.
+    """
+
+    def __init__(self, fixed_now):
+        self._fixed = fixed_now
+
+    def now(self, tz=None):
+        if tz is None:
+            return self._fixed
+        return self._fixed.astimezone(tz)
+
+    def __getattr__(self, name):
+        return getattr(datetime, name)
+
+
 class _FakeEPD:
     """Test double for the Waveshare EPD — records every SPI-shaped call.
 
@@ -614,6 +696,7 @@ class _FontFixtureMixin:
         d.font_large = None
         d.font_small = None
         d.font_tiny = None
+        d.font_phrase = None
         d.font_goodnight = None
 
 

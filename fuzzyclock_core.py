@@ -402,19 +402,49 @@ def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     return word, spec["format_hour"](spec["hours"][hour_12], is_pm)
 
 
-def draw_border(draw, width, height, margin=4, invert=False):
+def draw_border(draw, width, height, margin=5, invert=False):
+    """Frame the canvas with four symmetric L-shaped corner ticks.
+
+    Replaces the previous outline+mixed-corner design. Each tick is a 1 px
+    right-angle bracket with ~10 px arms, inset `margin` from the edge.
+    """
     ink = 255 if invert else 0
-    r = 6
-    draw.rectangle((margin, margin, width - margin, height - margin), outline=ink, width=1)
-    # Corner brackets: top corners are circles, bottom corners are squares.
-    tl = (margin + 2, margin + 2)
-    tr = (width - margin - r - 2, margin + 2)
-    bl = (margin + 2, height - margin - r - 2)
-    br = (width - margin - r - 2, height - margin - r - 2)
-    draw.ellipse((tl[0], tl[1], tl[0] + r, tl[1] + r), outline=ink)
-    draw.ellipse((tr[0], tr[1], tr[0] + r, tr[1] + r), outline=ink)
-    draw.rectangle((bl[0], bl[1], bl[0] + r, bl[1] + r), outline=ink)
-    draw.rectangle((br[0], br[1], br[0] + r, br[1] + r), outline=ink)
+    arm = 10
+    right = width - margin - 1
+    bottom = height - margin - 1
+    # Top-left
+    draw.line((margin, margin, margin + arm, margin), fill=ink, width=1)
+    draw.line((margin, margin, margin, margin + arm), fill=ink, width=1)
+    # Top-right
+    draw.line((right - arm, margin, right, margin), fill=ink, width=1)
+    draw.line((right, margin, right, margin + arm), fill=ink, width=1)
+    # Bottom-left
+    draw.line((margin, bottom, margin + arm, bottom), fill=ink, width=1)
+    draw.line((margin, bottom - arm, margin, bottom), fill=ink, width=1)
+    # Bottom-right
+    draw.line((right - arm, bottom, right, bottom), fill=ink, width=1)
+    draw.line((right, bottom - arm, right, bottom), fill=ink, width=1)
+
+
+def draw_day_progress(draw, width, height, progress, line_y, invert=False, inset=10):
+    """Draw a horizon line at `line_y` with a 3x3 mark at `progress` along it.
+
+    `progress` is a float in [0, 1] (clamped) or None (no-op). The line spans
+    from `inset` to `width - inset`, staying clear of the corner ticks. The
+    mark is centered on the line, so 0.0 puts it flush with the inset edge
+    and 1.0 puts it flush with the opposite inset.
+    """
+    if progress is None:
+        return
+    progress = max(0.0, min(1.0, progress))
+    ink = 255 if invert else 0
+    left, right = inset, width - inset
+    draw.line((left, line_y, right, line_y), fill=ink, width=1)
+    mark_x = left + int(round(progress * (right - left)))
+    draw.rectangle(
+        (mark_x - 1, line_y - 1, mark_x + 1, line_y + 1),
+        fill=ink,
+    )
 
 
 def render_clock(
@@ -427,32 +457,59 @@ def render_clock(
     font_tiny,
     dialect=DEFAULT_DIALECT,
     invert=False,
+    font_phrase=None,
+    progress=None,
 ):
-    """Draw the full clock face (border + phrase + hour + day line) onto `draw`.
+    """Draw the full clock face (frame + phrase + hour + date + optional
+    day-progress horizon) onto `draw`.
 
-    When `invert` is True the foreground is white (255) instead of black; the
-    caller is responsible for filling the canvas with the matching background
-    colour before calling this helper.
+    Typography hierarchy: phrase is the smaller "kicker" line, hour is the
+    focal display. Pass `font_phrase` (typically smaller than `font_small`)
+    to make the kicker/headline contrast more pronounced; without it the
+    phrase falls back to `font_small`. The hour stays on `font_large` unless
+    its string is too wide to fit, in which case it drops to `font_small`.
+
+    `progress` is a float in [0, 1] showing where `now` sits between today's
+    sunrise and sunset; when supplied, a thin horizon line and a small mark
+    are drawn just above the date footer. None disables the indicator —
+    callers without coordinates configured (or in polar night/midnight sun)
+    pass None and the layout collapses gracefully.
+
+    When `invert` is True the foreground is white (255) instead of black;
+    the caller is responsible for filling the canvas with the matching
+    background colour before calling this helper.
     """
     ink = 255 if invert else 0
     phrase, hour_str = fuzzy_time(now.hour, now.minute, dialect)
     day_line = now.strftime("%A, %b %d")
 
-    phrase_font = font_small if len(phrase) > 12 else font_large
+    phrase_font = font_phrase if font_phrase is not None else font_small
+    # When a dedicated phrase font is in use, an unusually long phrase
+    # (Shakespeare's "'tis a quarter past") would still fit, but the extra
+    # safety net keeps custom variants with wide metrics from overflowing.
+    if font_phrase is not None and len(phrase) > 14:
+        phrase_font = font_tiny
     hour_font = font_small if len(hour_str) > 12 else font_large
+
     phrase_bbox = draw.textbbox((0, 0), phrase, font=phrase_font)
     hour_bbox = draw.textbbox((0, 0), hour_str, font=hour_font)
     day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
-
-    total_height = (
-        (phrase_bbox[3] - phrase_bbox[1])
-        + (hour_bbox[3] - hour_bbox[1])
-        + (day_bbox[3] - day_bbox[1])
-        + 10
-    )
-    y = (height - total_height) // 2
+    phrase_h = phrase_bbox[3] - phrase_bbox[1]
+    hour_h = hour_bbox[3] - hour_bbox[1]
+    day_h = day_bbox[3] - day_bbox[1]
 
     draw_border(draw, width, height, invert=invert)
+
+    # Date stays pinned 6 px from the bottom; the horizon (if any) sits 4 px
+    # above the date's top. The phrase+hour stack is vertically centered in
+    # whatever space remains between the top corner ticks and the horizon.
+    date_y = height - day_h - 6
+    horizon_y = date_y - 4
+    text_top = 8
+    text_bottom = horizon_y - 4 if progress is not None else date_y - 4
+    text_block_h = phrase_h + hour_h + 2
+    y = text_top + max(0, (text_bottom - text_top - text_block_h) // 2)
+
     draw.text(
         ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, y),
         phrase,
@@ -460,18 +517,18 @@ def render_clock(
         fill=ink,
     )
     draw.text(
-        ((width - (hour_bbox[2] - hour_bbox[0])) // 2, y + (phrase_bbox[3] - phrase_bbox[1]) + 4),
+        ((width - (hour_bbox[2] - hour_bbox[0])) // 2, y + phrase_h + 2),
         hour_str,
         font=hour_font,
         fill=ink,
     )
-    # Day line is pinned to the bottom edge as a fixed footer.
     draw.text(
-        ((width - (day_bbox[2] - day_bbox[0])) // 2, height - day_bbox[3] - 6),
+        ((width - (day_bbox[2] - day_bbox[0])) // 2, date_y),
         day_line,
         font=font_tiny,
         fill=ink,
     )
+    draw_day_progress(draw, width, height, progress, horizon_y, invert=invert)
 
 
 def sun_times(date, latitude, longitude):
