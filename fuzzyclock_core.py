@@ -559,30 +559,41 @@ def render_clock(
     hour_bbox = draw.textbbox((0, 0), hour_str, font=hour_font)
     day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
 
-    total_height = (
-        (phrase_bbox[3] - phrase_bbox[1])
-        + (hour_bbox[3] - hour_bbox[1])
-        + (day_bbox[3] - day_bbox[1])
-        + 10
-    )
-    y = (height - total_height) // 2
+    # Visual ink heights (excludes internal font leading stored in bbox[1]).
+    phrase_ink_h = phrase_bbox[3] - phrase_bbox[1]
+    hour_ink_h = hour_bbox[3] - hour_bbox[1]
+
+    # Footer: pin ink bottom 6 px above canvas bottom, regardless of font metrics.
+    day_draw_y = height - 6 - day_bbox[3]
+    footer_ink_top = day_draw_y + day_bbox[1]
+
+    # Phrase + hour block: center their ink in the space above the footer.
+    # Working in ink coordinates avoids bbox[1] artefacts shifting the visual
+    # centre — fonts like Pacifico or Charis SIL carry large top offsets that
+    # would otherwise push the block up or compress the inter-line gap.
+    LINE_GAP = 4
+    block_ink_h = phrase_ink_h + LINE_GAP + hour_ink_h
+    phrase_ink_y = (footer_ink_top - block_ink_h) // 2
+
+    # Back-calculate draw positions from desired ink positions.
+    phrase_draw_y = phrase_ink_y - phrase_bbox[1]
+    hour_draw_y = phrase_ink_y + phrase_ink_h + LINE_GAP - hour_bbox[1]
 
     draw_border(draw, width, height, invert=invert)
     draw.text(
-        ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, y),
+        ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, phrase_draw_y),
         phrase,
         font=phrase_font,
         fill=ink,
     )
     draw.text(
-        ((width - (hour_bbox[2] - hour_bbox[0])) // 2, y + (phrase_bbox[3] - phrase_bbox[1]) + 4),
+        ((width - (hour_bbox[2] - hour_bbox[0])) // 2, hour_draw_y),
         hour_str,
         font=hour_font,
         fill=ink,
     )
-    # Day line is pinned to the bottom edge as a fixed footer.
     draw.text(
-        ((width - (day_bbox[2] - day_bbox[0])) // 2, height - day_bbox[3] - 6),
+        ((width - (day_bbox[2] - day_bbox[0])) // 2, day_draw_y),
         day_line,
         font=font_tiny,
         fill=ink,
