@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import signal
@@ -8,6 +7,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from subprocess import run
 
+import yaml
 from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
@@ -61,59 +61,76 @@ SHORT_PRESS_MIN_SECONDS = 0.05  # anything shorter is debounce noise
 SHORT_PRESS_MAX_SECONDS = 2.0  # anything between MAX and LONG_PRESS is ignored
 
 
-def _resolve_dialect():
-    requested = os.environ.get("FUZZYCLOCK_DIALECT", DEFAULT_DIALECT)
-    if requested not in DIALECTS:
-        logging.warning(
-            "Unknown FUZZYCLOCK_DIALECT=%r; falling back to %r. Valid: %s",
-            requested,
-            DEFAULT_DIALECT,
-            sorted(DIALECTS.keys()),
-        )
-        return DEFAULT_DIALECT
-    return requested
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.yaml")
 
 
-def _resolve_font():
-    requested = os.environ.get("FUZZYCLOCK_FONT", DEFAULT_FONT)
-    if requested not in FONT_VARIANTS:
-        logging.warning(
-            "Unknown FUZZYCLOCK_FONT=%r; falling back to %r. Valid: %s",
-            requested,
-            DEFAULT_FONT,
-            sorted(FONT_VARIANTS.keys()),
-        )
-        return DEFAULT_FONT
-    return requested
+def _load_config(path=CONFIG_PATH):
+    """Read the YAML config and return (dialect, font, latitude, longitude).
 
-
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.json")
-
-
-def _load_coordinates(path=CONFIG_PATH):
-    """Read (latitude, longitude) from the JSON config file.
-
-    Returns (None, None) if the file is missing or malformed; the daemon
-    treats that as "after-hours mode disabled" rather than crashing.
+    Validation matches the previous JSON+env-var behaviour: unknown dialect
+    or font logs a warning and falls back to the default; missing/invalid
+    coordinates log a warning and return (None, None) so the daemon stays
+    on plain day/night instead of crashing.
     """
     try:
         with open(path) as f:
-            cfg = json.load(f)
+            cfg = yaml.safe_load(f) or {}
     except FileNotFoundError:
-        logging.warning("Config file %s not found; after-hours mode disabled.", path)
-        return None, None
-    except (OSError, json.JSONDecodeError) as exc:
-        logging.warning("Could not read %s (%s); after-hours mode disabled.", path, exc)
-        return None, None
-    try:
-        return float(cfg["latitude"]), float(cfg["longitude"])
-    except (KeyError, TypeError, ValueError) as exc:
         logging.warning(
-            "Config file %s missing/invalid latitude or longitude (%s); after-hours mode disabled.",
+            "Config file %s not found; using defaults and after-hours mode disabled.",
+            path,
+        )
+        return DEFAULT_DIALECT, DEFAULT_FONT, None, None
+    except (OSError, yaml.YAMLError) as exc:
+        logging.warning(
+            "Could not read %s (%s); using defaults and after-hours mode disabled.",
             path,
             exc,
         )
-        return None, None
+        return DEFAULT_DIALECT, DEFAULT_FONT, None, None
+
+    if not isinstance(cfg, dict):
+        logging.warning(
+            "Config file %s is not a YAML mapping; using defaults and after-hours mode disabled.",
+            path,
+        )
+        return DEFAULT_DIALECT, DEFAULT_FONT, None, None
+
+    dialect = cfg.get("dialect", DEFAULT_DIALECT)
+    if dialect not in DIALECTS:
+        logging.warning(
+            "Unknown dialect=%r in %s; falling back to %r. Valid: %s",
+            dialect,
+            path,
+            DEFAULT_DIALECT,
+            sorted(DIALECTS.keys()),
+        )
+        dialect = DEFAULT_DIALECT
+
+    font = cfg.get("font", DEFAULT_FONT)
+    if font not in FONT_VARIANTS:
+        logging.warning(
+            "Unknown font=%r in %s; falling back to %r. Valid: %s",
+            font,
+            path,
+            DEFAULT_FONT,
+            sorted(FONT_VARIANTS.keys()),
+        )
+        font = DEFAULT_FONT
+
+    lat_raw = cfg.get("latitude")
+    lon_raw = cfg.get("longitude")
+    if lat_raw is None and lon_raw is None:
+        return dialect, font, None, None
+    try:
+        return dialect, font, float(lat_raw), float(lon_raw)
+    except (TypeError, ValueError) as exc:
+        logging.warning(
+            "Config file %s has invalid latitude/longitude (%s); after-hours mode disabled.",
+            path,
+            exc,
+        )
+        return dialect, font, None, None
 
 
 # Daemon config. These are populated in main() rather than at import time so
@@ -390,13 +407,11 @@ def main():
 
     # Load configuration here rather than at import time so tests can import
     # the module without triggering warnings or filesystem reads. After-hours
-    # mode is location-driven via fuzzyclock_config.json next to this file;
+    # mode is location-driven via fuzzyclock_config.yaml next to this file;
     # if it's missing or malformed, the feature stays off and we fall back
     # to plain day/night.
     global DIALECT, FONT_VARIANT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
-    DIALECT = _resolve_dialect()
-    FONT_VARIANT = _resolve_font()
-    LATITUDE, LONGITUDE = _load_coordinates()
+    DIALECT, FONT_VARIANT, LATITUDE, LONGITUDE = _load_config()
     AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
     _init_fonts()
 

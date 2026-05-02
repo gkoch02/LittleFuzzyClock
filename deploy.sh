@@ -38,6 +38,7 @@ apt-get install -y \
     fonts-jetbrains-mono \
     fonts-fredoka \
     python3-pil \
+    python3-yaml \
     python3-gpiozero \
     python3-spidev \
     python3-rpi.gpio

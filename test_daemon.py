@@ -1,23 +1,24 @@
 """Unit tests for the pure helpers in fuzzyclock_daemon.
 
 Covers `current_mode` (across the day/night/after-hours branch table),
-`_sleep_to_next_tick` (boundary math), `_load_coordinates` (config-file
-error paths), `_resolve_dialect` (environment-variable handling), the
-button thread's press classification and supervisor restart logic, the
-shutdown procedure's independent guards, the cross-thread render counter,
-and the EPD-touching helpers via a fake panel.
+`_sleep_to_next_tick` (boundary math), `_load_config` (YAML config-file
+error paths and dialect/font/coordinate validation), the button thread's
+press classification and supervisor restart logic, the shutdown procedure's
+independent guards, the cross-thread render counter, and the EPD-touching
+helpers via a fake panel.
 
 The daemon's hardware imports are guarded (see fuzzyclock_daemon top-of-file),
 so this test file imports the module directly without stubbing GPIO/EPD.
 """
 
-import json
 import os
 import tempfile
 import threading
 import unittest
 from datetime import date, datetime, timezone
 from unittest import mock
+
+import yaml
 
 import fuzzyclock_daemon as d
 
@@ -149,12 +150,15 @@ class SleepToNextTickTests(unittest.TestCase):
             self.assertEqual(d._sleep_to_next_tick(60), 18.0)
 
 
-class LoadCoordinatesTests(unittest.TestCase):
+class LoadConfigTests(unittest.TestCase):
     def _write(self, contents):
-        path = os.path.join(self.tmp.name, "fuzzyclock_config.json")
+        path = os.path.join(self.tmp.name, "fuzzyclock_config.yaml")
         with open(path, "w") as f:
             f.write(contents)
         return path
+
+    def _write_yaml(self, mapping):
+        return self._write(yaml.safe_dump(mapping))
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -162,61 +166,95 @@ class LoadCoordinatesTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_missing_file_disables_after_hours(self):
-        missing = os.path.join(self.tmp.name, "does_not_exist.json")
-        self.assertEqual(d._load_coordinates(missing), (None, None))
+    def test_missing_file_returns_defaults(self):
+        missing = os.path.join(self.tmp.name, "does_not_exist.yaml")
+        self.assertEqual(
+            d._load_config(missing),
+            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+        )
 
-    def test_malformed_json_disables_after_hours(self):
-        path = self._write("{not valid json")
-        self.assertEqual(d._load_coordinates(path), (None, None))
+    def test_malformed_yaml_returns_defaults(self):
+        path = self._write("dialect: classic\n  - oops: not valid")
+        self.assertEqual(
+            d._load_config(path),
+            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+        )
 
-    def test_missing_keys_disables_after_hours(self):
-        path = self._write(json.dumps({"latitude": 51.5}))  # no longitude
-        self.assertEqual(d._load_coordinates(path), (None, None))
+    def test_empty_file_returns_defaults(self):
+        path = self._write("")
+        self.assertEqual(
+            d._load_config(path),
+            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+        )
 
-    def test_non_numeric_values_disable_after_hours(self):
-        path = self._write(json.dumps({"latitude": "north", "longitude": -0.1}))
-        self.assertEqual(d._load_coordinates(path), (None, None))
+    def test_non_mapping_yaml_returns_defaults(self):
+        path = self._write("- not\n- a mapping\n")
+        with self.assertLogs("root", level="WARNING"):
+            self.assertEqual(
+                d._load_config(path),
+                (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+            )
 
-    def test_valid_config_returns_floats(self):
-        path = self._write(json.dumps({"latitude": 51.5074, "longitude": -0.1278}))
-        lat, lon = d._load_coordinates(path)
+    def test_unknown_dialect_falls_back_with_warning(self):
+        path = self._write_yaml({"dialect": "pirate"})
+        with self.assertLogs("root", level="WARNING") as cm:
+            dialect, font, lat, lon = d._load_config(path)
+        self.assertEqual(dialect, d.DEFAULT_DIALECT)
+        self.assertEqual(font, d.DEFAULT_FONT)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+        self.assertTrue(any("pirate" in line for line in cm.output))
+
+    def test_unknown_font_falls_back_with_warning(self):
+        path = self._write_yaml({"font": "comic-sans"})
+        with self.assertLogs("root", level="WARNING") as cm:
+            dialect, font, _lat, _lon = d._load_config(path)
+        self.assertEqual(dialect, d.DEFAULT_DIALECT)
+        self.assertEqual(font, d.DEFAULT_FONT)
+        self.assertTrue(any("comic-sans" in line for line in cm.output))
+
+    def test_known_dialect_and_font_are_returned(self):
+        path = self._write_yaml({"dialect": "shakespeare", "font": "roboto-slab"})
+        dialect, font, lat, lon = d._load_config(path)
+        self.assertEqual(dialect, "shakespeare")
+        self.assertEqual(font, "roboto-slab")
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_valid_full_config(self):
+        path = self._write_yaml(
+            {
+                "dialect": "shakespeare",
+                "font": "roboto-slab",
+                "latitude": 51.5074,
+                "longitude": -0.1278,
+            }
+        )
+        dialect, font, lat, lon = d._load_config(path)
+        self.assertEqual(dialect, "shakespeare")
+        self.assertEqual(font, "roboto-slab")
         self.assertAlmostEqual(lat, 51.5074)
         self.assertAlmostEqual(lon, -0.1278)
 
+    def test_missing_coords_disables_after_hours(self):
+        path = self._write_yaml({"dialect": "classic", "font": "dejavu"})
+        _dialect, _font, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
 
-class ResolveDialectTests(unittest.TestCase):
-    def test_unset_env_var_falls_back_to_default(self):
-        with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("FUZZYCLOCK_DIALECT", None)
-            self.assertEqual(d._resolve_dialect(), d.DEFAULT_DIALECT)
+    def test_partial_coords_disables_after_hours_with_warning(self):
+        path = self._write_yaml({"latitude": 51.5})  # no longitude
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
 
-    def test_known_dialect_is_returned(self):
-        with mock.patch.dict(os.environ, {"FUZZYCLOCK_DIALECT": "shakespeare"}):
-            self.assertEqual(d._resolve_dialect(), "shakespeare")
-
-    def test_unknown_dialect_falls_back_with_warning(self):
-        with mock.patch.dict(os.environ, {"FUZZYCLOCK_DIALECT": "pirate"}):
-            with self.assertLogs("root", level="WARNING") as cm:
-                self.assertEqual(d._resolve_dialect(), d.DEFAULT_DIALECT)
-            self.assertTrue(any("pirate" in line for line in cm.output))
-
-
-class ResolveFontTests(unittest.TestCase):
-    def test_unset_env_var_falls_back_to_default(self):
-        with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("FUZZYCLOCK_FONT", None)
-            self.assertEqual(d._resolve_font(), d.DEFAULT_FONT)
-
-    def test_known_font_is_returned(self):
-        with mock.patch.dict(os.environ, {"FUZZYCLOCK_FONT": "roboto-slab"}):
-            self.assertEqual(d._resolve_font(), "roboto-slab")
-
-    def test_unknown_font_falls_back_with_warning(self):
-        with mock.patch.dict(os.environ, {"FUZZYCLOCK_FONT": "comic-sans"}):
-            with self.assertLogs("root", level="WARNING") as cm:
-                self.assertEqual(d._resolve_font(), d.DEFAULT_FONT)
-            self.assertTrue(any("comic-sans" in line for line in cm.output))
+    def test_non_numeric_coords_disable_after_hours_with_warning(self):
+        path = self._write_yaml({"latitude": "north", "longitude": -0.1})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
 
 
 class _FakeButton:
