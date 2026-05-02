@@ -72,11 +72,10 @@ Pick one with `--dialect`:
 python3 fuzzyClock2.py --dry-run --dialect shakespeare --output preview.png
 ```
 
-The daemon reads the same setting from the `FUZZYCLOCK_DIALECT` environment variable. To change it on the Pi, add a line to the systemd unit and restart:
+The daemon reads the same setting from the `dialect:` field in `fuzzyclock_config.yaml` (next to the daemon). To change it on the Pi, edit that file and restart the service:
 
-```ini
-[Service]
-Environment=FUZZYCLOCK_DIALECT=shakespeare
+```yaml
+dialect: shakespeare
 ```
 
 Unknown values fall back to `classic` with a warning in the daemon log.
@@ -102,11 +101,10 @@ Pick one with `--font`:
 python3 fuzzyClock2.py --dry-run --font roboto-slab --output preview.png
 ```
 
-The daemon reads the same setting from the `FUZZYCLOCK_FONT` environment variable:
+The daemon reads the same setting from the `font:` field in `fuzzyclock_config.yaml`:
 
-```ini
-[Service]
-Environment=FUZZYCLOCK_FONT=roboto-slab
+```yaml
+font: roboto-slab
 ```
 
 Unknown values fall back to `dejavu` with a warning in the daemon log. On macOS the dev script falls back to the nearest stock equivalent (Times for the serif variants, Menlo for the mono, Arial Rounded for `fredoka`); the actual variant only renders authentically on the Pi.
@@ -115,16 +113,14 @@ To use a font that isn't packaged for apt, drop a TTF into a `fonts/` directory 
 
 ## After-hours mode
 
-After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.json`:
+After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.yaml` (the same file that holds `dialect:` and `font:`):
 
-```json
-{
-  "latitude": 37.2872,
-  "longitude": -121.9500
-}
+```yaml
+latitude: 37.2872
+longitude: -121.9500
 ```
 
-Edit those two numbers to match your location and restart the service. If the file is missing or malformed, after-hours mode stays off and the clock keeps the original day/night behaviour.
+Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is missing or malformed, after-hours mode stays off too.
 
 The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked once per refresh tick (every 5 minutes), so the swap happens at the next tick after the sun crosses the horizon.
 

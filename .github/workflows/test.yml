@@ -44,11 +44,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends fonts-dejavu-core
 
-      - name: Install Pillow
+      - name: Install Pillow and PyYAML
         # gpiozero / RPi.GPIO / spidev aren't installed: the daemon's hardware
         # imports are guarded so test_daemon* can import fuzzyclock_daemon
         # without them, and fuzzyClock2.py handles the missing-EPD case.
-        run: pip install "Pillow>=10,<13"
+        run: pip install "Pillow>=10,<13" "PyYAML>=6,<7"
 
       - name: Run tests
         run: python -m unittest discover -v

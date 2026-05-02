@@ -3,6 +3,7 @@
 # Upper bounds guard against future major-version breakage; widen as
 # newer majors are validated against the daemon and --dry-run.
 Pillow>=10,<13
+PyYAML>=6,<7
 gpiozero>=1.6,<3
 spidev>=3.5,<4
 RPi.GPIO>=0.7,<1

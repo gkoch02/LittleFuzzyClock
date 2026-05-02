@@ -1,0 +1,13 @@
+# Time phrasing.
+# Options: classic, shakespeare, klingon, belter, german, hal, cthulhu, latin
+dialect: classic
+
+# Font variant.
+# Options: dejavu, dejavu-serif, liberation-serif, roboto-slab,
+#          cantarell, ubuntu, jetbrains-mono, fredoka
+font: dejavu
+
+# Coordinates for after-hours mode (display inverts after sunset).
+# Leave both null to disable; the clock will use plain day/night only.
+latitude: 37.2872
+longitude: -121.9500
