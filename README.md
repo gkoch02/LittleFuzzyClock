@@ -82,18 +82,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## Fonts
 
-Eight display fonts ship pre-installed by `deploy.sh`, all chosen for legibility on a 122×250 e-ink panel. Each preview shows the same scene (`9:15` in the `classic` dialect) so you can compare side by side:
-
-| Variant            | Preview                                                                                  | Package                | Character                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------- |
-| `dejavu` (default) | ![dejavu preview](docs/preview-dejavu.png)                                               | `fonts-dejavu-core`    | Clean humanist sans — high x-height, broad Unicode.        |
-| `dejavu-serif`     | ![dejavu-serif preview](docs/preview-dejavu-serif.png)                                   | `fonts-dejavu`         | Elegant transitional serif companion to DejaVu Sans.       |
-| `liberation-serif` | ![liberation-serif preview](docs/preview-liberation-serif.png)                           | `fonts-liberation2`    | Times-metric serif — newspaper feel.                       |
-| `roboto-slab`      | ![roboto-slab preview](docs/preview-roboto-slab.png)                                     | `fonts-roboto-slab`    | Chunky slab serif; renders especially crisply on e-ink.    |
-| `cantarell`        | ![cantarell preview](docs/preview-cantarell.png)                                         | `fonts-cantarell`      | GNOME's humanist sans; tall x-height, friendly curves.     |
-| `ubuntu`           | ![ubuntu preview](docs/preview-ubuntu.png)                                               | `fonts-ubuntu`         | Distinctive warm sans with subtle calligraphic terminals.  |
-| `jetbrains-mono`   | ![jetbrains-mono preview](docs/preview-jetbrains-mono.png)                               | `fonts-jetbrains-mono` | Modern monospaced typewriter look.                         |
-| `fredoka`          | ![fredoka preview](docs/preview-fredoka.png)                                             | `fonts-fredoka` (or vendored `fonts/Fredoka.ttf`) | Rounded display font — soft, friendly geometric shapes. |
+Nineteen font variants are available — seven installed automatically by `deploy.sh`, five open-source fonts vendored in `fonts/`, and seven commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
 
 Pick one with `--font`:
 
@@ -107,9 +96,7 @@ The daemon reads the same setting from the `font:` field in `fuzzyclock_config.y
 font: roboto-slab
 ```
 
-Unknown values fall back to `dejavu` with a warning in the daemon log. On macOS the dev script falls back to the nearest stock equivalent (Times for the serif variants, Menlo for the mono, Arial Rounded for `fredoka`); the actual variant only renders authentically on the Pi.
-
-To use a font that isn't packaged for apt, drop a TTF into a `fonts/` directory at the repo root — the `fredoka` variant looks for `fonts/Fredoka.ttf` first, before its apt path.
+Unknown values fall back to `dejavu` with a warning in the daemon log.
 
 ## After-hours mode
 
