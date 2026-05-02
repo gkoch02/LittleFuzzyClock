@@ -20,45 +20,169 @@ Unknown values fall back to `dejavu` with a warning in the daemon log.
 
 ## Apt-installed
 
-`deploy.sh` installs these automatically. No extra steps needed on the Pi.
+`deploy.sh` installs these automatically — no extra steps needed on the Pi.
 
-| Variant | Preview | Package | Character |
-|---------|---------|---------|-----------|
-| `dejavu` *(default)* | ![dejavu](preview-dejavu.png) | `fonts-dejavu-core` | Clean humanist sans — high x-height, broad Unicode coverage. |
-| `dejavu-serif` | ![dejavu-serif](preview-dejavu-serif.png) | `fonts-dejavu` | Elegant transitional serif companion to DejaVu Sans. |
-| `liberation-serif` | ![liberation-serif](preview-liberation-serif.png) | `fonts-liberation2` | Times-metric serif — newspaper feel, very readable at small sizes. |
-| `roboto-slab` | ![roboto-slab](preview-roboto-slab.png) | `fonts-roboto-slab` | Chunky slab serif; renders especially crisply on e-ink. |
-| `cantarell` | ![cantarell](preview-cantarell.png) | `fonts-cantarell` | GNOME's humanist sans; tall x-height, friendly curves. |
-| `ubuntu` | ![ubuntu](preview-ubuntu.png) | `fonts-ubuntu` | Distinctive warm sans with subtle calligraphic terminals. |
-| `jetbrains-mono` | ![jetbrains-mono](preview-jetbrains-mono.png) | `fonts-jetbrains-mono` | Modern monospaced; typewriter personality on e-ink. |
+<table>
+<tr>
+<td align="center">
+<img src="preview-dejavu.png" alt="dejavu"><br><br>
+<strong><code>dejavu</code></strong> <em>(default)</em><br>
+<sup>fonts-dejavu-core</sup><br>
+Clean humanist sans — high x-height, broad Unicode coverage.
+</td>
+<td align="center">
+<img src="preview-dejavu-serif.png" alt="dejavu-serif"><br><br>
+<strong><code>dejavu-serif</code></strong><br>
+<sup>fonts-dejavu</sup><br>
+Elegant transitional serif companion to DejaVu Sans.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-liberation-serif.png" alt="liberation-serif"><br><br>
+<strong><code>liberation-serif</code></strong><br>
+<sup>fonts-liberation2</sup><br>
+Times-metric serif — newspaper feel, very readable at small sizes.
+</td>
+<td align="center">
+<img src="preview-roboto-slab.png" alt="roboto-slab"><br><br>
+<strong><code>roboto-slab</code></strong><br>
+<sup>fonts-roboto-slab</sup><br>
+Chunky slab serif — renders especially crisply on e-ink.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-cantarell.png" alt="cantarell"><br><br>
+<strong><code>cantarell</code></strong><br>
+<sup>fonts-cantarell</sup><br>
+GNOME's humanist sans — tall x-height, friendly curves.
+</td>
+<td align="center">
+<img src="preview-ubuntu.png" alt="ubuntu"><br><br>
+<strong><code>ubuntu</code></strong><br>
+<sup>fonts-ubuntu</sup><br>
+Distinctive warm sans with subtle calligraphic terminals.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-jetbrains-mono.png" alt="jetbrains-mono"><br><br>
+<strong><code>jetbrains-mono</code></strong><br>
+<sup>fonts-jetbrains-mono</sup><br>
+Modern monospaced — typewriter personality on e-ink.
+</td>
+<td></td>
+</tr>
+</table>
 
 ---
 
 ## Open-source, vendored
 
-These ship in the `fonts/` directory and work on any machine without an apt install. License noted beside each.
+These ship in the `fonts/` directory and work on any machine without an apt install. All are [OFL](https://openfontlicense.org/) licensed unless noted.
 
-| Variant | Preview | License | Source |
-|---------|---------|---------|--------|
-| `fredoka` | ![fredoka](preview-fredoka.png) | OFL | Variable font; `fonts/Fredoka.ttf` (falls back to `fonts-fredoka` apt package). Rounded display — soft, friendly geometric shapes. |
-| `bitter` | ![bitter](preview-bitter.png) | OFL | Variable font; `fonts/Bitter-Bold.ttf` (Google Fonts). High-contrast slab serif with strong vertical stress — confident on e-ink. |
-| `literata` | ![literata](preview-literata.png) | OFL | Variable font; `fonts/Literata-Bold.ttf` (Google Fonts / Google Books). Optically sized book serif; refined and even-toned. |
-| `libertinus` | ![libertinus](preview-libertinus.png) | OFL | Static OTF; `fonts/LibertinusSerif-Bold.otf` (v7.051). Open successor to Linux Libertine — classical book serif with broad glyph coverage. |
-| `charis-sil` | ![charis-sil](preview-charis-sil.png) | SIL OFL | Static TTF; `fonts/CharisSIL-Bold.ttf` (SIL International). Warm humanist serif with generous x-height; also installable via `fonts-sil-charis`. |
-| `playfair` | ![playfair](preview-playfair.png) | OFL | Variable font; `fonts/PlayfairDisplay-Bold.ttf` (Google Fonts). High-contrast display serif — dramatic stroke variation, elegant and legible at large sizes. |
-| `pacifico` | ![pacifico](preview-pacifico.png) | OFL | Static TTF; `fonts/Pacifico-Regular.ttf` (Google Fonts). Casual brush-script — maximally playful, reads beautifully when the display shows just a handful of words. |
-| `lilita-one` | ![lilita-one](preview-lilita-one.png) | OFL | Static TTF; `fonts/LilitaOne-Regular.ttf` (Google Fonts). Chunky Latin display face — very bold, almost cartoonish in the best way. |
-| `righteous` | ![righteous](preview-righteous.png) | OFL | Static TTF; `fonts/Righteous-Regular.ttf` (Google Fonts). Art Deco geometric sans — retro-modern personality with even strokes. |
-| `comfortaa` | ![comfortaa](preview-comfortaa.png) | OFL | Variable font; `fonts/Comfortaa-Bold.ttf` (Google Fonts). Rounded geometric sans — warm and friendly; also installable as `fonts-comfortaa` (static Bold used as system fallback). |
-| `nunito` | ![nunito](preview-nunito.png) | OFL | Variable font; `fonts/Nunito-Bold.ttf` (Google Fonts). Rounded sans with a generous x-height — approachable and legible at any display size. |
-| `jost` | ![jost](preview-jost.png) | OFL | Variable font; `fonts/Jost-Bold.ttf` (Google Fonts). Geometric sans inspired by Futura — clean and modern with subtle character in the `a` and `t`. |
-| `bangers` | ![bangers](preview-bangers.png) | OFL | Static TTF; `fonts/Bangers-Regular.ttf` (Google Fonts). Comic-book display font — bold, condensed, pop-art energy. The narrow width fits longer phrases like "twenty-five past" comfortably. |
+<table>
+<tr>
+<td align="center">
+<img src="preview-fredoka.png" alt="fredoka"><br><br>
+<strong><code>fredoka</code></strong><br>
+<sup>OFL · variable · apt: fonts-fredoka</sup><br>
+Rounded display — soft, friendly geometric shapes.
+</td>
+<td align="center">
+<img src="preview-bitter.png" alt="bitter"><br><br>
+<strong><code>bitter</code></strong><br>
+<sup>OFL · variable</sup><br>
+High-contrast slab serif — confident vertical stress on e-ink.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-literata.png" alt="literata"><br><br>
+<strong><code>literata</code></strong><br>
+<sup>OFL · variable</sup><br>
+Optically sized book serif — refined and even-toned.
+</td>
+<td align="center">
+<img src="preview-libertinus.png" alt="libertinus"><br><br>
+<strong><code>libertinus</code></strong><br>
+<sup>OFL · static OTF</sup><br>
+Open successor to Linux Libertine — classical book serif.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-charis-sil.png" alt="charis-sil"><br><br>
+<strong><code>charis-sil</code></strong><br>
+<sup>SIL OFL · static · apt: fonts-sil-charis</sup><br>
+Warm humanist serif — generous x-height, broad glyph coverage.
+</td>
+<td align="center">
+<img src="preview-playfair.png" alt="playfair"><br><br>
+<strong><code>playfair</code></strong><br>
+<sup>OFL · variable</sup><br>
+High-contrast display serif — dramatic stroke variation.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-pacifico.png" alt="pacifico"><br><br>
+<strong><code>pacifico</code></strong><br>
+<sup>OFL · static</sup><br>
+Casual brush-script — maximally playful.
+</td>
+<td align="center">
+<img src="preview-lilita-one.png" alt="lilita-one"><br><br>
+<strong><code>lilita-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Chunky Latin display — bold and cartoonish in the best way.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-righteous.png" alt="righteous"><br><br>
+<strong><code>righteous</code></strong><br>
+<sup>OFL · static</sup><br>
+Art Deco geometric sans — retro-modern personality.
+</td>
+<td align="center">
+<img src="preview-comfortaa.png" alt="comfortaa"><br><br>
+<strong><code>comfortaa</code></strong><br>
+<sup>OFL · variable · apt: fonts-comfortaa</sup><br>
+Rounded geometric sans — warm and friendly.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-nunito.png" alt="nunito"><br><br>
+<strong><code>nunito</code></strong><br>
+<sup>OFL · variable</sup><br>
+Rounded sans — generous x-height, approachable at any size.
+</td>
+<td align="center">
+<img src="preview-jost.png" alt="jost"><br><br>
+<strong><code>jost</code></strong><br>
+<sup>OFL · variable</sup><br>
+Geometric sans inspired by Futura — clean and modern.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-bangers.png" alt="bangers"><br><br>
+<strong><code>bangers</code></strong><br>
+<sup>OFL · static</sup><br>
+Comic-book display — bold, condensed, pop-art energy.
+</td>
+<td></td>
+</tr>
+</table>
 
 ---
 
 ## Commercial — bring your own file
 
-These variants are registered but need a licensed copy of the font dropped into the `fonts/` directory. The daemon will use the macOS system fallback (Georgia Bold or Times New Roman Bold) for off-Pi dev renders when no file is present.
+Drop a licensed copy of the font into `fonts/`. The daemon falls back to a macOS system font (Georgia Bold or Times New Roman Bold) for dev renders when no file is present.
 
 | Variant | File to drop in `fonts/` | Publisher | Character |
 |---------|--------------------------|-----------|-----------|
