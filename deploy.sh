@@ -27,16 +27,9 @@ fi
 echo "==> Installing system packages..."
 # Python deps come from apt rather than pip so we don't collide with PEP 668
 # (externally-managed-environment) on Raspberry Pi OS Bookworm+.
+# Fonts are vendored under fonts/ so no font packages are required here.
 apt-get update -qq
 apt-get install -y \
-    fonts-dejavu-core \
-    fonts-dejavu \
-    fonts-liberation2 \
-    fonts-roboto-slab \
-    fonts-cantarell \
-    fonts-ubuntu \
-    fonts-jetbrains-mono \
-    fonts-fredoka \
     python3-pil \
     python3-yaml \
     python3-gpiozero \
