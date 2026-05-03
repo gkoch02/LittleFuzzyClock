@@ -8,6 +8,19 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 
 ![Preview of the fuzzy clock display](docs/preview.png)
 
+## Contents
+
+- [Hardware](#hardware)
+- [Tested environment](#tested-environment)
+- [Behaviour](#behaviour)
+- [Rebuilding from scratch](#rebuilding-from-scratch)
+- [Testing without hardware](#testing-without-hardware)
+- [Phrasing personalities](#phrasing-personalities)
+- [Fonts](#fonts)
+- [After-hours mode](#after-hours-mode)
+- [Files](#files)
+- [License](#license)
+
 ## Hardware
 
 - Raspberry Pi Zero (or any Pi with SPI)
