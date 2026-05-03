@@ -405,3 +405,82 @@ Distressed typewriter — uneven inking, ribbon strikes.
 </td>
 </tr>
 </table>
+
+---
+
+## Notebook & hand-drawn
+
+Ballpoint, marker, classroom print — neat hand-made character that still reads cleanly at clock size.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-caveat.png" alt="caveat"><br><br>
+<strong><code>caveat</code></strong><br>
+<sup>OFL · variable</sup><br>
+Connected ballpoint cursive — quick personal notes.
+</td>
+<td align="center">
+<img src="preview-kalam.png" alt="kalam"><br><br>
+<strong><code>kalam</code></strong><br>
+<sup>OFL · static</sup><br>
+Rounded everyday handwriting — Indian Type Foundry.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-architects-daughter.png" alt="architects-daughter"><br><br>
+<strong><code>architects-daughter</code></strong><br>
+<sup>OFL · static</sup><br>
+Neat block-letter print — drafting-style hand.
+</td>
+<td align="center">
+<img src="preview-indie-flower.png" alt="indie-flower"><br><br>
+<strong><code>indie-flower</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Bouncy uneven print — friendly and informal.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-patrick-hand.png" alt="patrick-hand"><br><br>
+<strong><code>patrick-hand</code></strong><br>
+<sup>OFL · static</sup><br>
+Open clean handwriting — very legible at small sizes.
+</td>
+<td align="center">
+<img src="preview-shadows-into-light.png" alt="shadows-into-light"><br><br>
+<strong><code>shadows-into-light</code></strong><br>
+<sup>OFL · static</sup><br>
+Light marker on paper — airy, softly slanted.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-gloria-hallelujah.png" alt="gloria-hallelujah"><br><br>
+<strong><code>gloria-hallelujah</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Loose kid-like print — wobbly baseline, joyful.
+</td>
+<td align="center">
+<img src="preview-amatic-sc.png" alt="amatic-sc"><br><br>
+<strong><code>amatic-sc</code></strong><br>
+<sup>OFL · static</sup><br>
+Tall thin all-caps handwritten — fits long phrases.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-reenie-beanie.png" alt="reenie-beanie"><br><br>
+<strong><code>reenie-beanie</code></strong><br>
+<sup>OFL · static</sup><br>
+Slanted notebook scribble — back-of-the-book doodle.
+</td>
+<td align="center">
+<img src="preview-homemade-apple.png" alt="homemade-apple"><br><br>
+<strong><code>homemade-apple</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Quick handwritten cursive — looped and personal.
+</td>
+</tr>
+</table>

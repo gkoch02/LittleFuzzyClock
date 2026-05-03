@@ -272,6 +272,51 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    # Hand-drawn / notebook handwriting — OFL/Apache, vendored in fonts/.
+    # macOS fallbacks are deliberately approximate; the personality only
+    # reads with the vendored file present.
+    "caveat": [
+        os.path.join(_VENDORED_FONT_DIR, "Caveat-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+    ],
+    "kalam": [
+        os.path.join(_VENDORED_FONT_DIR, "Kalam-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "architects-daughter": [
+        os.path.join(_VENDORED_FONT_DIR, "ArchitectsDaughter-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    "indie-flower": [
+        os.path.join(_VENDORED_FONT_DIR, "IndieFlower-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    "patrick-hand": [
+        os.path.join(_VENDORED_FONT_DIR, "PatrickHand-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    "shadows-into-light": [
+        os.path.join(_VENDORED_FONT_DIR, "ShadowsIntoLight-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "gloria-hallelujah": [
+        os.path.join(_VENDORED_FONT_DIR, "GloriaHallelujah-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    "amatic-sc": [
+        os.path.join(_VENDORED_FONT_DIR, "AmaticSC-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "reenie-beanie": [
+        os.path.join(_VENDORED_FONT_DIR, "ReenieBeanie-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "homemade-apple": [
+        os.path.join(_VENDORED_FONT_DIR, "HomemadeApple-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"

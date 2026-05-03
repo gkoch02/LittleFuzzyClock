@@ -7,6 +7,9 @@ dialect: classic
 #                cantarell, ubuntu, jetbrains-mono
 # Vendored OFL:  fredoka, bitter, literata, libertinus, charis-sil, playfair,
 #                pacifico, lilita-one, righteous, comfortaa, nunito, jost, bangers
+# Hand-drawn:    caveat, kalam, architects-daughter, indie-flower, patrick-hand,
+#                shadows-into-light, gloria-hallelujah, amatic-sc, reenie-beanie,
+#                homemade-apple
 # Commercial:    bookerly, minion, livory, chaparral, arno, malabar, pigeonette
 # Special:       random (pick a vendored variant fresh each time the phrase changes)
 font: dejavu
