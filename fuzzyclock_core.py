@@ -11,6 +11,7 @@ from PIL import ImageFont
 _VENDORED_FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 
 FONT_CANDIDATES = [
+    os.path.join(_VENDORED_FONT_DIR, "DejaVuSans-Bold.ttf"),  # vendored
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Raspberry Pi / Debian
     "/Library/Fonts/Arial Bold.ttf",  # macOS
     "/System/Library/Fonts/Supplemental/Arial Bold.ttf",  # macOS (Ventura+)
@@ -25,34 +26,39 @@ FONT_CANDIDATES = [
 FONT_VARIANTS = {
     "dejavu": FONT_CANDIDATES,
     "dejavu-serif": [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",  # fonts-dejavu
+        os.path.join(_VENDORED_FONT_DIR, "DejaVuSerif-Bold.ttf"),  # vendored
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
         "/Library/Fonts/Times New Roman Bold.ttf",
     ],
     "liberation-serif": [
-        "/usr/share/fonts/truetype/liberation2/LiberationSerif-Bold.ttf",  # fonts-liberation2
+        os.path.join(_VENDORED_FONT_DIR, "LiberationSerif-Bold.ttf"),  # vendored
+        "/usr/share/fonts/truetype/liberation2/LiberationSerif-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",  # older Debian layout
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
     ],
     "roboto-slab": [
-        # fonts-roboto-slab Ubuntu/recent path (.otf), Bookworm path (.ttf), older layout
+        os.path.join(_VENDORED_FONT_DIR, "RobotoSlab-Bold.otf"),  # vendored
         "/usr/share/fonts/opentype/roboto/slab/RobotoSlab-Bold.otf",
         "/usr/share/fonts/truetype/roboto/slab/RobotoSlab-Bold.ttf",
         "/usr/share/fonts/truetype/roboto-slab/RobotoSlab-Bold.ttf",
         "/System/Library/Fonts/Supplemental/Courier New Bold.ttf",
     ],
     "cantarell": [
-        "/usr/share/fonts/opentype/cantarell/Cantarell-Bold.otf",  # fonts-cantarell (Ubuntu/recent)
-        "/usr/share/fonts/cantarell/Cantarell-Bold.otf",  # fonts-cantarell (older Debian)
+        os.path.join(_VENDORED_FONT_DIR, "Cantarell-Bold.otf"),  # vendored
+        "/usr/share/fonts/opentype/cantarell/Cantarell-Bold.otf",
+        "/usr/share/fonts/cantarell/Cantarell-Bold.otf",  # older Debian
         "/System/Library/Fonts/Supplemental/Verdana Bold.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
     "ubuntu": [
-        "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",  # fonts-ubuntu
+        os.path.join(_VENDORED_FONT_DIR, "Ubuntu-Bold.ttf"),  # vendored
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
         "/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf",
     ],
     "jetbrains-mono": [
-        "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",  # fonts-jetbrains-mono
+        os.path.join(_VENDORED_FONT_DIR, "JetBrainsMono-Bold.ttf"),  # vendored
+        "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",
         "/System/Library/Fonts/Menlo.ttc",
         "/System/Library/Fonts/Monaco.ttf",
     ],
@@ -99,8 +105,8 @@ FONT_VARIANTS = {
         "/Library/Fonts/Georgia Bold.ttf",
     ],
     "charis-sil": [
-        "/usr/share/fonts/truetype/charis/CharisSIL-Bold.ttf",  # fonts-sil-charis
-        os.path.join(_VENDORED_FONT_DIR, "CharisSIL-Bold.ttf"),
+        os.path.join(_VENDORED_FONT_DIR, "CharisSIL-Bold.ttf"),  # vendored
+        "/usr/share/fonts/truetype/charis/CharisSIL-Bold.ttf",
         "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
         "/Library/Fonts/Georgia Bold.ttf",
     ],
