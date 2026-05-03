@@ -160,6 +160,11 @@ FONT_VARIANTS = {
         os.path.join(_VENDORED_FONT_DIR, "LilitaOne-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
     ],
+    "modak": [
+        os.path.join(_VENDORED_FONT_DIR, "Modak-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
     "righteous": [
         os.path.join(_VENDORED_FONT_DIR, "Righteous-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Futura.ttc",
@@ -228,6 +233,11 @@ FONT_VARIANTS = {
     "pirata-one": [
         os.path.join(_VENDORED_FONT_DIR, "PirataOne-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+    ],
+    "almendra-display": [
+        os.path.join(_VENDORED_FONT_DIR, "AlmendraDisplay-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
     ],
     "bungee": [
         os.path.join(_VENDORED_FONT_DIR, "Bungee-Regular.ttf"),
@@ -372,6 +382,11 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Futura.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    "space-grotesk": [
+        os.path.join(_VENDORED_FONT_DIR, "SpaceGrotesk-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
     # Slab serif — OFL, vendored in fonts/. Sturdy bracketed serifs across the
     # full personality range: geometric precision to humanist warmth. macOS
     # fallback uses Georgia Bold (the closest stock slab-adjacent serif); the
@@ -437,6 +452,87 @@ FONT_VARIANTS = {
         os.path.join(_VENDORED_FONT_DIR, "Exo2-VF.ttf"),  # vendored, variable
         "/System/Library/Fonts/Supplemental/Futura.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Heavy display / cartoon — OFL, vendored in fonts/. Bold, chunky, or
+    # retro-comic personalities. macOS fallbacks are Impact/Helvetica; the
+    # full personality only reads with the vendored file present.
+    "luckiest-guy": [
+        os.path.join(_VENDORED_FONT_DIR, "LuckiestGuy-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "titan-one": [
+        os.path.join(_VENDORED_FONT_DIR, "TitanOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "boogaloo": [
+        os.path.join(_VENDORED_FONT_DIR, "Boogaloo-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Artistic & unique display — OFL, vendored in fonts/. Chosen for visual
+    # impact over legibility. macOS fallbacks are approximate; personality only
+    # reads with the vendored file present.
+    "bungee-shade": [
+        os.path.join(_VENDORED_FONT_DIR, "BungeeShade-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "faster-one": [
+        os.path.join(_VENDORED_FONT_DIR, "FasterOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "shrikhand": [
+        os.path.join(_VENDORED_FONT_DIR, "Shrikhand-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "henny-penny": [
+        os.path.join(_VENDORED_FONT_DIR, "HennyPenny-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "freckle-face": [
+        os.path.join(_VENDORED_FONT_DIR, "FrekleFace-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rye": [
+        os.path.join(_VENDORED_FONT_DIR, "Rye-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Textured / experimental — OFL, vendored in fonts/. Letterforms filled
+    # with dirt or maze patterns; renders as textured fills on e-ink.
+    "rubik-dirt": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikDirt-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-maze": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikMaze-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Ornate / Art Nouveau — OFL, vendored in fonts/. Decorative Roman caps,
+    # Art Deco inline, and calligraphic elegance. macOS fallbacks are Georgia/
+    # Times; personality only reads with the vendored file present.
+    "cinzel-decorative": [
+        os.path.join(_VENDORED_FONT_DIR, "CinzelDecorative-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "fascinate": [
+        os.path.join(_VENDORED_FONT_DIR, "Fascinate-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "forum": [
+        os.path.join(_VENDORED_FONT_DIR, "Forum-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
     ],
 }
 
