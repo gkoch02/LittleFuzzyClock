@@ -8,6 +8,19 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 
 ![Preview of the fuzzy clock display](docs/preview.png)
 
+## Contents
+
+- [Hardware](#hardware)
+- [Tested environment](#tested-environment)
+- [Behaviour](#behaviour)
+- [Rebuilding from scratch](#rebuilding-from-scratch)
+- [Testing without hardware](#testing-without-hardware)
+- [Phrasing personalities](#phrasing-personalities)
+- [Fonts](#fonts)
+- [After-hours mode](#after-hours-mode)
+- [Files](#files)
+- [License](#license)
+
 ## Hardware
 
 - Raspberry Pi Zero (or any Pi with SPI)
@@ -95,6 +108,8 @@ The daemon reads the same setting from the `font:` field in `fuzzyclock_config.y
 ```yaml
 font: roboto-slab
 ```
+
+Set `font: random` to roll a new vendored variant every time the time phrase changes — see [docs/fonts.md](docs/fonts.md#random-mode).
 
 Unknown values fall back to `dejavu` with a warning in the daemon log.
 

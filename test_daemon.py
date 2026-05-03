@@ -256,6 +256,78 @@ class LoadConfigTests(unittest.TestCase):
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
+    def test_random_font_value_is_accepted(self):
+        # `random` is a valid sentinel even though it isn't a key in
+        # FONT_VARIANTS; _load_config must not warn or fall back.
+        path = self._write_yaml({"font": "random"})
+        with self.assertNoLogs("root", level="WARNING"):
+            _dialect, font, _lat, _lon = d._load_config(path)
+        self.assertEqual(font, d.RANDOM_FONT)
+
+
+class ResolveFontTests(unittest.TestCase):
+    """`_resolve_font` is the daemon's hook for random-font mode: it returns
+    the configured variant verbatim except in random mode, where it picks a
+    fresh variant whenever the rendered phrase changes."""
+
+    def setUp(self):
+        # Save and reset the module's random-font state so tests don't bleed.
+        self._saved_variant = d.FONT_VARIANT
+        self._saved_current = d._current_random_font
+        self._saved_phrase = d._last_phrase
+        d._current_random_font = None
+        d._last_phrase = None
+
+    def tearDown(self):
+        d.FONT_VARIANT = self._saved_variant
+        d._current_random_font = self._saved_current
+        d._last_phrase = self._saved_phrase
+
+    def test_non_random_returns_configured_variant(self):
+        d.FONT_VARIANT = "roboto-slab"
+        self.assertEqual(d._resolve_font("anything"), "roboto-slab")
+        self.assertEqual(d._resolve_font(None), "roboto-slab")
+
+    def test_random_seeds_initial_pick(self):
+        # First call with no prior state should pick a real variant.
+        d.FONT_VARIANT = d.RANDOM_FONT
+        with mock.patch.object(d, "pick_random_font", return_value="ubuntu") as pick:
+            picked = d._resolve_font("half past")
+        self.assertEqual(picked, "ubuntu")
+        pick.assert_called_once()
+
+    def test_random_keeps_pick_within_same_phrase(self):
+        # Multiple resolves within the same phrase must NOT re-pick — that
+        # would change the font on every button-press refresh.
+        d.FONT_VARIANT = d.RANDOM_FONT
+        sequence = iter(["ubuntu", "fredoka", "playfair"])
+        with mock.patch.object(d, "pick_random_font", side_effect=lambda: next(sequence)):
+            first = d._resolve_font("half past")
+            second = d._resolve_font("half past")
+            third = d._resolve_font("half past")
+        self.assertEqual(first, "ubuntu")
+        self.assertEqual(second, "ubuntu")
+        self.assertEqual(third, "ubuntu")
+
+    def test_random_re_picks_on_phrase_change(self):
+        d.FONT_VARIANT = d.RANDOM_FONT
+        sequence = iter(["ubuntu", "fredoka"])
+        with mock.patch.object(d, "pick_random_font", side_effect=lambda: next(sequence)):
+            first = d._resolve_font("half past")
+            second = d._resolve_font("twenty to")
+        self.assertEqual(first, "ubuntu")
+        self.assertEqual(second, "fredoka")
+
+    def test_random_with_phrase_none_keeps_current_pick(self):
+        # phrase=None means "I don't know what's on screen" — used by code
+        # paths that just want the currently-active variant. Must not roll.
+        d.FONT_VARIANT = d.RANDOM_FONT
+        d._current_random_font = "ubuntu"
+        d._last_phrase = "half past"
+        with mock.patch.object(d, "pick_random_font", return_value="bangers") as pick:
+            self.assertEqual(d._resolve_font(None), "ubuntu")
+        pick.assert_not_called()
+
 
 class _FakeButton:
     """Minimal `gpiozero.Button` substitute for `button_listener` tests.

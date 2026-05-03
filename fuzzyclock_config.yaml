@@ -8,6 +8,7 @@ dialect: classic
 # Vendored OFL:  fredoka, bitter, literata, libertinus, charis-sil, playfair,
 #                pacifico, lilita-one, righteous, comfortaa, nunito, jost, bangers
 # Commercial:    bookerly, minion, livory, chaparral, arno, malabar, pigeonette
+# Special:       random (pick a vendored variant fresh each time the phrase changes)
 font: dejavu
 
 # Coordinates for after-hours mode (display inverts after sunset).

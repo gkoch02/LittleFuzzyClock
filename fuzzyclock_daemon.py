@@ -15,8 +15,11 @@ from fuzzyclock_core import (
     DEFAULT_FONT,
     DIALECTS,
     FONT_VARIANTS,
+    RANDOM_FONT,
     draw_border,
+    fuzzy_time,
     load_font,
+    pick_random_font,
     render_clock,
 )
 from fuzzyclock_core import sun_times as _raw_sun_times
@@ -108,13 +111,13 @@ def _load_config(path=CONFIG_PATH):
         dialect = DEFAULT_DIALECT
 
     font = cfg.get("font", DEFAULT_FONT)
-    if font not in FONT_VARIANTS:
+    if font != RANDOM_FONT and font not in FONT_VARIANTS:
         logging.warning(
             "Unknown font=%r in %s; falling back to %r. Valid: %s",
             font,
             path,
             DEFAULT_FONT,
-            sorted(FONT_VARIANTS.keys()),
+            sorted([RANDOM_FONT, *FONT_VARIANTS.keys()]),
         )
         font = DEFAULT_FONT
 
@@ -150,15 +153,50 @@ AFTER_HOURS_ENABLED = False
 # globals above.
 font_goodnight = None
 
+# Random-font mode state. `_current_random_font` is the variant in use right
+# now; `_last_phrase` is the phrase from the most recent successful render so
+# we can detect a phrase change and roll a fresh font. Both are touched from
+# the main loop and the button thread, hence the lock.
+_current_random_font = None
+_last_phrase = None
+_random_font_lock = threading.Lock()
+
 
 def _init_fonts():
     """Populate the font globals. Must run before any render path is invoked.
 
     render_clock auto-sizes its body fonts at render time, so only the
-    goodnight font needs to be pre-loaded here.
+    goodnight font needs to be pre-loaded here. In random-font mode we seed
+    the current pick here so the goodnight screen has a concrete variant
+    available even before the first clock-face render.
     """
-    global font_goodnight
-    font_goodnight = load_font(24, variant=FONT_VARIANT)
+    global font_goodnight, _current_random_font
+    if FONT_VARIANT == RANDOM_FONT:
+        _current_random_font = pick_random_font()
+        font_goodnight = load_font(24, variant=_current_random_font)
+    else:
+        font_goodnight = load_font(24, variant=FONT_VARIANT)
+
+
+def _resolve_font(phrase=None):
+    """Concrete font variant for the next render.
+
+    In random mode, picks a new vendored variant whenever the rendered phrase
+    differs from the previous render — so the font changes in lockstep with
+    the time phrasing (every 5 minutes, plus on dialect-driven boundaries).
+    A button press inside the same phrase keeps the current pick so the user
+    sees the "same" clock when they tap for a refresh. Returns FONT_VARIANT
+    verbatim when random mode is off.
+    """
+    global _current_random_font, _last_phrase
+    if FONT_VARIANT != RANDOM_FONT:
+        return FONT_VARIANT
+    with _random_font_lock:
+        if _current_random_font is None or (phrase is not None and phrase != _last_phrase):
+            _current_random_font = pick_random_font()
+        if phrase is not None:
+            _last_phrase = phrase
+        return _current_random_font
 
 
 def _require_fonts():
@@ -306,12 +344,18 @@ def draw_clock(epd, invert=False):
     image = Image.new("1", (width, height), bg)
     draw = ImageDraw.Draw(image)
 
+    now = datetime.now()
+    # Resolve the font before render so random-mode picks a fresh variant
+    # whenever the phrase rolls over to the next 5-minute bucket.
+    phrase, _ = fuzzy_time(now.hour, now.minute, DIALECT)
+    variant = _resolve_font(phrase)
+
     render_clock(
         draw,
         width,
         height,
-        datetime.now(),
-        font_variant=FONT_VARIANT,
+        now,
+        font_variant=variant,
         dialect=DIALECT,
         invert=invert,
     )

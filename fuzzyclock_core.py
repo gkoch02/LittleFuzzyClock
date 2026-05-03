@@ -2,6 +2,7 @@
 
 import math
 import os
+import random as _random
 from datetime import datetime, timedelta, timezone
 
 from PIL import ImageFont
@@ -188,6 +189,58 @@ FONT_VARIANTS = {
 }
 
 DEFAULT_FONT = "dejavu"
+
+# Sentinel font value for "pick a vendored variant per phrase change". Not a
+# key in FONT_VARIANTS — callers resolve it to a concrete variant via
+# pick_random_font() before passing it to load_font() / render_clock().
+RANDOM_FONT = "random"
+
+
+def _vendored_font_paths(variant):
+    """Yield every vendored-fonts-dir path in `variant`'s candidate list.
+
+    Each FONT_VARIANTS entry is an ordered list of paths; the vendored ones
+    live under fonts/ at the repo root and are how we tell "we ship this
+    font" from "system fallback only". Some variants list multiple vendored
+    fallbacks (e.g. pigeonette accepts Bold/Regular/plain) so callers must
+    consider all of them, not just the first — load_font() walks the whole
+    list at runtime, and the random-font filter would otherwise exclude
+    variants whose first preferred filename happens to be missing.
+    """
+    return [p for p in FONT_VARIANTS[variant] if p.startswith(_VENDORED_FONT_DIR)]
+
+
+def vendored_font_variants():
+    """Variants with at least one vendored TTF/OTF actually present in fonts/.
+
+    Used by the random-font mode so a roll only lands on a font we ship.
+    Mirrors load_font()'s "first-that-opens wins" semantics: a variant is
+    eligible if any of its vendored paths exists on disk, not just the first.
+    Filtering by file existence keeps a clean Pi (no commercial fonts dropped
+    in) from rendering with PIL's default bitmap fallback when the random
+    pick happens to be `bookerly` etc. — load_font would SystemExit.
+    """
+    available = []
+    for variant in FONT_VARIANTS:
+        if any(os.path.exists(p) for p in _vendored_font_paths(variant)):
+            available.append(variant)
+    return available
+
+
+def pick_random_font(rng=None):
+    """Pick a vendored font variant at random.
+
+    `rng` defaults to the module's `random` instance; tests pass a seeded
+    `random.Random` for determinism. Falls back to DEFAULT_FONT if nothing
+    is vendored on disk (degraded environment) so callers always get a
+    usable variant key.
+    """
+    available = vendored_font_variants()
+    if not available:
+        return DEFAULT_FONT
+    rng = rng if rng is not None else _random
+    return rng.choice(available)
+
 
 HOUR_WORDS = {
     1: "one",

@@ -23,9 +23,12 @@ from fuzzyclock_core import (
     DIALECTS,
     FONT_CANDIDATES,
     FONT_VARIANTS,
+    RANDOM_FONT,
     draw_border,
     load_font,
+    pick_random_font,
     render_clock,
+    vendored_font_variants,
 )
 
 WIDTH, HEIGHT = 250, 122  # landscape orientation of the 2.13" V4 panel
@@ -226,6 +229,87 @@ class LoadFontFailureTests(unittest.TestCase):
         self.assertIn("roboto-slab", message)
         for path in FONT_VARIANTS["roboto-slab"]:
             self.assertIn(path, message)
+
+
+class RandomFontTests(unittest.TestCase):
+    """`pick_random_font` underpins the daemon's random-font mode and the
+    CLI's `--font random` flag — it must always return a real, loadable
+    variant key, never the `random` sentinel itself."""
+
+    def test_random_font_sentinel_is_not_a_registered_variant(self):
+        # The sentinel exists *outside* FONT_VARIANTS by design — callers
+        # resolve it to a concrete variant before passing it to load_font.
+        self.assertNotIn(RANDOM_FONT, FONT_VARIANTS)
+
+    def test_vendored_variants_only_returns_existing_files(self):
+        # Every entry in the result must have a matching .ttf/.otf actually
+        # present in fonts/, so a random pick on a clean Pi can't land on
+        # a commercial variant the user hasn't dropped a file in for.
+        import os as _os
+
+        for variant in vendored_font_variants():
+            paths = FONT_VARIANTS[variant]
+            self.assertTrue(
+                any(_os.path.exists(p) for p in paths),
+                f"{variant} reported as vendored but has no existing path",
+            )
+
+    def test_vendored_variants_includes_variant_with_only_secondary_path(self):
+        # Variants like `pigeonette` list multiple vendored fallbacks (Bold,
+        # Regular, plain). load_font() walks the whole list, so the eligibility
+        # filter must too — a user who dropped only Pigeonette.otf in fonts/
+        # should still see pigeonette in the random pool. Use a synthetic
+        # variant so the test isn't tied to which files happen to be present.
+        import os as _os
+        from unittest import mock as _mock
+
+        from fuzzyclock_core import _VENDORED_FONT_DIR
+
+        primary = _os.path.join(_VENDORED_FONT_DIR, "DoesNotExist-Bold.ttf")
+        secondary = _os.path.join(_VENDORED_FONT_DIR, "DejaVuSans-Bold.ttf")  # actually present
+        fake_variants = {"synthetic": [primary, secondary, "/System/Library/Fonts/Helvetica.ttc"]}
+        with _mock.patch("fuzzyclock_core.FONT_VARIANTS", fake_variants):
+            self.assertIn("synthetic", vendored_font_variants())
+
+    def test_pick_random_returns_a_registered_variant(self):
+        # Sweep a few times in case the eligible set is small; every roll
+        # must produce a key load_font() will accept.
+        for _ in range(20):
+            picked = pick_random_font()
+            self.assertIn(picked, FONT_VARIANTS)
+            self.assertNotEqual(picked, RANDOM_FONT)
+
+    def test_pick_random_uses_supplied_rng(self):
+        # A seeded RNG makes the choice deterministic — useful for tests
+        # downstream that want a stable variant without monkey-patching.
+        import random
+
+        first = pick_random_font(rng=random.Random(42))
+        second = pick_random_font(rng=random.Random(42))
+        self.assertEqual(first, second)
+
+    def test_pick_random_falls_back_when_nothing_vendored(self):
+        # Degraded environment (no vendored fonts on disk): rather than
+        # raising, fall back to DEFAULT_FONT so callers always get a key.
+        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=[]):
+            self.assertEqual(pick_random_font(), DEFAULT_FONT)
+
+    def test_random_font_renders(self):
+        # End-to-end: a random pick must render through the normal pipeline
+        # without raising. Use a seeded RNG so the test fails consistently
+        # if a particular variant ever regresses.
+        import random as _r
+
+        variant = pick_random_font(rng=_r.Random(7))
+        image = Image.new("1", (WIDTH, HEIGHT), 255)
+        render_clock(
+            ImageDraw.Draw(image),
+            WIDTH,
+            HEIGHT,
+            datetime(2026, 4, 25, 9, 15),
+            font_variant=variant,
+        )
+        self.assertGreater(_count_black_pixels(image), 200)
 
 
 if __name__ == "__main__":
