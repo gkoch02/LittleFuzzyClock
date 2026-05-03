@@ -317,6 +317,127 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
         "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
     ],
+    # Flowing script & calligraphy — OFL/Apache 2.0, vendored in fonts/.
+    # Connected cursives and formal calligraphic scripts. macOS fallbacks
+    # point to Snell Roundhand (closest stock connected script); the
+    # personality only reads with the vendored file present.
+    "dancing-script": [
+        os.path.join(_VENDORED_FONT_DIR, "DancingScript-Bold.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "tangerine": [
+        os.path.join(_VENDORED_FONT_DIR, "Tangerine-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+    ],
+    "parisienne": [
+        os.path.join(_VENDORED_FONT_DIR, "Parisienne-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "clicker-script": [
+        os.path.join(_VENDORED_FONT_DIR, "ClickerScript-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "yellowtail": [
+        os.path.join(_VENDORED_FONT_DIR, "Yellowtail-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    # Geometric & condensed sans — OFL, vendored in fonts/. Clean geometric
+    # proportions; Oswald is condensed for fitting long e-ink phrases.
+    "poppins": [
+        os.path.join(_VENDORED_FONT_DIR, "Poppins-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "raleway": [
+        os.path.join(_VENDORED_FONT_DIR, "Raleway-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "oswald": [
+        os.path.join(_VENDORED_FONT_DIR, "Oswald-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "work-sans": [
+        os.path.join(_VENDORED_FONT_DIR, "WorkSans-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "cabin": [
+        os.path.join(_VENDORED_FONT_DIR, "Cabin-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Slab serif — OFL, vendored in fonts/. Sturdy bracketed serifs across the
+    # full personality range: geometric precision to humanist warmth. macOS
+    # fallback uses Georgia Bold (the closest stock slab-adjacent serif); the
+    # character of each face only reads with the vendored file present.
+    "arvo": [
+        os.path.join(_VENDORED_FONT_DIR, "Arvo-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "zilla-slab": [
+        os.path.join(_VENDORED_FONT_DIR, "ZillaSlab-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "rokkitt": [
+        os.path.join(_VENDORED_FONT_DIR, "Rokkitt-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "crete-round": [
+        os.path.join(_VENDORED_FONT_DIR, "CreteRound-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "josefin-slab": [
+        os.path.join(_VENDORED_FONT_DIR, "JosefinSlab-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    # Monospace additions — OFL, vendored in fonts/. Refined coding/terminal
+    # mono faces to complement the pixel/bitmap retro set. macOS fallbacks
+    # are Menlo/Courier; personality only reads with the vendored file.
+    "fira-mono": [
+        os.path.join(_VENDORED_FONT_DIR, "FiraMono-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    "courier-prime": [
+        os.path.join(_VENDORED_FONT_DIR, "CourierPrime-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Courier New Bold.ttf",
+        "/System/Library/Fonts/Menlo.ttc",
+    ],
+    "share-tech-mono": [
+        os.path.join(_VENDORED_FONT_DIR, "ShareTechMono-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    # Art deco & techno additions — OFL/Apache 2.0, vendored in fonts/.
+    # Extends the vintage/futuristic section. macOS fallbacks are Futura
+    # (closest geometric sans) then Helvetica; personality only reads with
+    # the vendored file present.
+    "poiret-one": [
+        os.path.join(_VENDORED_FONT_DIR, "PoiretOne-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "syncopate": [
+        os.path.join(_VENDORED_FONT_DIR, "Syncopate-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "exo-2": [
+        os.path.join(_VENDORED_FONT_DIR, "Exo2-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
