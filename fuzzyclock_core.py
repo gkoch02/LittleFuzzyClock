@@ -438,6 +438,42 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Futura.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    # Heavy display / cartoon — OFL, vendored in fonts/. Bold, chunky, or
+    # retro-comic personalities. macOS fallbacks are Impact/Helvetica; the
+    # full personality only reads with the vendored file present.
+    "luckiest-guy": [
+        os.path.join(_VENDORED_FONT_DIR, "LuckiestGuy-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "titan-one": [
+        os.path.join(_VENDORED_FONT_DIR, "TitanOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "boogaloo": [
+        os.path.join(_VENDORED_FONT_DIR, "Boogaloo-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Ornate / Art Nouveau — OFL, vendored in fonts/. Decorative Roman caps,
+    # Art Deco inline, and calligraphic elegance. macOS fallbacks are Georgia/
+    # Times; personality only reads with the vendored file present.
+    "cinzel-decorative": [
+        os.path.join(_VENDORED_FONT_DIR, "CinzelDecorative-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "fascinate": [
+        os.path.join(_VENDORED_FONT_DIR, "Fascinate-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "forum": [
+        os.path.join(_VENDORED_FONT_DIR, "Forum-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
