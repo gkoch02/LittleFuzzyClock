@@ -505,7 +505,9 @@ FONT_VARIANTS = {
         "/Library/Fonts/Times New Roman Bold.ttf",
     ],
     # Textured / experimental — OFL, vendored in fonts/. Letterforms filled
-    # with dirt or maze patterns; renders as textured fills on e-ink.
+    # with dirt, mazes, drips, microbes, puddles, scanlines, bricks, stars, or
+    # sprayed-on paint; renders as textured fills on e-ink. The wider Rubik
+    # Filtered family ships separate weirdness modes from the same chassis.
     "rubik-dirt": [
         os.path.join(_VENDORED_FONT_DIR, "RubikDirt-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Impact.ttf",
@@ -514,6 +516,122 @@ FONT_VARIANTS = {
     "rubik-maze": [
         os.path.join(_VENDORED_FONT_DIR, "RubikMaze-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-glitch": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikGlitch-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-wet-paint": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikWetPaint-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-puddles": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikPuddles-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-beastly": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikBeastly-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-microbe": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikMicrobe-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-spray-paint": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikSprayPaint-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-distressed": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikDistressed-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-iso": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikIso-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "splash": [
+        os.path.join(_VENDORED_FONT_DIR, "Splash-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    "sixtyfour": [
+        # Variable axes (BLED, SCAN) — load_font's set_variation_by_name("Bold")
+        # call silently no-ops since this face has no Bold instance.
+        os.path.join(_VENDORED_FONT_DIR, "Sixtyfour-VF.ttf"),
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    "rampart-one": [
+        os.path.join(_VENDORED_FONT_DIR, "RampartOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "codystar": [
+        os.path.join(_VENDORED_FONT_DIR, "Codystar-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "plaster": [
+        os.path.join(_VENDORED_FONT_DIR, "Plaster-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Horror & macabre — OFL, vendored in fonts/. Drippy, bitten, blood-spattered
+    # letterforms; the goth/halloween/horror corner of the gallery. macOS
+    # fallbacks lean on Chalkduster / Marker Felt for similar ragged energy.
+    "nosifer": [
+        os.path.join(_VENDORED_FONT_DIR, "Nosifer-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "butcherman": [
+        os.path.join(_VENDORED_FONT_DIR, "Butcherman-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "eater": [
+        os.path.join(_VENDORED_FONT_DIR, "Eater-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "lacquer": [
+        os.path.join(_VENDORED_FONT_DIR, "Lacquer-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    # Vintage display oddities — OFL, vendored in fonts/. Outlined inline
+    # (atomic-age), heavily ornamented Art Deco (diplomata), Nordic geometric
+    # rune-like (iceland), and constructed thin-stroke Art Nouveau (megrim).
+    # macOS fallbacks are Futura/Impact/Times; personality only reads with the
+    # vendored file present.
+    "atomic-age": [
+        os.path.join(_VENDORED_FONT_DIR, "AtomicAge-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "diplomata": [
+        os.path.join(_VENDORED_FONT_DIR, "Diplomata-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "iceland": [
+        os.path.join(_VENDORED_FONT_DIR, "Iceland-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "megrim": [
+        # Filename has no -Regular suffix; designer shipped it as Megrim.ttf.
+        os.path.join(_VENDORED_FONT_DIR, "Megrim.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
     # Ornate / Art Nouveau — OFL, vendored in fonts/. Decorative Roman caps,
@@ -880,7 +998,9 @@ def load_font(size, variant=None):
     static fonts the other variants ship as — otherwise PIL renders at the
     default axis values (Light/Regular), which looks wispy on e-ink and
     hides the variant's character. Static fonts raise OSError on the call
-    and we silently skip it.
+    and we silently skip it; variable fonts without a "Bold" named instance
+    (e.g. Sixtyfour, whose axes are BLED/SCAN) raise ValueError, also
+    silently skipped — they render at their default axis values.
 
     Raises SystemExit listing the variant's tried paths when none load. We
     fail loud rather than letting PIL silently fall back to its default
@@ -899,7 +1019,10 @@ def load_font(size, variant=None):
             continue
         try:
             font.set_variation_by_name("Bold")
-        except (OSError, AttributeError):
+        except (OSError, AttributeError, ValueError):
+            # ValueError: variable font without a "Bold" named instance
+            # (e.g. Sixtyfour ships BLED/SCAN axes only). Static fonts raise
+            # OSError; non-FreeType backends raise AttributeError.
             pass
         return font
     raise SystemExit(

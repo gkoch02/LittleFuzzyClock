@@ -95,7 +95,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## Fonts
 
-Forty-six font variants are available — seven installed automatically by `deploy.sh`, thirty-two open-source fonts vendored in `fonts/` (including a display-and-themed set with retro, art-deco, blackletter, poster, and quirky picks), and seven commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
+115 font variants are available — 108 open-source fonts vendored in `fonts/` (clean & literary serifs, slab serifs, soft & rounded, geometric & condensed, bold display, retro & computing, vintage/deco/futuristic, blackletter & fantasy, handwriting & script, hand-drawn, textured & experimental, horror & macabre), and 7 commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
 
 Pick one with `--font`:
 
