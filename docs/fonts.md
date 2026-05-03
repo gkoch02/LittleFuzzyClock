@@ -188,6 +188,150 @@ Comic-book display — bold, condensed, pop-art energy.
 
 ---
 
+## Display / themed — vendored
+
+Higher-character display faces for when you want the clock to *say something*. All ship in `fonts/` and work out of the box. Most are SIL OFL; the typewriter and marker faces are Apache 2.0 (Google Fonts). These are deliberately personality-forward — they read worse than DejaVu at small sizes, but each has a strong typographic flavour.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-vt323.png" alt="vt323"><br><br>
+<strong><code>vt323</code></strong><br>
+<sup>OFL · static</sup><br>
+CRT terminal — chunky monospace, late-70s computing.
+</td>
+<td align="center">
+<img src="preview-press-start-2p.png" alt="press-start-2p"><br><br>
+<strong><code>press-start-2p</code></strong><br>
+<sup>OFL · static</sup><br>
+8-bit arcade pixel font — quarter-eating energy.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-silkscreen.png" alt="silkscreen"><br><br>
+<strong><code>silkscreen</code></strong><br>
+<sup>OFL · static</sup><br>
+Bitmap-style display — late-90s desktop UI nostalgia.
+</td>
+<td align="center">
+<img src="preview-monoton.png" alt="monoton"><br><br>
+<strong><code>monoton</code></strong><br>
+<sup>OFL · static</sup><br>
+Multi-line striped art-deco caps — striking silhouette.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-limelight.png" alt="limelight"><br><br>
+<strong><code>limelight</code></strong><br>
+<sup>OFL · static</sup><br>
+1920s theatre marquee — vintage display serif.
+</td>
+<td align="center">
+<img src="preview-abril-fatface.png" alt="abril-fatface"><br><br>
+<strong><code>abril-fatface</code></strong><br>
+<sup>OFL · static</sup><br>
+Fashion-magazine ultra-bold display serif — high contrast.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-unifraktur-maguntia.png" alt="unifraktur-maguntia"><br><br>
+<strong><code>unifraktur-maguntia</code></strong><br>
+<sup>OFL · static</sup><br>
+Full gothic blackletter — medieval manuscript feel.
+</td>
+<td align="center">
+<img src="preview-medieval-sharp.png" alt="medieval-sharp"><br><br>
+<strong><code>medieval-sharp</code></strong><br>
+<sup>OFL · static</sup><br>
+Storybook fantasy — readable medieval display.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-pirata-one.png" alt="pirata-one"><br><br>
+<strong><code>pirata-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Decorative pirate / treasure-map blackletter.
+</td>
+<td align="center">
+<img src="preview-bungee.png" alt="bungee"><br><br>
+<strong><code>bungee</code></strong><br>
+<sup>OFL · static</sup><br>
+David Jonathan Ross signage face — architectural and bold.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-alfa-slab-one.png" alt="alfa-slab-one"><br><br>
+<strong><code>alfa-slab-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Chunky bold slab — confident, immovable.
+</td>
+<td align="center">
+<img src="preview-anton.png" alt="anton"><br><br>
+<strong><code>anton</code></strong><br>
+<sup>OFL · static</sup><br>
+Tall condensed poster sans — fits long phrases easily.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-staatliches.png" alt="staatliches"><br><br>
+<strong><code>staatliches</code></strong><br>
+<sup>OFL · static</sup><br>
+Bauhaus all-caps — extreme width contrast.
+</td>
+<td align="center">
+<img src="preview-special-elite.png" alt="special-elite"><br><br>
+<strong><code>special-elite</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Distressed typewriter — uneven inking, ribbon strikes.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-permanent-marker.png" alt="permanent-marker"><br><br>
+<strong><code>permanent-marker</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Felt-tip handwriting — looks like whiteboard scribble.
+</td>
+<td align="center">
+<img src="preview-creepster.png" alt="creepster"><br><br>
+<strong><code>creepster</code></strong><br>
+<sup>OFL · static</sup><br>
+Halloween / horror display — seasonal novelty.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-audiowide.png" alt="audiowide"><br><br>
+<strong><code>audiowide</code></strong><br>
+<sup>OFL · static</sup><br>
+Retro-futuristic chrome — hi-fi receiver vibe.
+</td>
+<td align="center">
+<img src="preview-orbitron.png" alt="orbitron"><br><br>
+<strong><code>orbitron</code></strong><br>
+<sup>OFL · variable</sup><br>
+Geometric sci-fi display — clean techno feel.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-lobster.png" alt="lobster"><br><br>
+<strong><code>lobster</code></strong><br>
+<sup>OFL · static</sup><br>
+Bold script — heavier and more decorative than Pacifico.
+</td>
+<td></td>
+</tr>
+</table>
+
+---
+
 ## Commercial — bring your own file
 
 Drop a licensed copy of the font into `fonts/`. The daemon falls back to a macOS system font (Georgia Bold or Times New Roman Bold) for dev renders when no file is present.

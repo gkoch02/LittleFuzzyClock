@@ -186,6 +186,92 @@ FONT_VARIANTS = {
         os.path.join(_VENDORED_FONT_DIR, "Bangers-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Impact.ttf",
     ],
+    # Display / themed — all OFL or Apache 2.0, vendored in fonts/. macOS
+    # fallbacks are deliberately approximate; the personality of these faces
+    # only really comes through with the vendored file present.
+    "vt323": [
+        os.path.join(_VENDORED_FONT_DIR, "VT323-Regular.ttf"),
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    "press-start-2p": [
+        os.path.join(_VENDORED_FONT_DIR, "PressStart2P-Regular.ttf"),
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    "silkscreen": [
+        os.path.join(_VENDORED_FONT_DIR, "Silkscreen-Bold.ttf"),
+        "/System/Library/Fonts/Menlo.ttc",
+    ],
+    "monoton": [
+        os.path.join(_VENDORED_FONT_DIR, "Monoton-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "limelight": [
+        os.path.join(_VENDORED_FONT_DIR, "Limelight-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "abril-fatface": [
+        os.path.join(_VENDORED_FONT_DIR, "AbrilFatface-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "unifraktur-maguntia": [
+        os.path.join(_VENDORED_FONT_DIR, "UnifrakturMaguntia-Book.ttf"),
+        "/usr/share/fonts/truetype/unifrakturmaguntia/UnifrakturMaguntia-Book.ttf",
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+    ],
+    "medieval-sharp": [
+        os.path.join(_VENDORED_FONT_DIR, "MedievalSharp-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+    ],
+    "pirata-one": [
+        os.path.join(_VENDORED_FONT_DIR, "PirataOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+    ],
+    "bungee": [
+        os.path.join(_VENDORED_FONT_DIR, "Bungee-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "alfa-slab-one": [
+        os.path.join(_VENDORED_FONT_DIR, "AlfaSlabOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+    ],
+    "anton": [
+        os.path.join(_VENDORED_FONT_DIR, "Anton-Regular.ttf"),
+        "/usr/share/fonts/truetype/anton/Anton-Regular.ttf",  # fonts-anton
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "staatliches": [
+        os.path.join(_VENDORED_FONT_DIR, "Staatliches-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "special-elite": [
+        os.path.join(_VENDORED_FONT_DIR, "SpecialElite-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Courier New Bold.ttf",
+    ],
+    "permanent-marker": [
+        os.path.join(_VENDORED_FONT_DIR, "PermanentMarker-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+    ],
+    "creepster": [
+        os.path.join(_VENDORED_FONT_DIR, "Creepster-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+    ],
+    "audiowide": [
+        os.path.join(_VENDORED_FONT_DIR, "Audiowide-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+    ],
+    "orbitron": [
+        os.path.join(_VENDORED_FONT_DIR, "Orbitron-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "lobster": [
+        os.path.join(_VENDORED_FONT_DIR, "Lobster-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
