@@ -225,7 +225,12 @@ Geometric sans inspired by Futura — clean and modern.
 <sup>OFL · static</sup><br>
 Chunky Latin display — bold and cartoonish in the best way.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-modak.png" alt="modak"><br><br>
+<strong><code>modak</code></strong><br>
+<sup>OFL · static</sup><br>
+Extreme inflated bubble — letters look pressurized, Devanagari-inspired.
+</td>
 </tr>
 </table>
 
@@ -370,6 +375,43 @@ Super-chunky rounded bold — compact punch, maximum presence.
 <sup>OFL · static</sup><br>
 Retro casual comic/poster — lighter and breezier than Bangers.
 </td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-bungee-shade.png" alt="bungee-shade"><br><br>
+<strong><code>bungee-shade</code></strong><br>
+<sup>OFL · static</sup><br>
+3D perspective shadow block below each letter — architectural and striking.
+</td>
+<td align="center">
+<img src="preview-faster-one.png" alt="faster-one"><br><br>
+<strong><code>faster-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Extreme italic condensed — maximum rightward lean, racing energy.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-shrikhand.png" alt="shrikhand"><br><br>
+<strong><code>shrikhand</code></strong><br>
+<sup>OFL · static</sup><br>
+Gujarati calligraphy-inspired bold — ink traps and terminals unlike any Latin font.
+</td>
+<td align="center">
+<img src="preview-henny-penny.png" alt="henny-penny"><br><br>
+<strong><code>henny-penny</code></strong><br>
+<sup>OFL · static</sup><br>
+Wobbly storybook display — organic stroke widths, pleasantly falling apart.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-freckle-face.png" alt="freckle-face"><br><br>
+<strong><code>freckle-face</code></strong><br>
+<sup>OFL · static</sup><br>
+Speckled / freckled letterforms — each character has a pressed-in texture.
+</td>
+<td></td>
 </tr>
 </table>
 
@@ -516,6 +558,15 @@ Art Deco inline — white channel through each stroke, striking on e-ink.
 Elegant Art Nouveau Roman — calligraphic influence, lighter than Cinzel.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-rye.png" alt="rye"><br><br>
+<strong><code>rye</code></strong><br>
+<sup>OFL · static</sup><br>
+Wild West poster — ornate inline decorations inside every bracketed serif.
+</td>
+<td></td>
+</tr>
 </table>
 
 ---
@@ -546,7 +597,12 @@ Storybook fantasy — readable medieval display.
 <sup>OFL · static</sup><br>
 Decorative pirate / treasure-map blackletter.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-almendra-display.png" alt="almendra-display"><br><br>
+<strong><code>almendra-display</code></strong><br>
+<sup>OFL · static</sup><br>
+Pen-drawn Gothic calligraphic — elaborate ink swells, medieval fantasy.
+</td>
 </tr>
 </table>
 
@@ -708,6 +764,29 @@ Slanted notebook scribble — back-of-the-book doodle.
 <strong><code>homemade-apple</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Quick handwritten cursive — looped and personal.
+</td>
+</tr>
+</table>
+
+---
+
+## Textured & experimental
+
+Letterforms filled with pattern, texture, or distortion — appearance over legibility.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-rubik-dirt.png" alt="rubik-dirt"><br><br>
+<strong><code>rubik-dirt</code></strong><br>
+<sup>OFL · static</sup><br>
+Dirt and debris embedded in the strokes — deliberately rough fill.
+</td>
+<td align="center">
+<img src="preview-rubik-maze.png" alt="rubik-maze"><br><br>
+<strong><code>rubik-maze</code></strong><br>
+<sup>OFL · static</sup><br>
+Every stroke filled with a continuous maze pattern — genuinely strange.
 </td>
 </tr>
 </table>

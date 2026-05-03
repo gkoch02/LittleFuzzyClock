@@ -160,6 +160,11 @@ FONT_VARIANTS = {
         os.path.join(_VENDORED_FONT_DIR, "LilitaOne-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
     ],
+    "modak": [
+        os.path.join(_VENDORED_FONT_DIR, "Modak-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
     "righteous": [
         os.path.join(_VENDORED_FONT_DIR, "Righteous-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Futura.ttc",
@@ -228,6 +233,11 @@ FONT_VARIANTS = {
     "pirata-one": [
         os.path.join(_VENDORED_FONT_DIR, "PirataOne-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+    ],
+    "almendra-display": [
+        os.path.join(_VENDORED_FONT_DIR, "AlmendraDisplay-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
     ],
     "bungee": [
         os.path.join(_VENDORED_FONT_DIR, "Bungee-Regular.ttf"),
@@ -458,6 +468,51 @@ FONT_VARIANTS = {
     ],
     "boogaloo": [
         os.path.join(_VENDORED_FONT_DIR, "Boogaloo-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Artistic & unique display — OFL, vendored in fonts/. Chosen for visual
+    # impact over legibility. macOS fallbacks are approximate; personality only
+    # reads with the vendored file present.
+    "bungee-shade": [
+        os.path.join(_VENDORED_FONT_DIR, "BungeeShade-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "faster-one": [
+        os.path.join(_VENDORED_FONT_DIR, "FasterOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "shrikhand": [
+        os.path.join(_VENDORED_FONT_DIR, "Shrikhand-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "henny-penny": [
+        os.path.join(_VENDORED_FONT_DIR, "HennyPenny-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        "/Library/Fonts/Georgia Bold.ttf",
+    ],
+    "freckle-face": [
+        os.path.join(_VENDORED_FONT_DIR, "FrekleFace-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rye": [
+        os.path.join(_VENDORED_FONT_DIR, "Rye-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Textured / experimental — OFL, vendored in fonts/. Letterforms filled
+    # with dirt or maze patterns; renders as textured fills on e-ink.
+    "rubik-dirt": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikDirt-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "rubik-maze": [
+        os.path.join(_VENDORED_FONT_DIR, "RubikMaze-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Impact.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
