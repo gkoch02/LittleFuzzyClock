@@ -139,6 +139,52 @@ Chunky slab serif — renders especially crisply on e-ink.
 
 ---
 
+## Slab serif
+
+Sturdy bracketed slabs — from crisp geometric (Arvo, Josefin Slab) to warm humanist (Zilla Slab) to chunky literary (Rokkitt) to softened slab terminals (Crete Round).
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-arvo.png" alt="arvo"><br><br>
+<strong><code>arvo</code></strong><br>
+<sup>OFL · static</sup><br>
+Clean geometric slab — high contrast, confident strokes.
+</td>
+<td align="center">
+<img src="preview-zilla-slab.png" alt="zilla-slab"><br><br>
+<strong><code>zilla-slab</code></strong><br>
+<sup>OFL · static</sup><br>
+Mozilla humanist slab — warm and screen-optimised.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-rokkitt.png" alt="rokkitt"><br><br>
+<strong><code>rokkitt</code></strong><br>
+<sup>OFL · variable</sup><br>
+Chunky literary slab — confident and even-toned on e-ink.
+</td>
+<td align="center">
+<img src="preview-crete-round.png" alt="crete-round"><br><br>
+<strong><code>crete-round</code></strong><br>
+<sup>OFL · static</sup><br>
+Rounded slab terminals — soft-but-solid, distinctive feel.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-josefin-slab.png" alt="josefin-slab"><br><br>
+<strong><code>josefin-slab</code></strong><br>
+<sup>OFL · variable</sup><br>
+Geometric slab — strong thin/thick contrast; elegant at display sizes.
+</td>
+<td></td>
+</tr>
+</table>
+
+---
+
 ## Soft & rounded
 
 Friendly geometric curves — informal warmth, approachable at any size.
@@ -344,6 +390,29 @@ Bitmap-style display — late-90s desktop UI nostalgia.
 Modern monospaced — typewriter personality on e-ink.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-fira-mono.png" alt="fira-mono"><br><br>
+<strong><code>fira-mono</code></strong><br>
+<sup>OFL · static</sup><br>
+Clean coding mono — readable and refined at small sizes.
+</td>
+<td align="center">
+<img src="preview-courier-prime.png" alt="courier-prime"><br><br>
+<strong><code>courier-prime</code></strong><br>
+<sup>OFL · static</sup><br>
+Refined typewriter serif — more character than Courier New.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-share-tech-mono.png" alt="share-tech-mono"><br><br>
+<strong><code>share-tech-mono</code></strong><br>
+<sup>OFL · static</sup><br>
+Techno grid mono — sci-fi terminal aesthetic.
+</td>
+<td></td>
+</tr>
 </table>
 
 ---
@@ -380,6 +449,29 @@ Retro-futuristic chrome — hi-fi receiver vibe.
 <sup>OFL · variable</sup><br>
 Geometric sci-fi display — clean techno feel.
 </td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-poiret-one.png" alt="poiret-one"><br><br>
+<strong><code>poiret-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Art Deco hairline geometric — distinctive thin strokes.
+</td>
+<td align="center">
+<img src="preview-syncopate.png" alt="syncopate"><br><br>
+<strong><code>syncopate</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+All-caps techno geometric — architectural, no lowercase glyphs.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-exo-2.png" alt="exo-2"><br><br>
+<strong><code>exo-2</code></strong><br>
+<sup>OFL · variable</sup><br>
+Techno-geometric variable — bridges vintage and sci-fi.
+</td>
+<td></td>
 </tr>
 </table>
 
