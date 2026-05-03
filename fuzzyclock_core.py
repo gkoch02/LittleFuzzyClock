@@ -196,32 +196,33 @@ DEFAULT_FONT = "dejavu"
 RANDOM_FONT = "random"
 
 
-def _vendored_font_path(variant):
-    """Return the first vendored-fonts-dir path in `variant`'s candidate list.
+def _vendored_font_paths(variant):
+    """Yield every vendored-fonts-dir path in `variant`'s candidate list.
 
     Each FONT_VARIANTS entry is an ordered list of paths; the vendored ones
     live under fonts/ at the repo root and are how we tell "we ship this
-    font" from "system fallback only". Returns None if the variant has no
-    vendored entry (which today is just `dejavu`'s legacy alias).
+    font" from "system fallback only". Some variants list multiple vendored
+    fallbacks (e.g. pigeonette accepts Bold/Regular/plain) so callers must
+    consider all of them, not just the first — load_font() walks the whole
+    list at runtime, and the random-font filter would otherwise exclude
+    variants whose first preferred filename happens to be missing.
     """
-    for path in FONT_VARIANTS[variant]:
-        if path.startswith(_VENDORED_FONT_DIR):
-            return path
-    return None
+    return [p for p in FONT_VARIANTS[variant] if p.startswith(_VENDORED_FONT_DIR)]
 
 
 def vendored_font_variants():
-    """Variants whose vendored TTF/OTF is actually present in fonts/.
+    """Variants with at least one vendored TTF/OTF actually present in fonts/.
 
     Used by the random-font mode so a roll only lands on a font we ship.
+    Mirrors load_font()'s "first-that-opens wins" semantics: a variant is
+    eligible if any of its vendored paths exists on disk, not just the first.
     Filtering by file existence keeps a clean Pi (no commercial fonts dropped
     in) from rendering with PIL's default bitmap fallback when the random
     pick happens to be `bookerly` etc. — load_font would SystemExit.
     """
     available = []
     for variant in FONT_VARIANTS:
-        path = _vendored_font_path(variant)
-        if path is not None and os.path.exists(path):
+        if any(os.path.exists(p) for p in _vendored_font_paths(variant)):
             available.append(variant)
     return available
 

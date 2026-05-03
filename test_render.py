@@ -254,6 +254,23 @@ class RandomFontTests(unittest.TestCase):
                 f"{variant} reported as vendored but has no existing path",
             )
 
+    def test_vendored_variants_includes_variant_with_only_secondary_path(self):
+        # Variants like `pigeonette` list multiple vendored fallbacks (Bold,
+        # Regular, plain). load_font() walks the whole list, so the eligibility
+        # filter must too — a user who dropped only Pigeonette.otf in fonts/
+        # should still see pigeonette in the random pool. Use a synthetic
+        # variant so the test isn't tied to which files happen to be present.
+        import os as _os
+        from unittest import mock as _mock
+
+        from fuzzyclock_core import _VENDORED_FONT_DIR
+
+        primary = _os.path.join(_VENDORED_FONT_DIR, "DoesNotExist-Bold.ttf")
+        secondary = _os.path.join(_VENDORED_FONT_DIR, "DejaVuSans-Bold.ttf")  # actually present
+        fake_variants = {"synthetic": [primary, secondary, "/System/Library/Fonts/Helvetica.ttc"]}
+        with _mock.patch("fuzzyclock_core.FONT_VARIANTS", fake_variants):
+            self.assertIn("synthetic", vendored_font_variants())
+
     def test_pick_random_returns_a_registered_variant(self):
         # Sweep a few times in case the eligible set is small; every roll
         # must produce a key load_font() will accept.
