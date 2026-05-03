@@ -317,6 +317,61 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
         "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
     ],
+    # Flowing script & calligraphy — OFL/Apache 2.0, vendored in fonts/.
+    # Connected cursives and formal calligraphic scripts. macOS fallbacks
+    # point to Snell Roundhand (closest stock connected script); the
+    # personality only reads with the vendored file present.
+    "dancing-script": [
+        os.path.join(_VENDORED_FONT_DIR, "DancingScript-Bold.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "tangerine": [
+        os.path.join(_VENDORED_FONT_DIR, "Tangerine-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+    ],
+    "parisienne": [
+        os.path.join(_VENDORED_FONT_DIR, "Parisienne-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "clicker-script": [
+        os.path.join(_VENDORED_FONT_DIR, "ClickerScript-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    "yellowtail": [
+        os.path.join(_VENDORED_FONT_DIR, "Yellowtail-Regular.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Snell Roundhand.ttc",
+        "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
+    ],
+    # Geometric & condensed sans — OFL, vendored in fonts/. Clean geometric
+    # proportions; Oswald is condensed for fitting long e-ink phrases.
+    "poppins": [
+        os.path.join(_VENDORED_FONT_DIR, "Poppins-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "raleway": [
+        os.path.join(_VENDORED_FONT_DIR, "Raleway-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "oswald": [
+        os.path.join(_VENDORED_FONT_DIR, "Oswald-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "work-sans": [
+        os.path.join(_VENDORED_FONT_DIR, "WorkSans-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "cabin": [
+        os.path.join(_VENDORED_FONT_DIR, "Cabin-VF.ttf"),  # vendored, variable
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"

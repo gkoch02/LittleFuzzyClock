@@ -3,15 +3,21 @@
 dialect: classic
 
 # Font variant. For the full list and previews see docs/fonts.md.
-# Apt-installed: dejavu (default), dejavu-serif, liberation-serif, roboto-slab,
-#                cantarell, ubuntu, jetbrains-mono
-# Vendored OFL:  fredoka, bitter, literata, libertinus, charis-sil, playfair,
-#                pacifico, lilita-one, righteous, comfortaa, nunito, jost, bangers
-# Hand-drawn:    caveat, kalam, architects-daughter, indie-flower, patrick-hand,
-#                shadows-into-light, gloria-hallelujah, amatic-sc, reenie-beanie,
-#                homemade-apple
-# Commercial:    bookerly, minion, livory, chaparral, arno, malabar, pigeonette
-# Special:       random (pick a vendored variant fresh each time the phrase changes)
+# Apt-installed:  dejavu (default), dejavu-serif, liberation-serif, roboto-slab,
+#                 cantarell, ubuntu, jetbrains-mono
+# Vendored OFL:   fredoka, bitter, literata, libertinus, charis-sil, playfair,
+#                 pacifico, lilita-one, righteous, comfortaa, nunito, jost, bangers
+# Display/themed: vt323, press-start-2p, silkscreen, monoton, limelight, abril-fatface,
+#                 unifraktur-maguntia, medieval-sharp, pirata-one, bungee, alfa-slab-one,
+#                 anton, staatliches, special-elite, permanent-marker, creepster,
+#                 audiowide, orbitron, lobster
+# Hand-drawn:     caveat, kalam, architects-daughter, indie-flower, patrick-hand,
+#                 shadows-into-light, gloria-hallelujah, amatic-sc, reenie-beanie,
+#                 homemade-apple
+# Script:         dancing-script, tangerine, parisienne, clicker-script, yellowtail
+# Geometric:      poppins, raleway, oswald, work-sans, cabin
+# Commercial:     bookerly, minion, livory, chaparral, arno, malabar, pigeonette
+# Special:        random (pick a vendored variant fresh each time the phrase changes)
 font: dejavu
 
 # Coordinates for after-hours mode (display inverts after sunset).

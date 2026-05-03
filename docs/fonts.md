@@ -185,6 +185,52 @@ Chunky Latin display — bold and cartoonish in the best way.
 
 ---
 
+## Geometric & condensed
+
+Clean geometric proportions and condensed widths — from balanced all-round workhorse to Art Deco elegance to space-saving condensed type. Condensed faces like Oswald fit longer fuzzy-time phrases on one line at a larger point size.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-poppins.png" alt="poppins"><br><br>
+<strong><code>poppins</code></strong><br>
+<sup>OFL · static</sup><br>
+Balanced geometric sans — uniform stroke, contemporary feel.
+</td>
+<td align="center">
+<img src="preview-raleway.png" alt="raleway"><br><br>
+<strong><code>raleway</code></strong><br>
+<sup>OFL · variable</sup><br>
+Art Deco geometric — distinctive double-storey 'W'.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-oswald.png" alt="oswald"><br><br>
+<strong><code>oswald</code></strong><br>
+<sup>OFL · variable</sup><br>
+Condensed sans — fits long dialect phrases at a larger size.
+</td>
+<td align="center">
+<img src="preview-work-sans.png" alt="work-sans"><br><br>
+<strong><code>work-sans</code></strong><br>
+<sup>OFL · variable</sup><br>
+Utilitarian geometric sans — clean and legible at any size.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-cabin.png" alt="cabin"><br><br>
+<strong><code>cabin</code></strong><br>
+<sup>OFL · variable</sup><br>
+Humanist geometric sans — slightly warmer than Poppins.
+</td>
+<td></td>
+</tr>
+</table>
+
+---
+
 ## Bold display & poster
 
 Big shouty character — signage, comic, slab, condensed. The clock as a poster.
@@ -403,6 +449,52 @@ Felt-tip handwriting — looks like whiteboard scribble.
 <sup>Apache 2.0 · static</sup><br>
 Distressed typewriter — uneven inking, ribbon strikes.
 </td>
+</tr>
+</table>
+
+---
+
+## Flowing script & calligraphy
+
+Flowing connected cursives and formal calligraphic scripts — elegant, personal, occasion-ready. Bold weights where available; thin-stroked faces like Tangerine and Parisienne may look delicate at small auto-sizes.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-dancing-script.png" alt="dancing-script"><br><br>
+<strong><code>dancing-script</code></strong><br>
+<sup>OFL · variable</sup><br>
+Flowing connected cursive — the most popular script on Google Fonts.
+</td>
+<td align="center">
+<img src="preview-tangerine.png" alt="tangerine"><br><br>
+<strong><code>tangerine</code></strong><br>
+<sup>OFL · static</sup><br>
+Elegant copperplate calligraphy — refined and formal.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-parisienne.png" alt="parisienne"><br><br>
+<strong><code>parisienne</code></strong><br>
+<sup>OFL · static</sup><br>
+French ornamental script — decorative loops and flourishes.
+</td>
+<td align="center">
+<img src="preview-clicker-script.png" alt="clicker-script"><br><br>
+<strong><code>clicker-script</code></strong><br>
+<sup>OFL · static</sup><br>
+Thick connecting brush script — bold and legible on e-ink.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-yellowtail.png" alt="yellowtail"><br><br>
+<strong><code>yellowtail</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Condensed calligraphic brush — stylish and compact.
+</td>
+<td></td>
 </tr>
 </table>
 
