@@ -345,7 +345,26 @@ Art Deco geometric sans — retro-modern personality.
 <sup>OFL · static</sup><br>
 Halloween / horror display — seasonal novelty.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-luckiest-guy.png" alt="luckiest-guy"><br><br>
+<strong><code>luckiest-guy</code></strong><br>
+<sup>OFL · static</sup><br>
+Cereal-box cartoon — irregular baseline, high-energy retro fun.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-titan-one.png" alt="titan-one"><br><br>
+<strong><code>titan-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Super-chunky rounded bold — compact punch, maximum presence.
+</td>
+<td align="center">
+<img src="preview-boogaloo.png" alt="boogaloo"><br><br>
+<strong><code>boogaloo</code></strong><br>
+<sup>OFL · static</sup><br>
+Retro casual comic/poster — lighter and breezier than Bangers.
+</td>
 </tr>
 </table>
 
@@ -471,7 +490,26 @@ All-caps techno geometric — architectural, no lowercase glyphs.
 <sup>OFL · variable</sup><br>
 Techno-geometric variable — bridges vintage and sci-fi.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-cinzel-decorative.png" alt="cinzel-decorative"><br><br>
+<strong><code>cinzel-decorative</code></strong><br>
+<sup>OFL · static</sup><br>
+Ornate Roman capitals with Art Deco serifs — regal, all-caps only.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-fascinate.png" alt="fascinate"><br><br>
+<strong><code>fascinate</code></strong><br>
+<sup>OFL · static</sup><br>
+Art Deco inline — white channel through each stroke, striking on e-ink.
+</td>
+<td align="center">
+<img src="preview-forum.png" alt="forum"><br><br>
+<strong><code>forum</code></strong><br>
+<sup>OFL · static</sup><br>
+Elegant Art Nouveau Roman — calligraphic influence, lighter than Cinzel.
+</td>
 </tr>
 </table>
 
