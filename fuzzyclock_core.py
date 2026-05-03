@@ -372,6 +372,11 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Futura.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    "space-grotesk": [
+        os.path.join(_VENDORED_FONT_DIR, "SpaceGrotesk-Bold.ttf"),  # vendored
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
     # Slab serif — OFL, vendored in fonts/. Sturdy bracketed serifs across the
     # full personality range: geometric precision to humanist warmth. macOS
     # fallback uses Georgia Bold (the closest stock slab-adjacent serif); the

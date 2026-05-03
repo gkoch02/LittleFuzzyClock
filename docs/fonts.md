@@ -271,7 +271,12 @@ Utilitarian geometric sans — clean and legible at any size.
 <sup>OFL · variable</sup><br>
 Humanist geometric sans — slightly warmer than Poppins.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-space-grotesk.png" alt="space-grotesk"><br><br>
+<strong><code>space-grotesk</code></strong><br>
+<sup>OFL · static</sup><br>
+Quirky geometric sans — slightly irregular strokes give it personality.
+</td>
 </tr>
 </table>
 
