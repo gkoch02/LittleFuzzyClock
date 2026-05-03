@@ -565,6 +565,34 @@ Elegant Art Nouveau Roman — calligraphic influence, lighter than Cinzel.
 <sup>OFL · static</sup><br>
 Wild West poster — ornate inline decorations inside every bracketed serif.
 </td>
+<td align="center">
+<img src="preview-atomic-age.png" alt="atomic-age"><br><br>
+<strong><code>atomic-age</code></strong><br>
+<sup>OFL · static</sup><br>
+Outlined Space Age display — '50s science-fiction inline.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-diplomata.png" alt="diplomata"><br><br>
+<strong><code>diplomata</code></strong><br>
+<sup>OFL · static</sup><br>
+Heavily ornamented Art Deco caps — diploma-grade engraving.
+</td>
+<td align="center">
+<img src="preview-iceland.png" alt="iceland"><br><br>
+<strong><code>iceland</code></strong><br>
+<sup>OFL · static</sup><br>
+Geometric blocky display — Nordic rune-like construction.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-megrim.png" alt="megrim"><br><br>
+<strong><code>megrim</code></strong><br>
+<sup>OFL · static</sup><br>
+Constructed thin-stroke Art Nouveau — built from straight lines and circles.
+</td>
 <td></td>
 </tr>
 </table>
@@ -772,7 +800,7 @@ Quick handwritten cursive — looped and personal.
 
 ## Textured & experimental
 
-Letterforms filled with pattern, texture, or distortion — appearance over legibility.
+Letterforms filled with pattern, texture, distortion, or melted into puddles — appearance over legibility. The Rubik Filtered family ships a wide collection of weirdness modes from the same chassis; the rest are one-off oddities.
 
 <table>
 <tr>
@@ -787,6 +815,136 @@ Dirt and debris embedded in the strokes — deliberately rough fill.
 <strong><code>rubik-maze</code></strong><br>
 <sup>OFL · static</sup><br>
 Every stroke filled with a continuous maze pattern — genuinely strange.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-rubik-glitch.png" alt="rubik-glitch"><br><br>
+<strong><code>rubik-glitch</code></strong><br>
+<sup>OFL · static</sup><br>
+Letters torn apart by digital glitch — slipped slices and corrupted shapes.
+</td>
+<td align="center">
+<img src="preview-rubik-distressed.png" alt="rubik-distressed"><br><br>
+<strong><code>rubik-distressed</code></strong><br>
+<sup>OFL · static</sup><br>
+Heavily eroded grunge — letters that look worn down by sandpaper.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-rubik-wet-paint.png" alt="rubik-wet-paint"><br><br>
+<strong><code>rubik-wet-paint</code></strong><br>
+<sup>OFL · static</sup><br>
+Paint dripping down each stroke — fresh-coat-of-paint vandalism.
+</td>
+<td align="center">
+<img src="preview-rubik-puddles.png" alt="rubik-puddles"><br><br>
+<strong><code>rubik-puddles</code></strong><br>
+<sup>OFL · static</sup><br>
+Letterforms melted into puddles — gravity won.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-rubik-spray-paint.png" alt="rubik-spray-paint"><br><br>
+<strong><code>rubik-spray-paint</code></strong><br>
+<sup>OFL · static</sup><br>
+Spray-painted stencil with overspray dots — graffiti-tag energy.
+</td>
+<td align="center">
+<img src="preview-rubik-microbe.png" alt="rubik-microbe"><br><br>
+<strong><code>rubik-microbe</code></strong><br>
+<sup>OFL · static</sup><br>
+Cellular microbe texture across every stroke — petri-dish typography.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-rubik-beastly.png" alt="rubik-beastly"><br><br>
+<strong><code>rubik-beastly</code></strong><br>
+<sup>OFL · static</sup><br>
+Chunky furry-creature shapes — letters that look like tiny beasts.
+</td>
+<td align="center">
+<img src="preview-rubik-iso.png" alt="rubik-iso"><br><br>
+<strong><code>rubik-iso</code></strong><br>
+<sup>OFL · static</sup><br>
+Isometric 3D outlined — architectural perspective on every glyph.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-splash.png" alt="splash"><br><br>
+<strong><code>splash</code></strong><br>
+<sup>OFL · static</sup><br>
+Liquid brush splash — connected calligraphic ink, very wet.
+</td>
+<td align="center">
+<img src="preview-sixtyfour.png" alt="sixtyfour"><br><br>
+<strong><code>sixtyfour</code></strong><br>
+<sup>OFL · variable</sup><br>
+C64 CRT scanlines — retro-computing pixel grid with deliberate bleed.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-rampart-one.png" alt="rampart-one"><br><br>
+<strong><code>rampart-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Letters built from masonry — towers, ramparts, and brick walls.
+</td>
+<td align="center">
+<img src="preview-codystar.png" alt="codystar"><br><br>
+<strong><code>codystar</code></strong><br>
+<sup>OFL · static</sup><br>
+Star-pattern stencil — letterforms assembled from clusters of dots.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-plaster.png" alt="plaster"><br><br>
+<strong><code>plaster</code></strong><br>
+<sup>OFL · static</sup><br>
+Heavy stencil plaster — slab industrial relief, feels poured.
+</td>
+<td></td>
+</tr>
+</table>
+
+---
+
+## Horror & macabre
+
+Drippy, bitten, blood-spattered letterforms — the Halloween / horror corner of the gallery.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-nosifer.png" alt="nosifer"><br><br>
+<strong><code>nosifer</code></strong><br>
+<sup>OFL · static</sup><br>
+Blood dripping from every stroke — proper Halloween horror.
+</td>
+<td align="center">
+<img src="preview-butcherman.png" alt="butcherman"><br><br>
+<strong><code>butcherman</code></strong><br>
+<sup>OFL · static</sup><br>
+Splatter horror display — uneven, ragged, slightly threatening.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-eater.png" alt="eater"><br><br>
+<strong><code>eater</code></strong><br>
+<sup>OFL · static</sup><br>
+Bites taken out of the letterforms — gnawed-on type.
+</td>
+<td align="center">
+<img src="preview-lacquer.png" alt="lacquer"><br><br>
+<strong><code>lacquer</code></strong><br>
+<sup>OFL · static</sup><br>
+Thick lacquered marker — wet-glossy painted strokes.
 </td>
 </tr>
 </table>
