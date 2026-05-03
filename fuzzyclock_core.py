@@ -2,6 +2,7 @@
 
 import math
 import os
+import random as _random
 from datetime import datetime, timedelta, timezone
 
 from PIL import ImageFont
@@ -188,6 +189,57 @@ FONT_VARIANTS = {
 }
 
 DEFAULT_FONT = "dejavu"
+
+# Sentinel font value for "pick a vendored variant per phrase change". Not a
+# key in FONT_VARIANTS — callers resolve it to a concrete variant via
+# pick_random_font() before passing it to load_font() / render_clock().
+RANDOM_FONT = "random"
+
+
+def _vendored_font_path(variant):
+    """Return the first vendored-fonts-dir path in `variant`'s candidate list.
+
+    Each FONT_VARIANTS entry is an ordered list of paths; the vendored ones
+    live under fonts/ at the repo root and are how we tell "we ship this
+    font" from "system fallback only". Returns None if the variant has no
+    vendored entry (which today is just `dejavu`'s legacy alias).
+    """
+    for path in FONT_VARIANTS[variant]:
+        if path.startswith(_VENDORED_FONT_DIR):
+            return path
+    return None
+
+
+def vendored_font_variants():
+    """Variants whose vendored TTF/OTF is actually present in fonts/.
+
+    Used by the random-font mode so a roll only lands on a font we ship.
+    Filtering by file existence keeps a clean Pi (no commercial fonts dropped
+    in) from rendering with PIL's default bitmap fallback when the random
+    pick happens to be `bookerly` etc. — load_font would SystemExit.
+    """
+    available = []
+    for variant in FONT_VARIANTS:
+        path = _vendored_font_path(variant)
+        if path is not None and os.path.exists(path):
+            available.append(variant)
+    return available
+
+
+def pick_random_font(rng=None):
+    """Pick a vendored font variant at random.
+
+    `rng` defaults to the module's `random` instance; tests pass a seeded
+    `random.Random` for determinism. Falls back to DEFAULT_FONT if nothing
+    is vendored on disk (degraded environment) so callers always get a
+    usable variant key.
+    """
+    available = vendored_font_variants()
+    if not available:
+        return DEFAULT_FONT
+    rng = rng if rng is not None else _random
+    return rng.choice(available)
+
 
 HOUR_WORDS = {
     1: "one",

@@ -16,6 +16,14 @@ python3 fuzzyClock2.py --dry-run --font libertinus --output preview.png
 
 Unknown values fall back to `dejavu` with a warning in the daemon log.
 
+## Random mode
+
+```yaml
+font: random
+```
+
+Picks a fresh vendored variant each time the time phrase rolls over to the next 5-minute bucket — every phrase change comes with a new typeface. Only fonts whose file is actually present in `fonts/` are eligible, so a clean Pi without any commercial faces dropped in still works (it just rolls from the OFL set). A short button-press refresh keeps the current font; the variant only changes when the phrase itself does.
+
 ---
 
 ## Apt-installed

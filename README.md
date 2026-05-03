@@ -96,6 +96,8 @@ The daemon reads the same setting from the `font:` field in `fuzzyclock_config.y
 font: roboto-slab
 ```
 
+Set `font: random` to roll a new vendored variant every time the time phrase changes — see [docs/fonts.md](docs/fonts.md#random-mode).
+
 Unknown values fall back to `dejavu` with a warning in the daemon log.
 
 ## After-hours mode

@@ -8,6 +8,8 @@ from fuzzyclock_core import (
     DEFAULT_FONT,
     DIALECTS,
     FONT_VARIANTS,
+    RANDOM_FONT,
+    pick_random_font,
     render_clock,
 )
 
@@ -43,12 +45,16 @@ def draw_fuzzy_clock(
         image = Image.new("1", (width, height), 255)
 
     draw = ImageDraw.Draw(image)
+    # `random` is a config sentinel rather than a real variant; resolve it to
+    # a concrete vendored font for this one render. The daemon re-picks per
+    # phrase change, but the CLI is one-shot so a single roll is enough.
+    resolved_font = pick_random_font() if font == RANDOM_FONT else font
     render_clock(
         draw,
         width,
         height,
         now if now is not None else datetime.now(),
-        font_variant=font,
+        font_variant=resolved_font,
         dialect=dialect,
     )
 
@@ -84,8 +90,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--font",
         default=DEFAULT_FONT,
-        choices=sorted(FONT_VARIANTS.keys()),
-        help=f"Display font variant (default: {DEFAULT_FONT})",
+        choices=sorted([RANDOM_FONT, *FONT_VARIANTS.keys()]),
+        help=(
+            f"Display font variant (default: {DEFAULT_FONT}). "
+            f"Use {RANDOM_FONT!r} to pick a vendored variant at random."
+        ),
     )
     parser.add_argument(
         "--time",
