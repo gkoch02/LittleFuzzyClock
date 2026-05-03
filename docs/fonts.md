@@ -26,59 +26,41 @@ Picks a fresh vendored variant each time the time phrase rolls over to the next 
 
 ---
 
-## Apt-installed
+## Sourcing
 
-`deploy.sh` installs these automatically — no extra steps needed on the Pi.
+Each preview's `<sup>` line indicates how the font reaches the daemon:
+
+- **`apt: ...`** — installed automatically by `deploy.sh` on the Pi; no extra steps.
+- **`OFL · ...`** / **`Apache 2.0 · ...`** — vendored in this repo's `fonts/` directory; works on any machine.
+- **`Commercial · drop ... into fonts/`** — no apt package and not redistributable here. Provide the file yourself; the daemon falls back to a macOS system font for dev renders when no file is present.
+
+---
+
+## Clean & everyday
+
+Neutral, readable workhorses — for when you want the time to feel ordinary.
 
 <table>
 <tr>
 <td align="center">
 <img src="preview-dejavu.png" alt="dejavu"><br><br>
 <strong><code>dejavu</code></strong> <em>(default)</em><br>
-<sup>fonts-dejavu-core</sup><br>
+<sup>apt: fonts-dejavu-core</sup><br>
 Clean humanist sans — high x-height, broad Unicode coverage.
 </td>
 <td align="center">
-<img src="preview-dejavu-serif.png" alt="dejavu-serif"><br><br>
-<strong><code>dejavu-serif</code></strong><br>
-<sup>fonts-dejavu</sup><br>
-Elegant transitional serif companion to DejaVu Sans.
-</td>
-</tr>
-<tr>
-<td align="center">
-<img src="preview-liberation-serif.png" alt="liberation-serif"><br><br>
-<strong><code>liberation-serif</code></strong><br>
-<sup>fonts-liberation2</sup><br>
-Times-metric serif — newspaper feel, very readable at small sizes.
-</td>
-<td align="center">
-<img src="preview-roboto-slab.png" alt="roboto-slab"><br><br>
-<strong><code>roboto-slab</code></strong><br>
-<sup>fonts-roboto-slab</sup><br>
-Chunky slab serif — renders especially crisply on e-ink.
-</td>
-</tr>
-<tr>
-<td align="center">
 <img src="preview-cantarell.png" alt="cantarell"><br><br>
 <strong><code>cantarell</code></strong><br>
-<sup>fonts-cantarell</sup><br>
+<sup>apt: fonts-cantarell</sup><br>
 GNOME's humanist sans — tall x-height, friendly curves.
 </td>
+</tr>
+<tr>
 <td align="center">
 <img src="preview-ubuntu.png" alt="ubuntu"><br><br>
 <strong><code>ubuntu</code></strong><br>
-<sup>fonts-ubuntu</sup><br>
+<sup>apt: fonts-ubuntu</sup><br>
 Distinctive warm sans with subtle calligraphic terminals.
-</td>
-</tr>
-<tr>
-<td align="center">
-<img src="preview-jetbrains-mono.png" alt="jetbrains-mono"><br><br>
-<strong><code>jetbrains-mono</code></strong><br>
-<sup>fonts-jetbrains-mono</sup><br>
-Modern monospaced — typewriter personality on e-ink.
 </td>
 <td></td>
 </tr>
@@ -86,23 +68,23 @@ Modern monospaced — typewriter personality on e-ink.
 
 ---
 
-## Open-source, vendored
+## Classic & literary serifs
 
-These ship in the `fonts/` directory and work on any machine without an apt install. All are [OFL](https://openfontlicense.org/) licensed unless noted.
+Reading-focused serifs with traditional proportions — book pages and printed essays in miniature. The commercial drop-ins live here too: most were designed for long-form reading.
 
 <table>
 <tr>
 <td align="center">
-<img src="preview-fredoka.png" alt="fredoka"><br><br>
-<strong><code>fredoka</code></strong><br>
-<sup>OFL · variable · apt: fonts-fredoka</sup><br>
-Rounded display — soft, friendly geometric shapes.
+<img src="preview-dejavu-serif.png" alt="dejavu-serif"><br><br>
+<strong><code>dejavu-serif</code></strong><br>
+<sup>apt: fonts-dejavu</sup><br>
+Elegant transitional serif companion to DejaVu Sans.
 </td>
 <td align="center">
-<img src="preview-bitter.png" alt="bitter"><br><br>
-<strong><code>bitter</code></strong><br>
-<sup>OFL · variable</sup><br>
-High-contrast slab serif — confident vertical stress on e-ink.
+<img src="preview-liberation-serif.png" alt="liberation-serif"><br><br>
+<strong><code>liberation-serif</code></strong><br>
+<sup>apt: fonts-liberation2</sup><br>
+Times-metric serif — newspaper feel, very readable at small sizes.
 </td>
 </tr>
 <tr>
@@ -127,32 +109,47 @@ Open successor to Linux Libertine — classical book serif.
 Warm humanist serif — generous x-height, broad glyph coverage.
 </td>
 <td align="center">
-<img src="preview-playfair.png" alt="playfair"><br><br>
-<strong><code>playfair</code></strong><br>
+<img src="preview-bitter.png" alt="bitter"><br><br>
+<strong><code>bitter</code></strong><br>
 <sup>OFL · variable</sup><br>
-High-contrast display serif — dramatic stroke variation.
+High-contrast slab serif — confident vertical stress on e-ink.
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="preview-pacifico.png" alt="pacifico"><br><br>
-<strong><code>pacifico</code></strong><br>
-<sup>OFL · static</sup><br>
-Casual brush-script — maximally playful.
+<img src="preview-roboto-slab.png" alt="roboto-slab"><br><br>
+<strong><code>roboto-slab</code></strong><br>
+<sup>apt: fonts-roboto-slab</sup><br>
+Chunky slab serif — renders especially crisply on e-ink.
 </td>
-<td align="center">
-<img src="preview-lilita-one.png" alt="lilita-one"><br><br>
-<strong><code>lilita-one</code></strong><br>
-<sup>OFL · static</sup><br>
-Chunky Latin display — bold and cartoonish in the best way.
-</td>
+<td></td>
 </tr>
+</table>
+
+**Commercial drop-ins** — drop the listed file into `fonts/` to unlock:
+
+| Variant | File | Publisher | Character |
+|---------|------|-----------|-----------|
+| `bookerly` | `Bookerly-Bold.ttf` | Amazon (Kindle) | Warm humanist serif designed for long reading sessions; optimised for screen rendering. |
+| `minion` | `MinionPro-Bold.otf` | Adobe | Classic old-style serif inspired by Renaissance-era type; timeless and space-efficient. |
+| `livory` | `Livory-Bold.otf` | iA (Information Architects) | Transitional serif with calligraphic warmth; designed for iA Writer. |
+| `chaparral` | `ChaparralPro-Bold.otf` | Adobe | Humanist slab serif blending serif warmth with slab structure; very even on e-ink. |
+| `arno` | `ArnoPro-Bold.otf` | Adobe | Old-style text serif in the tradition of the early Venetian printers; compact and elegant. |
+| `malabar` | `Malabar-Bold.otf` | Linotype | Sturdy hybrid serif with slab tendencies; originally designed for newspaper body text. |
+
+---
+
+## Soft & rounded
+
+Friendly geometric curves — informal warmth, approachable at any size.
+
+<table>
 <tr>
 <td align="center">
-<img src="preview-righteous.png" alt="righteous"><br><br>
-<strong><code>righteous</code></strong><br>
-<sup>OFL · static</sup><br>
-Art Deco geometric sans — retro-modern personality.
+<img src="preview-fredoka.png" alt="fredoka"><br><br>
+<strong><code>fredoka</code></strong><br>
+<sup>OFL · variable · apt: fonts-fredoka</sup><br>
+Rounded display — soft, friendly geometric shapes.
 </td>
 <td align="center">
 <img src="preview-comfortaa.png" alt="comfortaa"><br><br>
@@ -177,10 +174,10 @@ Geometric sans inspired by Futura — clean and modern.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-bangers.png" alt="bangers"><br><br>
-<strong><code>bangers</code></strong><br>
+<img src="preview-lilita-one.png" alt="lilita-one"><br><br>
+<strong><code>lilita-one</code></strong><br>
 <sup>OFL · static</sup><br>
-Comic-book display — bold, condensed, pop-art energy.
+Chunky Latin display — bold and cartoonish in the best way.
 </td>
 <td></td>
 </tr>
@@ -188,16 +185,223 @@ Comic-book display — bold, condensed, pop-art energy.
 
 ---
 
-## Commercial — bring your own file
+## Bold display & poster
 
-Drop a licensed copy of the font into `fonts/`. The daemon falls back to a macOS system font (Georgia Bold or Times New Roman Bold) for dev renders when no file is present.
+Big shouty character — signage, comic, slab, condensed. The clock as a poster.
 
-| Variant | File to drop in `fonts/` | Publisher | Character |
-|---------|--------------------------|-----------|-----------|
-| `bookerly` | `Bookerly-Bold.ttf` | Amazon (Kindle) | Warm humanist serif designed for long reading sessions; optimised for screen rendering. |
-| `minion` | `MinionPro-Bold.otf` | Adobe | Classic old-style serif inspired by Renaissance-era type; timeless and space-efficient. |
-| `livory` | `Livory-Bold.otf` | iA (Information Architects) | Transitional serif with calligraphic warmth; designed for iA Writer. |
-| `chaparral` | `ChaparralPro-Bold.otf` | Adobe | Humanist slab serif blending serif warmth with slab structure; very even on e-ink. |
-| `arno` | `ArnoPro-Bold.otf` | Adobe | Old-style text serif in the tradition of the early Venetian printers; compact and elegant. |
-| `malabar` | `Malabar-Bold.otf` | Linotype | Sturdy hybrid serif with slab tendencies; originally designed for newspaper body text. |
+<table>
+<tr>
+<td align="center">
+<img src="preview-bangers.png" alt="bangers"><br><br>
+<strong><code>bangers</code></strong><br>
+<sup>OFL · static</sup><br>
+Comic-book display — bold, condensed, pop-art energy.
+</td>
+<td align="center">
+<img src="preview-bungee.png" alt="bungee"><br><br>
+<strong><code>bungee</code></strong><br>
+<sup>OFL · static</sup><br>
+David Jonathan Ross signage face — architectural and bold.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-alfa-slab-one.png" alt="alfa-slab-one"><br><br>
+<strong><code>alfa-slab-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Chunky bold slab — confident, immovable.
+</td>
+<td align="center">
+<img src="preview-anton.png" alt="anton"><br><br>
+<strong><code>anton</code></strong><br>
+<sup>OFL · static</sup><br>
+Tall condensed poster sans — fits long phrases easily.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-staatliches.png" alt="staatliches"><br><br>
+<strong><code>staatliches</code></strong><br>
+<sup>OFL · static</sup><br>
+Bauhaus all-caps — extreme width contrast.
+</td>
+<td align="center">
+<img src="preview-playfair.png" alt="playfair"><br><br>
+<strong><code>playfair</code></strong><br>
+<sup>OFL · variable</sup><br>
+High-contrast display serif — dramatic stroke variation.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-abril-fatface.png" alt="abril-fatface"><br><br>
+<strong><code>abril-fatface</code></strong><br>
+<sup>OFL · static</sup><br>
+Fashion-magazine ultra-bold display serif — high contrast.
+</td>
+<td align="center">
+<img src="preview-righteous.png" alt="righteous"><br><br>
+<strong><code>righteous</code></strong><br>
+<sup>OFL · static</sup><br>
+Art Deco geometric sans — retro-modern personality.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-creepster.png" alt="creepster"><br><br>
+<strong><code>creepster</code></strong><br>
+<sup>OFL · static</sup><br>
+Halloween / horror display — seasonal novelty.
+</td>
+<td></td>
+</tr>
+</table>
+
+**Commercial drop-ins** — drop the listed file into `fonts/` to unlock:
+
+| Variant | File | Publisher | Character |
+|---------|------|-----------|-----------|
 | `pigeonette` | `Pigeonette-Bold.otf`, `Pigeonette-Regular.otf`, or `Pigeonette.otf` | Tortilla Studio ([Future Fonts](https://www.futurefonts.xyz/tortillastudio/pigeonette)) | Idiosyncratic display serif with expressive stroke contrast. |
+
+---
+
+## Retro & computing
+
+Terminal, pixel, 8-bit nostalgia.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-vt323.png" alt="vt323"><br><br>
+<strong><code>vt323</code></strong><br>
+<sup>OFL · static</sup><br>
+CRT terminal — chunky monospace, late-70s computing.
+</td>
+<td align="center">
+<img src="preview-press-start-2p.png" alt="press-start-2p"><br><br>
+<strong><code>press-start-2p</code></strong><br>
+<sup>OFL · static</sup><br>
+8-bit arcade pixel font — quarter-eating energy.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-silkscreen.png" alt="silkscreen"><br><br>
+<strong><code>silkscreen</code></strong><br>
+<sup>OFL · static</sup><br>
+Bitmap-style display — late-90s desktop UI nostalgia.
+</td>
+<td align="center">
+<img src="preview-jetbrains-mono.png" alt="jetbrains-mono"><br><br>
+<strong><code>jetbrains-mono</code></strong><br>
+<sup>apt: fonts-jetbrains-mono</sup><br>
+Modern monospaced — typewriter personality on e-ink.
+</td>
+</tr>
+</table>
+
+---
+
+## Vintage, deco & futuristic
+
+1920s marquee through retro-futuristic chrome.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-monoton.png" alt="monoton"><br><br>
+<strong><code>monoton</code></strong><br>
+<sup>OFL · static</sup><br>
+Multi-line striped art-deco caps — striking silhouette.
+</td>
+<td align="center">
+<img src="preview-limelight.png" alt="limelight"><br><br>
+<strong><code>limelight</code></strong><br>
+<sup>OFL · static</sup><br>
+1920s theatre marquee — vintage display serif.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-audiowide.png" alt="audiowide"><br><br>
+<strong><code>audiowide</code></strong><br>
+<sup>OFL · static</sup><br>
+Retro-futuristic chrome — hi-fi receiver vibe.
+</td>
+<td align="center">
+<img src="preview-orbitron.png" alt="orbitron"><br><br>
+<strong><code>orbitron</code></strong><br>
+<sup>OFL · variable</sup><br>
+Geometric sci-fi display — clean techno feel.
+</td>
+</tr>
+</table>
+
+---
+
+## Blackletter & fantasy
+
+Medieval, gothic, storybook.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-unifraktur-maguntia.png" alt="unifraktur-maguntia"><br><br>
+<strong><code>unifraktur-maguntia</code></strong><br>
+<sup>OFL · static</sup><br>
+Full gothic blackletter — medieval manuscript feel.
+</td>
+<td align="center">
+<img src="preview-medieval-sharp.png" alt="medieval-sharp"><br><br>
+<strong><code>medieval-sharp</code></strong><br>
+<sup>OFL · static</sup><br>
+Storybook fantasy — readable medieval display.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-pirata-one.png" alt="pirata-one"><br><br>
+<strong><code>pirata-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Decorative pirate / treasure-map blackletter.
+</td>
+<td></td>
+</tr>
+</table>
+
+---
+
+## Handwriting & script
+
+Cursive, brush, typewriter, marker — informal, hand-made character.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-pacifico.png" alt="pacifico"><br><br>
+<strong><code>pacifico</code></strong><br>
+<sup>OFL · static</sup><br>
+Casual brush-script — maximally playful.
+</td>
+<td align="center">
+<img src="preview-lobster.png" alt="lobster"><br><br>
+<strong><code>lobster</code></strong><br>
+<sup>OFL · static</sup><br>
+Bold script — heavier and more decorative than Pacifico.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-permanent-marker.png" alt="permanent-marker"><br><br>
+<strong><code>permanent-marker</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Felt-tip handwriting — looks like whiteboard scribble.
+</td>
+<td align="center">
+<img src="preview-special-elite.png" alt="special-elite"><br><br>
+<strong><code>special-elite</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Distressed typewriter — uneven inking, ribbon strikes.
+</td>
+</tr>
+</table>
