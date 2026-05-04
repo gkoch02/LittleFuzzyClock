@@ -23,6 +23,11 @@ dialect: classic
 # Special:        random (pick a vendored variant fresh each time the phrase changes)
 font: dejavu
 
+# Border frame style. "auto" picks one matched to the active font's category;
+# explicit values override that pairing for any font.
+# Options: auto (default), bauhaus, rustic, sketchy, retro
+frame: auto
+
 # Coordinates for after-hours mode (display inverts after sunset).
 # Leave both null to disable; the clock will use plain day/night only.
 latitude: 37.2872

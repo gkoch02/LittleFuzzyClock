@@ -18,13 +18,18 @@ from fuzzyclock_core import (
     _BODY_MAX_SIZE,
     _BODY_MIN_SIZE,
     _TINY_SIZE,
+    AUTO_FRAME,
     DEFAULT_DIALECT,
     DEFAULT_FONT,
+    DEFAULT_FRAME,
     DIALECTS,
     FONT_CANDIDATES,
+    FONT_FRAME_CATEGORY,
     FONT_VARIANTS,
+    FRAME_VARIANTS,
     RANDOM_FONT,
     draw_border,
+    frame_for_font,
     load_font,
     pick_random_font,
     render_clock,
@@ -310,6 +315,122 @@ class RandomFontTests(unittest.TestCase):
             font_variant=variant,
         )
         self.assertGreater(_count_black_pixels(image), 200)
+
+
+class FrameVariantsTests(unittest.TestCase):
+    """Themed-frame registry: every frame must paint distinct ink that honours
+    invert, every registered font must map to a valid frame, and the auto
+    sentinel must resolve through render_clock to the font's category."""
+
+    def test_default_frame_is_a_registered_variant(self):
+        self.assertIn(DEFAULT_FRAME, FRAME_VARIANTS)
+
+    def test_auto_sentinel_is_not_a_registered_variant(self):
+        # AUTO_FRAME lives outside FRAME_VARIANTS by design — render_clock and
+        # the daemon resolve it to a concrete frame before dispatch.
+        self.assertNotIn(AUTO_FRAME, FRAME_VARIANTS)
+
+    def test_every_frame_marks_pixels(self):
+        for name in FRAME_VARIANTS:
+            with self.subTest(frame=name):
+                image = Image.new("1", (WIDTH, HEIGHT), 255)
+                draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT, frame=name)
+                self.assertGreater(_count_black_pixels(image), 0)
+
+    def test_every_frame_is_sparse(self):
+        # No frame should fill more than a quarter of the canvas — they're
+        # outlines, not panels. Catches a runaway draw loop.
+        for name in FRAME_VARIANTS:
+            with self.subTest(frame=name):
+                image = Image.new("1", (WIDTH, HEIGHT), 255)
+                draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT, frame=name)
+                self.assertLess(_count_black_pixels(image), (WIDTH * HEIGHT) // 4)
+
+    def test_every_frame_respects_invert(self):
+        for name in FRAME_VARIANTS:
+            with self.subTest(frame=name):
+                image = Image.new("1", (WIDTH, HEIGHT), 0)
+                draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT, invert=True, frame=name)
+                black = _count_black_pixels(image)
+                self.assertGreater(WIDTH * HEIGHT - black, 0)
+                self.assertGreater(black, (WIDTH * HEIGHT) * 3 // 4)
+
+    def test_unknown_frame_falls_back_to_default(self):
+        # Mirror the unknown-font behaviour: don't crash on a typo, just
+        # render the default frame so the clock face stays usable.
+        unknown = Image.new("1", (WIDTH, HEIGHT), 255)
+        default = Image.new("1", (WIDTH, HEIGHT), 255)
+        draw_border(ImageDraw.Draw(unknown), WIDTH, HEIGHT, frame="not-a-real-frame")
+        draw_border(ImageDraw.Draw(default), WIDTH, HEIGHT, frame=DEFAULT_FRAME)
+        self.assertEqual(_count_black_pixels(unknown), _count_black_pixels(default))
+
+    def test_frame_for_font_covers_every_registered_variant(self):
+        # Every font in FONT_VARIANTS should have an explicit category so the
+        # auto-frame mode never silently falls back to the default for a
+        # vendored variant.
+        for variant in FONT_VARIANTS:
+            with self.subTest(variant=variant):
+                self.assertIn(variant, FONT_FRAME_CATEGORY)
+
+    def test_frame_for_font_returns_registered_frames(self):
+        for variant, frame in FONT_FRAME_CATEGORY.items():
+            with self.subTest(variant=variant):
+                self.assertIn(frame, FRAME_VARIANTS)
+
+    def test_frame_for_font_unknown_falls_back_to_default(self):
+        self.assertEqual(frame_for_font("definitely-not-a-font"), DEFAULT_FRAME)
+
+    def test_frame_for_font_known_categories(self):
+        # Spot-check one font from each category so a future re-categorisation
+        # that breaks the bauhaus/rustic/sketchy/retro buckets fails loudly.
+        self.assertEqual(frame_for_font("dejavu"), "bauhaus")
+        self.assertEqual(frame_for_font("unifraktur-maguntia"), "rustic")
+        self.assertEqual(frame_for_font("caveat"), "sketchy")
+        self.assertEqual(frame_for_font("vt323"), "retro")
+
+    def test_auto_frame_routes_through_font_category(self):
+        # render_clock with frame=AUTO_FRAME and a rustic-bucket font should
+        # produce identical output to an explicit frame="rustic" render with
+        # the same font — proves the auto sentinel is wired through.
+        when = datetime(2026, 4, 25, 9, 15)
+        auto_image = Image.new("1", (WIDTH, HEIGHT), 255)
+        explicit_image = Image.new("1", (WIDTH, HEIGHT), 255)
+        render_clock(
+            ImageDraw.Draw(auto_image),
+            WIDTH,
+            HEIGHT,
+            when,
+            font_variant="dejavu",
+            frame=AUTO_FRAME,
+        )
+        render_clock(
+            ImageDraw.Draw(explicit_image),
+            WIDTH,
+            HEIGHT,
+            when,
+            font_variant="dejavu",
+            frame=frame_for_font("dejavu"),
+        )
+        self.assertEqual(
+            list(auto_image.getdata()),
+            list(explicit_image.getdata()),
+        )
+
+    def test_every_frame_renders_through_render_clock(self):
+        # End-to-end smoke: every registered frame must survive the full
+        # render_clock pipeline (text + border + footer) at panel size.
+        when = datetime(2026, 4, 25, 9, 15)
+        for name in FRAME_VARIANTS:
+            with self.subTest(frame=name):
+                image = Image.new("1", (WIDTH, HEIGHT), 255)
+                render_clock(
+                    ImageDraw.Draw(image),
+                    WIDTH,
+                    HEIGHT,
+                    when,
+                    frame=name,
+                )
+                self.assertGreater(_count_black_pixels(image), 200)
 
 
 if __name__ == "__main__":

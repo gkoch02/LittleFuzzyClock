@@ -4,10 +4,12 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
+    AUTO_FRAME,
     DEFAULT_DIALECT,
     DEFAULT_FONT,
     DIALECTS,
     FONT_VARIANTS,
+    FRAME_VARIANTS,
     RANDOM_FONT,
     pick_random_font,
     render_clock,
@@ -26,7 +28,12 @@ except (ImportError, RuntimeError):
 
 
 def draw_fuzzy_clock(
-    dry_run=False, output="dry_run.png", dialect=DEFAULT_DIALECT, font=DEFAULT_FONT, now=None
+    dry_run=False,
+    output="dry_run.png",
+    dialect=DEFAULT_DIALECT,
+    font=DEFAULT_FONT,
+    frame=AUTO_FRAME,
+    now=None,
 ):
     if dry_run:
         # 2.13" V4 display is 122×250 in portrait; landscape = 250×122
@@ -56,6 +63,7 @@ def draw_fuzzy_clock(
         now if now is not None else datetime.now(),
         font_variant=resolved_font,
         dialect=dialect,
+        frame=frame,
     )
 
     if dry_run:
@@ -97,6 +105,15 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--frame",
+        default=AUTO_FRAME,
+        choices=sorted([AUTO_FRAME, *FRAME_VARIANTS.keys()]),
+        help=(
+            f"Border frame style (default: {AUTO_FRAME}). "
+            f"{AUTO_FRAME!r} matches the frame to the active font's category."
+        ),
+    )
+    parser.add_argument(
         "--time",
         default=None,
         metavar="HH:MM",
@@ -111,5 +128,6 @@ if __name__ == "__main__":
         output=args.output,
         dialect=args.dialect,
         font=args.font,
+        frame=args.frame,
         now=now,
     )

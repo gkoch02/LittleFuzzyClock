@@ -170,21 +170,21 @@ class LoadConfigTests(unittest.TestCase):
         missing = os.path.join(self.tmp.name, "does_not_exist.yaml")
         self.assertEqual(
             d._load_config(missing),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
         )
 
     def test_malformed_yaml_returns_defaults(self):
         path = self._write("dialect: classic\n  - oops: not valid")
         self.assertEqual(
             d._load_config(path),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
         )
 
     def test_empty_file_returns_defaults(self):
         path = self._write("")
         self.assertEqual(
             d._load_config(path),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
         )
 
     def test_non_mapping_yaml_returns_defaults(self):
@@ -192,15 +192,16 @@ class LoadConfigTests(unittest.TestCase):
         with self.assertLogs("root", level="WARNING"):
             self.assertEqual(
                 d._load_config(path),
-                (d.DEFAULT_DIALECT, d.DEFAULT_FONT, None, None),
+                (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
             )
 
     def test_unknown_dialect_falls_back_with_warning(self):
         path = self._write_yaml({"dialect": "pirate"})
         with self.assertLogs("root", level="WARNING") as cm:
-            dialect, font, lat, lon = d._load_config(path)
+            dialect, font, frame, lat, lon = d._load_config(path)
         self.assertEqual(dialect, d.DEFAULT_DIALECT)
         self.assertEqual(font, d.DEFAULT_FONT)
+        self.assertEqual(frame, d.AUTO_FRAME)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
         self.assertTrue(any("pirate" in line for line in cm.output))
@@ -208,16 +209,17 @@ class LoadConfigTests(unittest.TestCase):
     def test_unknown_font_falls_back_with_warning(self):
         path = self._write_yaml({"font": "comic-sans"})
         with self.assertLogs("root", level="WARNING") as cm:
-            dialect, font, _lat, _lon = d._load_config(path)
+            dialect, font, _frame, _lat, _lon = d._load_config(path)
         self.assertEqual(dialect, d.DEFAULT_DIALECT)
         self.assertEqual(font, d.DEFAULT_FONT)
         self.assertTrue(any("comic-sans" in line for line in cm.output))
 
     def test_known_dialect_and_font_are_returned(self):
         path = self._write_yaml({"dialect": "shakespeare", "font": "roboto-slab"})
-        dialect, font, lat, lon = d._load_config(path)
+        dialect, font, frame, lat, lon = d._load_config(path)
         self.assertEqual(dialect, "shakespeare")
         self.assertEqual(font, "roboto-slab")
+        self.assertEqual(frame, d.AUTO_FRAME)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
@@ -226,33 +228,35 @@ class LoadConfigTests(unittest.TestCase):
             {
                 "dialect": "shakespeare",
                 "font": "roboto-slab",
+                "frame": "rustic",
                 "latitude": 51.5074,
                 "longitude": -0.1278,
             }
         )
-        dialect, font, lat, lon = d._load_config(path)
+        dialect, font, frame, lat, lon = d._load_config(path)
         self.assertEqual(dialect, "shakespeare")
         self.assertEqual(font, "roboto-slab")
+        self.assertEqual(frame, "rustic")
         self.assertAlmostEqual(lat, 51.5074)
         self.assertAlmostEqual(lon, -0.1278)
 
     def test_missing_coords_disables_after_hours(self):
         path = self._write_yaml({"dialect": "classic", "font": "dejavu"})
-        _dialect, _font, lat, lon = d._load_config(path)
+        _dialect, _font, _frame, lat, lon = d._load_config(path)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
     def test_partial_coords_disables_after_hours_with_warning(self):
         path = self._write_yaml({"latitude": 51.5})  # no longitude
         with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, lat, lon = d._load_config(path)
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
     def test_non_numeric_coords_disable_after_hours_with_warning(self):
         path = self._write_yaml({"latitude": "north", "longitude": -0.1})
         with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, lat, lon = d._load_config(path)
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
@@ -261,8 +265,29 @@ class LoadConfigTests(unittest.TestCase):
         # FONT_VARIANTS; _load_config must not warn or fall back.
         path = self._write_yaml({"font": "random"})
         with self.assertNoLogs("root", level="WARNING"):
-            _dialect, font, _lat, _lon = d._load_config(path)
+            _dialect, font, _frame, _lat, _lon = d._load_config(path)
         self.assertEqual(font, d.RANDOM_FONT)
+
+    def test_known_frame_is_accepted(self):
+        path = self._write_yaml({"frame": "sketchy"})
+        with self.assertNoLogs("root", level="WARNING"):
+            _dialect, _font, frame, _lat, _lon = d._load_config(path)
+        self.assertEqual(frame, "sketchy")
+
+    def test_auto_frame_value_is_accepted(self):
+        # `auto` is the sentinel; valid even though it isn't a key in
+        # FRAME_VARIANTS. Must not warn or fall back.
+        path = self._write_yaml({"frame": "auto"})
+        with self.assertNoLogs("root", level="WARNING"):
+            _dialect, _font, frame, _lat, _lon = d._load_config(path)
+        self.assertEqual(frame, d.AUTO_FRAME)
+
+    def test_unknown_frame_falls_back_with_warning(self):
+        path = self._write_yaml({"frame": "art-deco"})
+        with self.assertLogs("root", level="WARNING") as cm:
+            _dialect, _font, frame, _lat, _lon = d._load_config(path)
+        self.assertEqual(frame, d.AUTO_FRAME)
+        self.assertTrue(any("art-deco" in line for line in cm.output))
 
 
 class ResolveFontTests(unittest.TestCase):
@@ -327,6 +352,36 @@ class ResolveFontTests(unittest.TestCase):
         with mock.patch.object(d, "pick_random_font", return_value="bangers") as pick:
             self.assertEqual(d._resolve_font(None), "ubuntu")
         pick.assert_not_called()
+
+
+class ResolveFrameTests(unittest.TestCase):
+    """`_resolve_frame` mirrors `_resolve_font`: an explicit frame in config
+    wins; the AUTO_FRAME sentinel defers to the active font's category so the
+    border stays in step with whichever variant is currently rendering."""
+
+    def setUp(self):
+        self._saved_frame = d.FRAME_VARIANT
+
+    def tearDown(self):
+        d.FRAME_VARIANT = self._saved_frame
+
+    def test_explicit_frame_wins_over_font_category(self):
+        # Even with a rustic-bucket font, an explicit frame in config must be
+        # honoured verbatim — that's the whole point of the override.
+        d.FRAME_VARIANT = "retro"
+        self.assertEqual(d._resolve_frame("unifraktur-maguntia"), "retro")
+
+    def test_auto_frame_resolves_via_font_category(self):
+        d.FRAME_VARIANT = d.AUTO_FRAME
+        self.assertEqual(d._resolve_frame("unifraktur-maguntia"), "rustic")
+        self.assertEqual(d._resolve_frame("vt323"), "retro")
+        self.assertEqual(d._resolve_frame("dejavu"), "bauhaus")
+
+    def test_auto_frame_with_unknown_font_falls_back_to_default(self):
+        d.FRAME_VARIANT = d.AUTO_FRAME
+        from fuzzyclock_core import DEFAULT_FRAME
+
+        self.assertEqual(d._resolve_frame("not-a-real-font"), DEFAULT_FRAME)
 
 
 class _FakeButton:
@@ -701,6 +756,16 @@ class DisplayGoodnightTests(_FontFixtureMixin, unittest.TestCase):
 
 
 class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
+    def setUp(self):
+        # Pre-seed _last_applied_frame so draw_clock doesn't trigger an
+        # implicit reset_base_image on the first call; the tests below assert
+        # what draw_clock does in steady state, not on cold start.
+        self._saved_frame = d._last_applied_frame
+        d._last_applied_frame = "bauhaus"
+
+    def tearDown(self):
+        d._last_applied_frame = self._saved_frame
+
     def test_uses_partial_refresh(self):
         epd = _FakeEPD()
         d.draw_clock(epd, invert=False)
@@ -710,6 +775,19 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
         epd = _FakeEPD()
         d.draw_clock(epd, invert=True)
         self.assertEqual([c[0] for c in epd.calls], ["partial"])
+
+    def test_frame_change_reseeds_base_before_partial(self):
+        # Random-font + auto-frame can shift the frame between renders. If
+        # draw_clock didn't reseed the partial-refresh base in that case,
+        # displayPartial would diff against the old frame and ghost the old
+        # border. Simulate the shift by pre-seeding a non-bauhaus frame and
+        # forcing _resolve_frame to return bauhaus for this render.
+        d._last_applied_frame = "rustic"
+        epd = _FakeEPD()
+        with mock.patch.object(d, "_resolve_frame", return_value="bauhaus"):
+            d.draw_clock(epd, invert=False)
+        self.assertEqual([c[0] for c in epd.calls], ["part_base", "partial"])
+        self.assertEqual(d._last_applied_frame, "bauhaus")
 
 
 class RequireFontsTests(unittest.TestCase):

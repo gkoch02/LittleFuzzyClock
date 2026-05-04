@@ -11,12 +11,15 @@ import yaml
 from PIL import Image, ImageDraw
 
 from fuzzyclock_core import (
+    AUTO_FRAME,
     DEFAULT_DIALECT,
     DEFAULT_FONT,
     DIALECTS,
     FONT_VARIANTS,
+    FRAME_VARIANTS,
     RANDOM_FONT,
     draw_border,
+    frame_for_font,
     fuzzy_time,
     load_font,
     pick_random_font,
@@ -68,12 +71,12 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclo
 
 
 def _load_config(path=CONFIG_PATH):
-    """Read the YAML config and return (dialect, font, latitude, longitude).
+    """Read the YAML config and return (dialect, font, frame, latitude, longitude).
 
-    Validation matches the previous JSON+env-var behaviour: unknown dialect
-    or font logs a warning and falls back to the default; missing/invalid
-    coordinates log a warning and return (None, None) so the daemon stays
-    on plain day/night instead of crashing.
+    Validation matches the previous JSON+env-var behaviour: unknown dialect,
+    font, or frame logs a warning and falls back to the default; missing or
+    invalid coordinates log a warning and return (None, None) so the daemon
+    stays on plain day/night instead of crashing.
     """
     try:
         with open(path) as f:
@@ -83,21 +86,21 @@ def _load_config(path=CONFIG_PATH):
             "Config file %s not found; using defaults and after-hours mode disabled.",
             path,
         )
-        return DEFAULT_DIALECT, DEFAULT_FONT, None, None
+        return DEFAULT_DIALECT, DEFAULT_FONT, AUTO_FRAME, None, None
     except (OSError, yaml.YAMLError) as exc:
         logging.warning(
             "Could not read %s (%s); using defaults and after-hours mode disabled.",
             path,
             exc,
         )
-        return DEFAULT_DIALECT, DEFAULT_FONT, None, None
+        return DEFAULT_DIALECT, DEFAULT_FONT, AUTO_FRAME, None, None
 
     if not isinstance(cfg, dict):
         logging.warning(
             "Config file %s is not a YAML mapping; using defaults and after-hours mode disabled.",
             path,
         )
-        return DEFAULT_DIALECT, DEFAULT_FONT, None, None
+        return DEFAULT_DIALECT, DEFAULT_FONT, AUTO_FRAME, None, None
 
     dialect = cfg.get("dialect", DEFAULT_DIALECT)
     if dialect not in DIALECTS:
@@ -121,19 +124,30 @@ def _load_config(path=CONFIG_PATH):
         )
         font = DEFAULT_FONT
 
+    frame = cfg.get("frame", AUTO_FRAME)
+    if frame != AUTO_FRAME and frame not in FRAME_VARIANTS:
+        logging.warning(
+            "Unknown frame=%r in %s; falling back to %r. Valid: %s",
+            frame,
+            path,
+            AUTO_FRAME,
+            sorted([AUTO_FRAME, *FRAME_VARIANTS.keys()]),
+        )
+        frame = AUTO_FRAME
+
     lat_raw = cfg.get("latitude")
     lon_raw = cfg.get("longitude")
     if lat_raw is None and lon_raw is None:
-        return dialect, font, None, None
+        return dialect, font, frame, None, None
     try:
-        return dialect, font, float(lat_raw), float(lon_raw)
+        return dialect, font, frame, float(lat_raw), float(lon_raw)
     except (TypeError, ValueError) as exc:
         logging.warning(
             "Config file %s has invalid latitude/longitude (%s); after-hours mode disabled.",
             path,
             exc,
         )
-        return dialect, font, None, None
+        return dialect, font, frame, None, None
 
 
 # Daemon config. These are populated in main() rather than at import time so
@@ -142,6 +156,7 @@ def _load_config(path=CONFIG_PATH):
 # they're only ever called from inside main()'s control flow.
 DIALECT = DEFAULT_DIALECT
 FONT_VARIANT = DEFAULT_FONT
+FRAME_VARIANT = AUTO_FRAME
 LATITUDE = None
 LONGITUDE = None
 AFTER_HOURS_ENABLED = False
@@ -176,6 +191,27 @@ def _init_fonts():
         font_goodnight = load_font(24, variant=_current_random_font)
     else:
         font_goodnight = load_font(24, variant=FONT_VARIANT)
+
+
+# Tracks the frame name that was last painted onto the partial-refresh base
+# image. In random-font + auto-frame mode the variant (and therefore the
+# frame) can shift between renders; if draw_clock noticed a frame change
+# without re-seeding the base, displayPartial would diff against the old
+# frame and leave ghost border pixels. Updated by reset_base_image, consulted
+# by draw_clock.
+_last_applied_frame = None
+
+
+def _resolve_frame(font_variant):
+    """Concrete frame name for `font_variant` under the active FRAME_VARIANT.
+
+    Mirrors how _resolve_font handles random fonts: an explicit frame in
+    config wins; AUTO_FRAME defers to frame_for_font(font_variant), which
+    keeps the border in step with whichever font is currently rendering.
+    """
+    if FRAME_VARIANT == AUTO_FRAME:
+        return frame_for_font(font_variant)
+    return FRAME_VARIANT
 
 
 def _resolve_font(phrase=None):
@@ -299,18 +335,25 @@ def _current_mode_now():
     )
 
 
-def reset_base_image(epd, invert=False):
+def reset_base_image(epd, invert=False, frame=None):
     """Re-issue a blank base image for partial refresh.
 
     Required after any full epd.display() call (e.g. the goodnight screen) and
     whenever the foreground/background swap, since partial refresh diffs
-    against the previously-set base image.
+    against the previously-set base image. `frame` selects which border style
+    is painted onto the base; defaults to the resolved frame for the current
+    fixed font (random-font callers pass an explicit frame so the base matches
+    the variant they're about to render with).
     """
+    global _last_applied_frame
+    if frame is None:
+        frame = _resolve_frame(FONT_VARIANT)
     bg = 0 if invert else 255
     with epd_lock:
         base = Image.new("1", (epd.height, epd.width), bg)
-        draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert)
+        draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert, frame=frame)
         epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
+    _last_applied_frame = frame
 
 
 def display_goodnight(epd):
@@ -349,6 +392,13 @@ def draw_clock(epd, invert=False):
     # whenever the phrase rolls over to the next 5-minute bucket.
     phrase, _ = fuzzy_time(now.hour, now.minute, DIALECT)
     variant = _resolve_font(phrase)
+    frame = _resolve_frame(variant)
+
+    # Random-font + auto-frame mode can pick a font in a new category between
+    # ticks; without re-seeding the partial-refresh base, displayPartial would
+    # diff against the old frame and leave ghost border pixels.
+    if frame != _last_applied_frame:
+        reset_base_image(epd, invert=invert, frame=frame)
 
     render_clock(
         draw,
@@ -358,6 +408,7 @@ def draw_clock(epd, invert=False):
         font_variant=variant,
         dialect=DIALECT,
         invert=invert,
+        frame=frame,
     )
 
     with epd_lock:
@@ -446,8 +497,8 @@ def main():
     # mode is location-driven via fuzzyclock_config.yaml next to this file;
     # if it's missing or malformed, the feature stays off and we fall back
     # to plain day/night.
-    global DIALECT, FONT_VARIANT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
-    DIALECT, FONT_VARIANT, LATITUDE, LONGITUDE = _load_config()
+    global DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
+    DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE = _load_config()
     AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
     _init_fonts()
 
@@ -490,7 +541,11 @@ def main():
 
     # Seed the partial-refresh base image to match whichever mode we're starting in.
     initial_mode = _current_mode_now()
-    reset_base_image(epd, invert=(initial_mode == "after_hours"))
+    reset_base_image(
+        epd,
+        invert=(initial_mode == "after_hours"),
+        frame=_resolve_frame(_resolve_font()),
+    )
 
     last_state = None
 
@@ -520,7 +575,11 @@ def main():
             if last_state is not None and last_state != mode:
                 logging.info("Entering %s mode.", mode.replace("_", "-"))
                 try:
-                    reset_base_image(epd, invert=invert)
+                    reset_base_image(
+                        epd,
+                        invert=invert,
+                        frame=_resolve_frame(_resolve_font()),
+                    )
                 except Exception:
                     logging.exception("reset_base_image() failed; will recover via re-init")
                     _on_render_failure()
@@ -534,7 +593,11 @@ def main():
                     if _needs_recovery:
                         with epd_lock:
                             epd.init()
-                        reset_base_image(epd, invert=invert)
+                        reset_base_image(
+                            epd,
+                            invert=invert,
+                            frame=_resolve_frame(_resolve_font()),
+                        )
                     draw_clock(epd, invert=invert)
                     _on_render_success()
                 except Exception:
