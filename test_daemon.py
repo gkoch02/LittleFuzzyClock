@@ -789,6 +789,50 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
         self.assertEqual([c[0] for c in epd.calls], ["part_base", "partial"])
         self.assertEqual(d._last_applied_frame, "bauhaus")
 
+    def test_concurrent_calls_keep_part_base_paired_with_partial(self):
+        # draw_clock runs from both the main loop and the button thread. If
+        # the _last_applied_frame check isn't held under the same lock as the
+        # subsequent reseed + render + displayPartial, two concurrent calls
+        # can interleave: e.g. [part_base_A, part_base_B, partial_A, partial_B]
+        # which leaves partial_A diffing against B's base. Under _render_lock
+        # the pairs stay atomic regardless of scheduler ordering.
+        import itertools
+        import threading as _t
+
+        epd = _FakeEPD()
+        # Cycle through non-bauhaus frames so every draw_clock call sees a
+        # frame mismatch and triggers a reset_base_image.
+        d._last_applied_frame = "bauhaus"
+
+        cycle = itertools.cycle(["rustic", "sketchy"])
+        cycle_lock = _t.Lock()
+
+        def _frame(_variant):
+            with cycle_lock:
+                return next(cycle)
+
+        # Patch once in the main thread (not inside the workers) so the
+        # mock's enter/exit can't race across threads and leave d._resolve_frame
+        # pointing at a stale mock after the test finishes.
+        with mock.patch.object(d, "_resolve_frame", side_effect=_frame):
+            threads = [_t.Thread(target=lambda: d.draw_clock(epd, invert=False)) for _ in range(8)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        # Every part_base must be immediately followed by its own partial
+        # before the next part_base — that's the atomic pair the lock guards.
+        kinds = [c[0] for c in epd.calls]
+        for i, kind in enumerate(kinds):
+            if kind == "part_base":
+                self.assertLess(i + 1, len(kinds), "trailing part_base with no partial")
+                self.assertEqual(
+                    kinds[i + 1],
+                    "partial",
+                    f"part_base at {i} not immediately followed by partial: {kinds}",
+                )
+
 
 class RequireFontsTests(unittest.TestCase):
     """`_require_fonts` exists so a missed `_init_fonts()` fails loudly

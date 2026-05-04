@@ -250,6 +250,15 @@ def _require_fonts():
 # === EPD LOCK — protects all SPI writes to the display ===
 epd_lock = threading.Lock()
 
+# Render lock — serializes the check-then-reseed sequence on _last_applied_frame
+# and the surrounding render/displayPartial so the main loop and the button
+# thread can't interleave a frame change with another thread's render. Without
+# it, two concurrent draw_clock calls could pick different frames, both reseed
+# the partial-refresh base, and leave one render diffing against a base painted
+# by the other call. Reentrant so reset_base_image can be invoked from inside
+# draw_clock without deadlocking.
+_render_lock = threading.RLock()
+
 # Set by the SIGTERM/SIGINT handler so the main loop and the button-thread
 # supervisor can break out of their waits and exit cleanly. Routing shutdown
 # through an Event (instead of acquiring epd_lock inside the signal handler)
@@ -344,16 +353,21 @@ def reset_base_image(epd, invert=False, frame=None):
     is painted onto the base; defaults to the resolved frame for the current
     fixed font (random-font callers pass an explicit frame so the base matches
     the variant they're about to render with).
+
+    Held under _render_lock so the base-image swap and the corresponding
+    update to _last_applied_frame can't interleave with a concurrent
+    draw_clock call from the button thread.
     """
     global _last_applied_frame
-    if frame is None:
-        frame = _resolve_frame(FONT_VARIANT)
-    bg = 0 if invert else 255
-    with epd_lock:
-        base = Image.new("1", (epd.height, epd.width), bg)
-        draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert, frame=frame)
-        epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
-    _last_applied_frame = frame
+    with _render_lock:
+        if frame is None:
+            frame = _resolve_frame(FONT_VARIANT)
+        bg = 0 if invert else 255
+        with epd_lock:
+            base = Image.new("1", (epd.height, epd.width), bg)
+            draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert, frame=frame)
+            epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
+        _last_applied_frame = frame
 
 
 def display_goodnight(epd):
@@ -382,37 +396,44 @@ def display_goodnight(epd):
 
 def draw_clock(epd, invert=False):
     _require_fonts()
-    width, height = epd.height, epd.width
-    bg = 0 if invert else 255
-    image = Image.new("1", (width, height), bg)
-    draw = ImageDraw.Draw(image)
 
-    now = datetime.now()
-    # Resolve the font before render so random-mode picks a fresh variant
-    # whenever the phrase rolls over to the next 5-minute bucket.
-    phrase, _ = fuzzy_time(now.hour, now.minute, DIALECT)
-    variant = _resolve_font(phrase)
-    frame = _resolve_frame(variant)
+    # Held for the entire body so the main loop and the button thread can't
+    # interleave the _last_applied_frame check with another thread's reseed —
+    # an interleave would let one render diff against a base painted by the
+    # other call and ghost the previous border. Reentrant so the nested
+    # reset_base_image call below doesn't deadlock.
+    with _render_lock:
+        width, height = epd.height, epd.width
+        bg = 0 if invert else 255
+        image = Image.new("1", (width, height), bg)
+        draw = ImageDraw.Draw(image)
 
-    # Random-font + auto-frame mode can pick a font in a new category between
-    # ticks; without re-seeding the partial-refresh base, displayPartial would
-    # diff against the old frame and leave ghost border pixels.
-    if frame != _last_applied_frame:
-        reset_base_image(epd, invert=invert, frame=frame)
+        now = datetime.now()
+        # Resolve the font before render so random-mode picks a fresh variant
+        # whenever the phrase rolls over to the next 5-minute bucket.
+        phrase, _ = fuzzy_time(now.hour, now.minute, DIALECT)
+        variant = _resolve_font(phrase)
+        frame = _resolve_frame(variant)
 
-    render_clock(
-        draw,
-        width,
-        height,
-        now,
-        font_variant=variant,
-        dialect=DIALECT,
-        invert=invert,
-        frame=frame,
-    )
+        # Random-font + auto-frame mode can pick a font in a new category
+        # between ticks; without re-seeding the partial-refresh base,
+        # displayPartial would diff against the old frame and ghost it.
+        if frame != _last_applied_frame:
+            reset_base_image(epd, invert=invert, frame=frame)
 
-    with epd_lock:
-        epd.displayPartial(epd.getbuffer(image.rotate(180)))
+        render_clock(
+            draw,
+            width,
+            height,
+            now,
+            font_variant=variant,
+            dialect=DIALECT,
+            invert=invert,
+            frame=frame,
+        )
+
+        with epd_lock:
+            epd.displayPartial(epd.getbuffer(image.rotate(180)))
 
 
 def shutdown_procedure(epd):
