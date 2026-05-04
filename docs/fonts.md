@@ -948,3 +948,82 @@ Thick lacquered marker — wet-glossy painted strokes.
 </td>
 </tr>
 </table>
+
+---
+
+## Weird & unique
+
+The deeper end of the gallery — typefaces chosen for visual strangeness over legibility. 3D faceted gradients, origami folds, machined-metal axes, Wild West cracked engravings, smoke-filled marquees, skeletal carnival, frantic outlines, hollow inline serifs, runic medieval geometry, and chiselled stone. macOS fallbacks are deliberately approximate; the personality only reads with the vendored file present.
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-nabla.png" alt="nabla"><br><br>
+<strong><code>nabla</code></strong><br>
+<sup>OFL · variable · COLR/CPAL</sup><br>
+3D faceted extrusion designed as a colour font; renders on e-ink as nested outlined geometry — gothic, structural, unlike anything else here.
+</td>
+<td align="center">
+<img src="preview-foldit.png" alt="foldit"><br><br>
+<strong><code>foldit</code></strong><br>
+<sup>OFL · variable</sup><br>
+Origami creased letterforms — every stroke looks like folded paper.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-workbench.png" alt="workbench"><br><br>
+<strong><code>workbench</code></strong><br>
+<sup>OFL · variable</sup><br>
+Machined dot-matrix industrial — bled and scanned axes give workshop-printer feel.
+</td>
+<td align="center">
+<img src="preview-sancreek.png" alt="sancreek"><br><br>
+<strong><code>sancreek</code></strong><br>
+<sup>OFL · static</sup><br>
+Wild West cracked engraved poster serif — wanted-poster energy.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-smokum.png" alt="smokum"><br><br>
+<strong><code>smokum</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Western circus marquee — outlined slab with curling smoke wisps.
+</td>
+<td align="center">
+<img src="preview-jolly-lodger.png" alt="jolly-lodger"><br><br>
+<strong><code>jolly-lodger</code></strong><br>
+<sup>OFL · static</sup><br>
+Skeletal carnival display — hollow-bone strokes, slightly creepy fairground.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-akronim.png" alt="akronim"><br><br>
+<strong><code>akronim</code></strong><br>
+<sup>OFL · static</sup><br>
+Frantic outlined italic — loose hand-drawn caps, kinetic and untidy.
+</td>
+<td align="center">
+<img src="preview-ribeye-marrow.png" alt="ribeye-marrow"><br><br>
+<strong><code>ribeye-marrow</code></strong><br>
+<sup>OFL · static</sup><br>
+Hollow inline display serif — only the outline remains, marrow scooped out.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-astloch.png" alt="astloch"><br><br>
+<strong><code>astloch</code></strong><br>
+<sup>OFL · static</sup><br>
+Bold runic medieval — angular geometric blackletter built from sharp wedges.
+</td>
+<td align="center">
+<img src="preview-wallpoet.png" alt="wallpoet"><br><br>
+<strong><code>wallpoet</code></strong><br>
+<sup>OFL · static</sup><br>
+Chiselled stone techno — block letters with horizontal grooves cut through every stroke.
+</td>
+</tr>
+</table>

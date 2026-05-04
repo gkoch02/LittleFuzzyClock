@@ -652,6 +652,70 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
         "/Library/Fonts/Times New Roman Bold.ttf",
     ],
+    # Weird & unique — OFL/Apache 2.0, vendored in fonts/. The deeper end of the
+    # gallery: 3D faceted gradients, origami folds, machined-metal axes, Wild
+    # West cracked engravings, smoke-marquee, skeletal carnival, frantic
+    # outlines, hollow inline serifs, runic medieval geometry, chiselled stone.
+    # macOS fallbacks are deliberately approximate; the personality of these
+    # faces only really comes through with the vendored file present.
+    "nabla": [
+        # Variable axes (EDPT, EHLT) — Bold named instance is a no-op; renders
+        # at default axis values: 3D faceted extrusion with internal highlights.
+        # COLR/CPAL color-font tables are ignored by PIL and the e-ink panel,
+        # so the glyphs come through as nested outlined geometry.
+        os.path.join(_VENDORED_FONT_DIR, "Nabla-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "foldit": [
+        # Variable wght axis — Bold named instance is honoured: heavier folds.
+        # Letters look like creased paper at every weight.
+        os.path.join(_VENDORED_FONT_DIR, "Foldit-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "workbench": [
+        # Variable axes (BLED, SCAN) — same gotcha as sixtyfour: no Bold named
+        # instance, set_variation_by_name silently no-ops, renders at defaults.
+        os.path.join(_VENDORED_FONT_DIR, "Workbench-VF.ttf"),
+        "/System/Library/Fonts/Menlo.ttc",
+        "/System/Library/Fonts/Monaco.ttf",
+    ],
+    "sancreek": [
+        os.path.join(_VENDORED_FONT_DIR, "Sancreek-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "smokum": [
+        os.path.join(_VENDORED_FONT_DIR, "Smokum-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    "jolly-lodger": [
+        os.path.join(_VENDORED_FONT_DIR, "JollyLodger-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "akronim": [
+        os.path.join(_VENDORED_FONT_DIR, "Akronim-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+    ],
+    "ribeye-marrow": [
+        os.path.join(_VENDORED_FONT_DIR, "RibeyeMarrow-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "astloch": [
+        os.path.join(_VENDORED_FONT_DIR, "Astloch-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    "wallpoet": [
+        os.path.join(_VENDORED_FONT_DIR, "Wallpoet-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
