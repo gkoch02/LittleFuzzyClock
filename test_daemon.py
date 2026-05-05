@@ -289,6 +289,18 @@ class LoadConfigTests(unittest.TestCase):
         self.assertEqual(frame, d.AUTO_FRAME)
         self.assertTrue(any("art-deco" in line for line in cm.output))
 
+    def test_oserror_other_than_fnf_returns_defaults_with_warning(self):
+        # The (OSError, yaml.YAMLError) branch is separate from the
+        # FileNotFoundError branch. A PermissionError (or any other OSError
+        # subclass that isn't FileNotFoundError) must also fall back to
+        # defaults and emit a warning.
+        path = os.path.join(self.tmp.name, "unreadable.yaml")
+        with mock.patch("builtins.open", side_effect=PermissionError("access denied")):
+            with self.assertLogs("root", level="WARNING") as cm:
+                result = d._load_config(path)
+        self.assertEqual(result, (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None))
+        self.assertTrue(any("access denied" in line for line in cm.output))
+
 
 class ResolveFontTests(unittest.TestCase):
     """`_resolve_font` is the daemon's hook for random-font mode: it returns
@@ -856,6 +868,86 @@ class RequireFontsTests(unittest.TestCase):
             d.font_small = None
             d.font_tiny = None
             d.font_goodnight = None
+
+
+class MainSignalHandlerTests(unittest.TestCase):
+    """The SIGTERM/SIGINT handler that main() registers must set _stop_event.
+
+    main() can't run end-to-end without hardware, so we mock all EPD/GPIO
+    calls and let the loop complete one tick (by having _stop_event.wait
+    set the event as its side-effect). We then extract the handler that was
+    registered via signal.signal and call it directly to confirm it behaves
+    correctly.
+    """
+
+    def setUp(self):
+        d._stop_event.clear()
+        d._on_render_success()
+        self._saved = {
+            "DIALECT": d.DIALECT,
+            "FONT_VARIANT": d.FONT_VARIANT,
+            "FRAME_VARIANT": d.FRAME_VARIANT,
+            "LATITUDE": d.LATITUDE,
+            "LONGITUDE": d.LONGITUDE,
+            "AFTER_HOURS_ENABLED": d.AFTER_HOURS_ENABLED,
+            "font_goodnight": d.font_goodnight,
+        }
+
+    def tearDown(self):
+        d._stop_event.clear()
+        d._on_render_success()
+        for attr, val in self._saved.items():
+            setattr(d, attr, val)
+
+    def _run_main_and_capture_handlers(self):
+        """Run main() with all hardware mocked; return {signum: handler}."""
+
+        registered = {}
+
+        def _capture(signum, handler):
+            registered[signum] = handler
+
+        with (
+            mock.patch("fuzzyclock_daemon.signal.signal", side_effect=_capture),
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "reset_base_image"),
+            mock.patch.object(d, "_current_mode_now", return_value="night"),
+            mock.patch.object(d, "display_goodnight"),
+            # Exit the main loop after the first tick.
+            mock.patch.object(
+                d._stop_event,
+                "wait",
+                side_effect=lambda timeout: d._stop_event.set(),
+            ),
+        ):
+            m_epd.EPD.return_value = mock.Mock()
+            d.main()
+
+        return registered
+
+    def test_sigterm_is_registered_and_sets_stop_event(self):
+        import signal as _sig
+
+        registered = self._run_main_and_capture_handlers()
+        self.assertIn(_sig.SIGTERM, registered)
+        d._stop_event.clear()
+        registered[_sig.SIGTERM](_sig.SIGTERM, None)
+        self.assertTrue(d._stop_event.is_set())
+
+    def test_sigint_is_registered_and_sets_stop_event(self):
+        import signal as _sig
+
+        registered = self._run_main_and_capture_handlers()
+        self.assertIn(_sig.SIGINT, registered)
+        d._stop_event.clear()
+        registered[_sig.SIGINT](_sig.SIGINT, None)
+        self.assertTrue(d._stop_event.is_set())
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw
 from fuzzyclock_core import (
     _BODY_MAX_SIZE,
     _BODY_MIN_SIZE,
+    _CONTENT_PAD,
     _TINY_SIZE,
     AUTO_FRAME,
     DEFAULT_DIALECT,
@@ -28,6 +29,7 @@ from fuzzyclock_core import (
     FONT_VARIANTS,
     FRAME_VARIANTS,
     RANDOM_FONT,
+    _fit_body_font,
     draw_border,
     frame_for_font,
     load_font,
@@ -95,6 +97,18 @@ class LoadFontTests(unittest.TestCase):
 
     def test_default_font_constant_is_a_registered_variant(self):
         self.assertIn(DEFAULT_FONT, FONT_VARIANTS)
+
+    def test_variable_font_without_bold_named_instance_still_loads(self):
+        # Variable fonts whose wght axis carries no "Bold" named instance
+        # (e.g. Sixtyfour, Workbench) raise ValueError from
+        # set_variation_by_name("Bold"). load_font must catch it and return
+        # the font at its default axis values rather than advancing to the
+        # next candidate or raising.
+        mock_font = mock.Mock()
+        mock_font.set_variation_by_name.side_effect = ValueError("no Bold instance")
+        with mock.patch("fuzzyclock_core.ImageFont.truetype", return_value=mock_font):
+            result = load_font(20)
+        self.assertIs(result, mock_font)
 
 
 class DrawBorderTests(unittest.TestCase):
@@ -431,6 +445,95 @@ class FrameVariantsTests(unittest.TestCase):
                     frame=name,
                 )
                 self.assertGreater(_count_black_pixels(image), 200)
+
+
+class FitBodyFontTests(unittest.TestCase):
+    """Direct unit tests for the auto-sizing helper used by render_clock.
+
+    render_clock calls _fit_body_font with available_w = canvas_width -
+    2*_CONTENT_PAD and available_h derived from the footer position. We use
+    the real panel geometry here so the tested constraints match production.
+    """
+
+    _AW = WIDTH - 2 * _CONTENT_PAD  # 222 px at 250-wide panel
+    _AH = 80  # conservative but realistic body-area height
+
+    def _draw(self):
+        return ImageDraw.Draw(Image.new("1", (WIDTH, HEIGHT), 255))
+
+    def test_short_phrase_uses_max_font_size(self):
+        # A trivially short phrase-and-hour pair must fit at the largest
+        # permitted body size, confirming the loop terminates early.
+        font = _fit_body_font(
+            self._draw(),
+            "ha",
+            "ha",
+            DEFAULT_FONT,
+            available_w=self._AW,
+            available_h=self._AH,
+        )
+        self.assertEqual(font.size, _BODY_MAX_SIZE)
+
+    def test_long_phrase_forced_to_smaller_font(self):
+        # A long phrase that overflows at _BODY_MAX_SIZE must be sized down;
+        # the result must be strictly smaller than what the short phrase gets.
+        draw = self._draw()
+        font_short = _fit_body_font(
+            draw,
+            "ha",
+            "ha",
+            DEFAULT_FONT,
+            available_w=self._AW,
+            available_h=self._AH,
+        )
+        font_long = _fit_body_font(
+            draw,
+            "twenty-five past",
+            "twelve am",
+            DEFAULT_FONT,
+            available_w=self._AW,
+            available_h=self._AH,
+        )
+        self.assertLess(font_long.size, font_short.size)
+
+    def test_unavoidable_overflow_returns_min_size(self):
+        # When no size fits (available_w and available_h both 1 px), the
+        # function must return _BODY_MIN_SIZE rather than raising or returning
+        # None — the clock face degrades gracefully under extreme constraints.
+        font = _fit_body_font(
+            self._draw(),
+            "twenty-five past",
+            "twelve am",
+            DEFAULT_FONT,
+            available_w=1,
+            available_h=1,
+        )
+        self.assertEqual(font.size, _BODY_MIN_SIZE)
+
+    def test_size_is_monotonically_non_decreasing_with_shorter_phrases(self):
+        # The size selected for a shorter phrase must always be >= the size
+        # selected for a longer phrase on the same canvas. This is the core
+        # contract: brevity earns display real-estate.
+        draw = self._draw()
+        phrases = [
+            ("twenty-five past", "twelve am"),  # longest
+            ("quarter past", "nine am"),
+            ("half past", "two am"),
+            ("almost", "ten am"),  # shortest
+        ]
+        sizes = [
+            _fit_body_font(
+                draw, p, h, DEFAULT_FONT, available_w=self._AW, available_h=self._AH
+            ).size
+            for p, h in phrases
+        ]
+        for i in range(len(sizes) - 1):
+            self.assertLessEqual(
+                sizes[i],
+                sizes[i + 1],
+                f"phrase [{i}] got size {sizes[i]} but shorter phrase [{i + 1}] "
+                f"got {sizes[i + 1]} — expected non-decreasing order",
+            )
 
 
 if __name__ == "__main__":
