@@ -423,6 +423,25 @@ Super-chunky rounded bold — compact punch, maximum presence.
 |---------|------|-----------|-----------|
 | `pigeonette` | `Pigeonette-Bold.otf`, `Pigeonette-Regular.otf`, or `Pigeonette.otf` | Tortilla Studio ([Future Fonts](https://www.futurefonts.xyz/tortillastudio/pigeonette)) | Idiosyncratic display serif with expressive stroke contrast. |
 
+### More bold display
+
+<table>
+<tr>
+<td align="center">
+<img src="preview-chango.png" alt="chango"><br><br>
+<strong><code>chango</code></strong><br>
+<sup>OFL · static</sup><br>
+Single-weight ultra-heavy Latin display — fills every pixel with imposing mass.
+</td>
+<td align="center">
+<img src="preview-gravitas-one.png" alt="gravitas-one"><br><br>
+<strong><code>gravitas-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Maximum-weight display serif — brutal ink coverage, deep ink traps.
+</td>
+</tr>
+</table>
+
 ---
 
 ## Vintage, deco & futuristic
@@ -554,6 +573,48 @@ All-caps techno geometric — architectural, no lowercase glyphs.
 <strong><code>wallpoet</code></strong><br>
 <sup>OFL · static</sup><br>
 Chiselled stone techno — block letters with horizontal grooves cut through every stroke.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-baumans.png" alt="baumans"><br><br>
+<strong><code>baumans</code></strong><br>
+<sup>OFL · static</sup><br>
+Techno-mechanical constructed from circles and straight rules — hi-fi instrument dials.
+</td>
+<td align="center">
+<img src="preview-mystery-quest.png" alt="mystery-quest"><br><br>
+<strong><code>mystery-quest</code></strong><br>
+<sup>OFL · static</sup><br>
+Alien sci-fi display — letterforms with UFO-landing-zone cut-outs and strange angular gaps.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-oi.png" alt="oi"><br><br>
+<strong><code>oi</code></strong><br>
+<sup>OFL · static</sup><br>
+Victorian ornamental display — elaborate swash caps with inline filigree decoration.
+</td>
+<td align="center">
+<img src="preview-emblema-one.png" alt="emblema-one"><br><br>
+<strong><code>emblema-one</code></strong><br>
+<sup>OFL · static</sup><br>
+Outlined decorative display — inline channels carved through bold exotic caps.
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-flamenco.png" alt="flamenco"><br><br>
+<strong><code>flamenco</code></strong><br>
+<sup>OFL · static</sup><br>
+Art Nouveau calligraphic display — organic curved spurs growing from every terminal.
+</td>
+<td align="center">
+<img src="preview-tourney.png" alt="tourney"><br><br>
+<strong><code>tourney</code></strong><br>
+<sup>OFL · variable</sup><br>
+Racing championship variable — extreme condensed wdth axis, chequered-flag energy.
 </td>
 </tr>
 </table>
@@ -774,6 +835,15 @@ Felt-tip handwriting — looks like whiteboard scribble.
 Distressed typewriter — uneven inking, ribbon strikes.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-unkempt.png" alt="unkempt"><br><br>
+<strong><code>unkempt</code></strong><br>
+<sup>Apache 2.0 · static</sup><br>
+Scrawly asymmetric handwriting — deliberately wild loops, uneven baseline, zero composure.
+</td>
+<td></td>
+</tr>
 </table>
 
 ---
@@ -959,6 +1029,15 @@ Spray-painted stencil with overspray dots — graffiti-tag energy.
 <sup>OFL · static</sup><br>
 Paint dripping down each stroke — fresh-coat-of-paint vandalism.
 </td>
+</tr>
+<tr>
+<td align="center">
+<img src="preview-kablammo.png" alt="kablammo"><br><br>
+<strong><code>kablammo</code></strong><br>
+<sup>OFL · variable · MORF axis</sup><br>
+Inflated balloon variable font — the MORF axis bloats letterforms into pressurised rubber bubbles.
+</td>
+<td></td>
 </tr>
 </table>
 

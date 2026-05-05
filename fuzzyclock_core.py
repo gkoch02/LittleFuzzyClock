@@ -716,6 +716,69 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Impact.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    # --- New artistic / strange additions ---
+    # Ultra-heavy condensed Latin display — single weight, fills space with presence.
+    "chango": [
+        os.path.join(_VENDORED_FONT_DIR, "Chango-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Single-weight ultra-heavy display serif — maximum ink, ink traps, immovable gravity.
+    "gravitas-one": [
+        os.path.join(_VENDORED_FONT_DIR, "GravitasOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Victorian ornamental display — elaborate swash caps with inline decorations.
+    "oi": [
+        os.path.join(_VENDORED_FONT_DIR, "Oi-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Art Nouveau calligraphic display — letterforms with organic curved spurs.
+    "flamenco": [
+        os.path.join(_VENDORED_FONT_DIR, "Flamenco-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Outlined decorative display — inline channels through bold exotic caps.
+    "emblema-one": [
+        os.path.join(_VENDORED_FONT_DIR, "EmblemaOne-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Alien sci-fi display — letterforms with UFO/mystery-zone cut-outs and strange angles.
+    "mystery-quest": [
+        os.path.join(_VENDORED_FONT_DIR, "MysteryQuest-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Techno-mechanical constructed — built from circles and straight lines; hi-fi gear vibes.
+    "baumans": [
+        os.path.join(_VENDORED_FONT_DIR, "Baumans-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Futura.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Variable racing/championship — extreme condensed wdth axis; spoiler, chequered flag.
+    "tourney": [
+        # Variable wdth + wght axes — Bold named instance narrows glyphs further.
+        os.path.join(_VENDORED_FONT_DIR, "Tourney-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Inflated balloon variable font — MORF axis bloats letters into pressurised bubbles.
+    "kablammo": [
+        # Variable MORF axis — no Bold named instance; renders at default inflation.
+        os.path.join(_VENDORED_FONT_DIR, "Kablammo-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Scrawly asymmetric handwriting — deliberately unkempt, uneven baseline, wild loops.
+    "unkempt": [
+        os.path.join(_VENDORED_FONT_DIR, "Unkempt-Bold.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -867,6 +930,17 @@ FONT_FRAME_CATEGORY = {
     "bungee-shade": "retro",
     "foldit": "retro",
     "nabla": "retro",
+    # New additions
+    "chango": "bauhaus",
+    "gravitas-one": "bauhaus",
+    "oi": "rustic",
+    "flamenco": "rustic",
+    "emblema-one": "rustic",
+    "mystery-quest": "retro",
+    "baumans": "retro",
+    "tourney": "retro",
+    "kablammo": "sketchy",
+    "unkempt": "sketchy",
 }
 
 
