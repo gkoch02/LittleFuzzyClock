@@ -4,7 +4,7 @@
 
 A fuzzy clock for a Raspberry Pi Zero driving a [Waveshare 2.13" e-ink display (V4)](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT_%28E%29).
 
-Instead of showing an exact time, it displays natural-language phrases like "quarter past nine am" or "twenty to three pm", with the date as a footer and a small Bauhaus-inspired border.
+Instead of showing an exact time, it displays natural-language phrases like "quarter past nine am" or "twenty to three pm", with the date as a footer and a decorative border in one of four styles (Bauhaus, rustic, sketchy, or retro).
 
 ![Preview of the fuzzy clock display](docs/preview.png)
 
@@ -17,6 +17,7 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 - [Testing without hardware](#testing-without-hardware)
 - [Phrasing personalities](#phrasing-personalities)
 - [Fonts](#fonts)
+- [Border frame styles](#border-frame-styles)
 - [After-hours mode](#after-hours-mode)
 - [Files](#files)
 - [License](#license)
@@ -62,6 +63,16 @@ That's it. The script installs dependencies via `apt` (Raspberry Pi OS Bookworm'
 ```bash
 pip install -r requirements.txt   # only needed off-Pi; deploy.sh uses apt on-Pi
 python3 fuzzyClock2.py --dry-run --output preview.png
+```
+
+Additional flags for previewing specific configurations:
+
+```bash
+# pin to a specific time (HH:MM)
+python3 fuzzyClock2.py --dry-run --time 09:30 --output preview.png
+
+# pick a dialect, font, and frame style
+python3 fuzzyClock2.py --dry-run --dialect shakespeare --font literata --frame rustic --output preview.png
 ```
 
 ## Phrasing personalities
@@ -113,6 +124,31 @@ Set `font: random` to roll a new vendored variant every time the time phrase cha
 
 Unknown values fall back to `dejavu` with a warning in the daemon log.
 
+## Border frame styles
+
+Four border styles are available, each paired by default with a matching font category:
+
+| Style      | Character                                                          |
+| ---------- | ------------------------------------------------------------------ |
+| `bauhaus`  | Clean geometric corners — the default for most sans/serif fonts    |
+| `rustic`   | Rough hand-drawn look — pairs with handwriting and sketch fonts    |
+| `sketchy`  | Loose, uneven lines — pairs with hand-drawn and novelty fonts      |
+| `retro`    | Vintage/deco ornaments — pairs with display, retro, and sci-fi fonts |
+
+The default `auto` setting picks the frame that best complements the active font. You can override it for any font with `--frame`:
+
+```bash
+python3 fuzzyClock2.py --dry-run --font dejavu --frame retro --output preview.png
+```
+
+The daemon reads the same setting from the `frame:` field in `fuzzyclock_config.yaml`:
+
+```yaml
+frame: auto   # auto, bauhaus, rustic, sketchy, or retro
+```
+
+Unknown values fall back to `auto` with a warning in the daemon log.
+
 ## After-hours mode
 
 After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.yaml` (the same file that holds `dialect:` and `font:`):
@@ -147,6 +183,8 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | `test_render.py` | Smoke tests for `draw_border` and `render_clock` |
 | `test_dry_run.py` | End-to-end test that invokes `fuzzyClock2.py --dry-run` |
 | `test_sun.py` | Unit tests for the sunrise/sunset approximation used by after-hours mode |
+| `test_daemon.py` | Unit tests for `current_mode`, tick sleep, config loading, and render-retry logic |
+| `test_daemon_import.py` | Smoke test: bare `import fuzzyclock_daemon` to catch eager hardware calls |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
 | `fuzzyclock_config.yaml` | Dialect, font, and latitude/longitude for the after-hours sunset/sunrise calculation |
