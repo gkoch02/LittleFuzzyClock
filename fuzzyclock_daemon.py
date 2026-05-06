@@ -371,23 +371,47 @@ def reset_base_image(epd, invert=False, frame=None):
 
 
 def display_goodnight(epd):
+    """Render the night-mode 'Goodnight' slide.
+
+    Visually mirrors the inverted (after-hours) clock face — black canvas
+    with the rustic border in white — but replaces the fuzzy phrase + hour
+    with a single auto-sized 'Goodnight' line centered in the canvas, and
+    hides the date footer.
+    """
     _require_fonts()
     width, height = epd.height, epd.width
-    image = Image.new("1", (width, height), 255)
+    image = Image.new("1", (width, height), 0)
     draw = ImageDraw.Draw(image)
 
-    text = "Goodnight"
-    text_bbox = draw.textbbox((0, 0), text, font=font_goodnight)
-    x = (width - (text_bbox[2] - text_bbox[0])) // 2
-    y = (height - (text_bbox[3] - text_bbox[1])) // 2
+    # Inset mirrors fuzzyclock_core._CONTENT_PAD (= _BORDER_MARGIN + 2 +
+    # _CORNER_R + 2 = 14) so the text clears the rustic frame's corner ink.
+    pad = 14
+    available_w = width - 2 * pad
+    available_h = height - 2 * pad
 
-    draw.rounded_rectangle(
-        (10, 10, width - 10, height - 10),
-        radius=15,
-        outline=0,
-        width=2,
-    )
-    draw.text((x, y), text, font=font_goodnight, fill=0)
+    text = "Goodnight"
+    # Single-line auto-fit: shrink from a higher ceiling than render_clock's
+    # 40-pt body cap because we don't have a second line competing for
+    # vertical space.
+    font = None
+    bbox = None
+    for size in range(60, 13, -1):
+        candidate = load_font(size, variant="unifraktur-maguntia")
+        cb = draw.textbbox((0, 0), text, font=candidate)
+        if (cb[2] - cb[0]) <= available_w and (cb[3] - cb[1]) <= available_h:
+            font, bbox = candidate, cb
+            break
+    if font is None:
+        font = load_font(14, variant="unifraktur-maguntia")
+        bbox = draw.textbbox((0, 0), text, font=font)
+
+    draw_border(draw, width, height, invert=True, frame="rustic")
+
+    text_w = bbox[2] - bbox[0]
+    text_ink_h = bbox[3] - bbox[1]
+    x = (width - text_w) // 2 - bbox[0]
+    y = (height - text_ink_h) // 2 - bbox[1]
+    draw.text((x, y), text, font=font, fill=255)
 
     with epd_lock:
         epd.display(epd.getbuffer(image.rotate(180)))
