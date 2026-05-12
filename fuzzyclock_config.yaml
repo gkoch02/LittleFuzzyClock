@@ -30,5 +30,5 @@ frame: auto
 
 # Coordinates for after-hours mode (display inverts after sunset).
 # Leave both null to disable; the clock will use plain day/night only.
-latitude: 37.2872
-longitude: -121.9500
+latitude: 51.4769
+longitude: 0.0005

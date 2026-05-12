@@ -154,8 +154,8 @@ Unknown values fall back to `auto` with a warning in the daemon log.
 After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.yaml` (the same file that holds `dialect:` and `font:`):
 
 ```yaml
-latitude: 37.2872
-longitude: -121.9500
+latitude: 51.4769
+longitude: 0.0005
 ```
 
 Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is missing or malformed, after-hours mode stays off too.
