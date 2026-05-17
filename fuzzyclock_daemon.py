@@ -223,12 +223,21 @@ def _resolve_font(phrase=None):
     A button press inside the same phrase keeps the current pick so the user
     sees the "same" clock when they tap for a refresh. Returns FONT_VARIANT
     verbatim when random mode is off.
+
+    The first call after `_init_fonts()` reuses the init-time seed instead
+    of popping a fresh variant from the shuffle bag — otherwise the
+    goodnight preload would silently consume a bag slot the user never sees
+    on the clock face, breaking the "every variant before repeats"
+    guarantee at startup. `_last_phrase is None` is the sentinel for "init
+    pick has not yet been displayed".
     """
     global _current_random_font, _last_phrase
     if FONT_VARIANT != RANDOM_FONT:
         return FONT_VARIANT
     with _random_font_lock:
-        if _current_random_font is None or (phrase is not None and phrase != _last_phrase):
+        if _current_random_font is None:
+            _current_random_font = pick_random_font()
+        elif phrase is not None and _last_phrase is not None and phrase != _last_phrase:
             _current_random_font = pick_random_font()
         if phrase is not None:
             _last_phrase = phrase

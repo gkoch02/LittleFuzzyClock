@@ -365,6 +365,21 @@ class ResolveFontTests(unittest.TestCase):
             self.assertEqual(d._resolve_font(None), "ubuntu")
         pick.assert_not_called()
 
+    def test_random_first_render_reuses_init_seed(self):
+        # `_init_fonts()` seeds `_current_random_font` to preload the
+        # goodnight font; the first clock render then arrives with
+        # `_last_phrase=None`. Re-rolling here would burn a slot from the
+        # shuffle bag without the user ever seeing the init pick on the
+        # clock face, breaking the "all variants before repeats" guarantee.
+        d.FONT_VARIANT = d.RANDOM_FONT
+        d._current_random_font = "ubuntu"
+        d._last_phrase = None
+        with mock.patch.object(d, "pick_random_font", return_value="bangers") as pick:
+            picked = d._resolve_font("half past")
+        self.assertEqual(picked, "ubuntu")
+        self.assertEqual(d._last_phrase, "half past")
+        pick.assert_not_called()
+
 
 class ResolveFrameTests(unittest.TestCase):
     """`_resolve_frame` mirrors `_resolve_font`: an explicit frame in config
