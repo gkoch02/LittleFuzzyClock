@@ -817,6 +817,13 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
         "/Library/Fonts/Times New Roman Bold.ttf",
     ],
+    # Small-caps companion to patrick-hand — same casual hand, lowercase
+    # rendered as scaled caps so phrases read in steady block letters.
+    "patrick-hand-sc": [
+        os.path.join(_VENDORED_FONT_DIR, "PatrickHandSC-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -984,6 +991,7 @@ FONT_FRAME_CATEGORY = {
     "shojumaru": "sketchy",
     "manufacturing-consent": "rustic",
     "balthazar": "bauhaus",
+    "patrick-hand-sc": "sketchy",
 }
 
 

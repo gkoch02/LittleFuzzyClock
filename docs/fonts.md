@@ -939,17 +939,26 @@ Open clean handwriting — very legible at small sizes.
 </tr>
 <tr>
 <td align="center">
+<img src="preview-patrick-hand-sc.png" alt="patrick-hand-sc"><br><br>
+<strong><code>patrick-hand-sc</code></strong><br>
+<sup>OFL · static</sup><br>
+Small-caps companion to Patrick Hand — same casual hand, but everything renders as steady block letters.
+</td>
+<td align="center">
 <img src="preview-reenie-beanie.png" alt="reenie-beanie"><br><br>
 <strong><code>reenie-beanie</code></strong><br>
 <sup>OFL · static</sup><br>
 Slanted notebook scribble — back-of-the-book doodle.
 </td>
+</tr>
+<tr>
 <td align="center">
 <img src="preview-shadows-into-light.png" alt="shadows-into-light"><br><br>
 <strong><code>shadows-into-light</code></strong><br>
 <sup>OFL · static</sup><br>
 Light marker on paper — airy, softly slanted.
 </td>
+<td></td>
 </tr>
 </table>
 
