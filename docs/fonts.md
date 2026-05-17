@@ -124,7 +124,12 @@ Optically sized book serif — refined and even-toned.
 <sup>apt: fonts-roboto-slab</sup><br>
 Chunky slab serif — renders especially crisply on e-ink.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-balthazar.png" alt="balthazar"><br><br>
+<strong><code>balthazar</code></strong><br>
+<sup>OFL · static</sup><br>
+Copperplate-Gothic-inspired bistro serif — high x-height with delicate serifs, NYC/Paris menu vibe.
+</td>
 </tr>
 </table>
 
@@ -440,6 +445,20 @@ Single-weight ultra-heavy Latin display — fills every pixel with imposing mass
 Maximum-weight display serif — brutal ink coverage, deep ink traps.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-jaro.png" alt="jaro"><br><br>
+<strong><code>jaro</code></strong><br>
+<sup>OFL · variable · opsz axis</sup><br>
+Global display sans inspired by Jaroslav Benda — heavy geometric caps with quirky terminals and tight counters.
+</td>
+<td align="center">
+<img src="preview-shojumaru.png" alt="shojumaru"><br><br>
+<strong><code>shojumaru</code></strong><br>
+<sup>OFL · static</sup><br>
+Sumi-e brush-calligraphy interpretation of Latin caps — thick rounded strokes with sharp tapered terminals.
+</td>
+</tr>
 </table>
 
 ---
@@ -747,6 +766,15 @@ Decorative pirate / treasure-map blackletter.
 Full gothic blackletter — medieval manuscript feel.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-manufacturing-consent.png" alt="manufacturing-consent"><br><br>
+<strong><code>manufacturing-consent</code></strong><br>
+<sup>OFL · static</sup><br>
+NYT-masthead Fraktur — editorial blackletter forked from Chomsky, named for the Chomsky/Herman book.
+</td>
+<td></td>
+</tr>
 </table>
 
 ---
@@ -911,17 +939,26 @@ Open clean handwriting — very legible at small sizes.
 </tr>
 <tr>
 <td align="center">
+<img src="preview-patrick-hand-sc.png" alt="patrick-hand-sc"><br><br>
+<strong><code>patrick-hand-sc</code></strong><br>
+<sup>OFL · static</sup><br>
+Small-caps companion to Patrick Hand — same casual hand, but everything renders as steady block letters.
+</td>
+<td align="center">
 <img src="preview-reenie-beanie.png" alt="reenie-beanie"><br><br>
 <strong><code>reenie-beanie</code></strong><br>
 <sup>OFL · static</sup><br>
 Slanted notebook scribble — back-of-the-book doodle.
 </td>
+</tr>
+<tr>
 <td align="center">
 <img src="preview-shadows-into-light.png" alt="shadows-into-light"><br><br>
 <strong><code>shadows-into-light</code></strong><br>
 <sup>OFL · static</sup><br>
 Light marker on paper — airy, softly slanted.
 </td>
+<td></td>
 </tr>
 </table>
 

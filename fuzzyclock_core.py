@@ -787,6 +787,43 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    # Global display sans inspired by Jaroslav Benda — heavy geometric caps with
+    # quirky terminals. Variable opsz axis only (no Bold instance), so
+    # set_variation_by_name("Bold") silently no-ops and the font renders at its
+    # default optical size.
+    "jaro": [
+        os.path.join(_VENDORED_FONT_DIR, "Jaro-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
+    # Brushed sumi-e display — thick rounded strokes with sharp tapered terminals,
+    # Japanese brush-calligraphy interpretation of Latin caps.
+    "shojumaru": [
+        os.path.join(_VENDORED_FONT_DIR, "Shojumaru-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+    ],
+    # NYT-masthead-style Fraktur blackletter — forked from Chomsky, named after
+    # the Chomsky/Herman book. Authoritative editorial gravitas.
+    "manufacturing-consent": [
+        os.path.join(_VENDORED_FONT_DIR, "ManufacturingConsent-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Copperplate-Gothic-inspired bistro serif — high x-height, diagonal stress,
+    # delicate serifs, NYC/Paris menu vibe.
+    "balthazar": [
+        os.path.join(_VENDORED_FONT_DIR, "Balthazar-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
+    # Small-caps companion to patrick-hand — same casual hand, lowercase
+    # rendered as scaled caps so phrases read in steady block letters.
+    "patrick-hand-sc": [
+        os.path.join(_VENDORED_FONT_DIR, "PatrickHandSC-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -950,6 +987,11 @@ FONT_FRAME_CATEGORY = {
     "tourney": "retro",
     "kablammo": "sketchy",
     "unkempt": "sketchy",
+    "jaro": "bauhaus",
+    "shojumaru": "sketchy",
+    "manufacturing-consent": "rustic",
+    "balthazar": "bauhaus",
+    "patrick-hand-sc": "sketchy",
 }
 
 
