@@ -3,6 +3,7 @@
 import math
 import os
 import random as _random
+import threading as _threading
 from datetime import datetime, timedelta, timezone
 
 from PIL import ImageFont
@@ -1037,19 +1038,72 @@ def vendored_font_variants():
     return available
 
 
-def pick_random_font(rng=None):
-    """Pick a vendored font variant at random.
+# Shuffle-bag state for pick_random_font(). Calls with rng=None deal one
+# variant at a time from _random_font_bag; when it empties we reshuffle the
+# eligible set, so the user sees every vendored font before any repeats
+# (music-shuffle semantics rather than uniform i.i.d.). _last_random_font_pick
+# is kept so we can avoid back-to-back duplicates across bag boundaries.
+# _random_font_bag_source is the frozenset the current bag was built from —
+# if the eligible set changes (font dropped in or removed) we discard the bag
+# so the new variant gets a fair turn instead of waiting until the next cycle.
+_random_font_bag = []
+_random_font_bag_source = None
+_last_random_font_pick = None
+_random_font_bag_lock = _threading.Lock()
 
-    `rng` defaults to the module's `random` instance; tests pass a seeded
-    `random.Random` for determinism. Falls back to DEFAULT_FONT if nothing
-    is vendored on disk (degraded environment) so callers always get a
-    usable variant key.
+
+def _reset_random_font_bag():
+    """Clear shuffle-bag state. Tests call this so bag carryover between
+    cases doesn't leak; production never needs it — refill is automatic
+    when the bag empties or the eligible set changes."""
+    global _random_font_bag_source, _last_random_font_pick
+    with _random_font_bag_lock:
+        _random_font_bag.clear()
+        _random_font_bag_source = None
+        _last_random_font_pick = None
+
+
+def pick_random_font(rng=None):
+    """Pick a vendored font variant.
+
+    With `rng=None` (the production path) uses a shuffle bag: deals each
+    vendored variant once before reshuffling, so the user sees every font
+    before any repeats. Across bag boundaries the next pick is swapped
+    deeper if it matches the previous return, avoiding visible back-to-back
+    duplicates whenever the eligible set has at least two entries.
+
+    With `rng` supplied (deterministic test path) bypasses the bag and does
+    an isolated `rng.choice` — same seed yields the same pick and leaves
+    module bag state undisturbed.
+
+    Falls back to DEFAULT_FONT if no vendored variant is present on disk
+    (degraded environment) so callers always get a usable variant key.
     """
     available = vendored_font_variants()
     if not available:
         return DEFAULT_FONT
-    rng = rng if rng is not None else _random
-    return rng.choice(available)
+    if rng is not None:
+        return rng.choice(available)
+    global _random_font_bag_source, _last_random_font_pick
+    available_set = frozenset(available)
+    with _random_font_bag_lock:
+        if not _random_font_bag or _random_font_bag_source != available_set:
+            _random_font_bag[:] = list(available)
+            _random.shuffle(_random_font_bag)
+            _random_font_bag_source = available_set
+            if (
+                len(_random_font_bag) > 1
+                and _last_random_font_pick is not None
+                and _random_font_bag[-1] == _last_random_font_pick
+            ):
+                swap_idx = _random.randrange(len(_random_font_bag) - 1)
+                _random_font_bag[-1], _random_font_bag[swap_idx] = (
+                    _random_font_bag[swap_idx],
+                    _random_font_bag[-1],
+                )
+        pick = _random_font_bag.pop()
+        _last_random_font_pick = pick
+        return pick
 
 
 HOUR_WORDS = {
