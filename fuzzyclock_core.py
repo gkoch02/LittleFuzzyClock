@@ -810,6 +810,13 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
         "/Library/Fonts/Times New Roman Bold.ttf",
     ],
+    # Copperplate-Gothic-inspired bistro serif — high x-height, diagonal stress,
+    # delicate serifs, NYC/Paris menu vibe.
+    "balthazar": [
+        os.path.join(_VENDORED_FONT_DIR, "Balthazar-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -976,6 +983,7 @@ FONT_FRAME_CATEGORY = {
     "jaro": "bauhaus",
     "shojumaru": "sketchy",
     "manufacturing-consent": "rustic",
+    "balthazar": "bauhaus",
 }
 
 

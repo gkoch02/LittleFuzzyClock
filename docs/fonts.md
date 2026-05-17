@@ -124,7 +124,12 @@ Optically sized book serif — refined and even-toned.
 <sup>apt: fonts-roboto-slab</sup><br>
 Chunky slab serif — renders especially crisply on e-ink.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-balthazar.png" alt="balthazar"><br><br>
+<strong><code>balthazar</code></strong><br>
+<sup>OFL · static</sup><br>
+Copperplate-Gothic-inspired bistro serif — high x-height with delicate serifs, NYC/Paris menu vibe.
+</td>
 </tr>
 </table>
 
