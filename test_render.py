@@ -30,6 +30,7 @@ from fuzzyclock_core import (
     FRAME_VARIANTS,
     RANDOM_FONT,
     _fit_body_font,
+    _reset_random_font_bag,
     draw_border,
     frame_for_font,
     load_font,
@@ -329,6 +330,75 @@ class RandomFontTests(unittest.TestCase):
             font_variant=variant,
         )
         self.assertGreater(_count_black_pixels(image), 200)
+
+
+class RandomFontShuffleBagTests(unittest.TestCase):
+    """`pick_random_font()` (no rng) deals from a shuffle bag so the user
+    sees every vendored variant before any repeats — the "music shuffle"
+    semantics that distinguish this from uniform i.i.d. sampling."""
+
+    def setUp(self):
+        _reset_random_font_bag()
+
+    def tearDown(self):
+        _reset_random_font_bag()
+
+    def test_every_variant_appears_before_any_repeats(self):
+        # With a small synthetic eligible set, the first N calls must be a
+        # permutation of the set (no repeats), then the next N another
+        # permutation. This is the whole point of the change.
+        pool = ["alpha", "beta", "gamma", "delta", "epsilon"]
+        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=pool):
+            first_cycle = [pick_random_font() for _ in pool]
+            second_cycle = [pick_random_font() for _ in pool]
+        self.assertEqual(sorted(first_cycle), sorted(pool))
+        self.assertEqual(sorted(second_cycle), sorted(pool))
+
+    def test_no_back_to_back_repeat_across_bag_boundary(self):
+        # When a new bag is dealt, the next pick must not equal the
+        # previous one (provided more than one variant is eligible).
+        # Without the swap-deeper guard, two cycles of length 1...N could
+        # legally produce a duplicate at the seam.
+        pool = ["alpha", "beta", "gamma"]
+        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=pool):
+            for _ in range(50):
+                sequence = [pick_random_font() for _ in range(2 * len(pool))]
+                for a, b in zip(sequence, sequence[1:]):
+                    self.assertNotEqual(a, b, f"back-to-back repeat in {sequence}")
+
+    def test_single_variant_pool_repeats_silently(self):
+        # The back-to-back guard is conditional on len > 1. With a single
+        # eligible variant we have no choice but to repeat — and we must
+        # not raise.
+        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=["solo"]):
+            self.assertEqual(pick_random_font(), "solo")
+            self.assertEqual(pick_random_font(), "solo")
+
+    def test_bag_resets_when_eligible_set_changes(self):
+        # If a font is dropped into fonts/ mid-session, the new variant
+        # should be reachable on the very next pick rather than waiting
+        # for the current bag to drain.
+        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=["alpha", "beta"]):
+            pick_random_font()  # partially drains the bag
+        with mock.patch(
+            "fuzzyclock_core.vendored_font_variants",
+            return_value=["alpha", "beta", "gamma"],
+        ):
+            picks = {pick_random_font() for _ in range(3)}
+        self.assertEqual(picks, {"alpha", "beta", "gamma"})
+
+    def test_supplied_rng_does_not_disturb_bag(self):
+        # The rng= path is the deterministic-test path. It must not pop
+        # from or refill the shared bag, so production callers using
+        # rng=None still see a clean shuffle.
+        import random as _r
+
+        pool = ["alpha", "beta", "gamma"]
+        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=pool):
+            pick_random_font(rng=_r.Random(1))
+            pick_random_font(rng=_r.Random(2))
+            cycle = [pick_random_font() for _ in pool]
+        self.assertEqual(sorted(cycle), sorted(pool))
 
 
 class FrameVariantsTests(unittest.TestCase):

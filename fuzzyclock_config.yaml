@@ -20,7 +20,8 @@ dialect: classic
 # Script:         dancing-script, tangerine, parisienne, clicker-script, yellowtail
 # Geometric:      poppins, raleway, oswald, work-sans, cabin
 # Commercial:     bookerly, minion, livory, chaparral, arno, malabar, pigeonette
-# Special:        random (pick a vendored variant fresh each time the phrase changes)
+# Special:        random (shuffle through every vendored variant before any repeats,
+#                          re-rolling on each phrase change)
 font: dejavu
 
 # Border frame style. "auto" picks one matched to the active font's category;
