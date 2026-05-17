@@ -440,6 +440,15 @@ Single-weight ultra-heavy Latin display — fills every pixel with imposing mass
 Maximum-weight display serif — brutal ink coverage, deep ink traps.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-jaro.png" alt="jaro"><br><br>
+<strong><code>jaro</code></strong><br>
+<sup>OFL · variable · opsz axis</sup><br>
+Global display sans inspired by Jaroslav Benda — heavy geometric caps with quirky terminals and tight counters.
+</td>
+<td></td>
+</tr>
 </table>
 
 ---

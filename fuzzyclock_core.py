@@ -787,6 +787,15 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    # Global display sans inspired by Jaroslav Benda — heavy geometric caps with
+    # quirky terminals. Variable opsz axis only (no Bold instance), so
+    # set_variation_by_name("Bold") silently no-ops and the font renders at its
+    # default optical size.
+    "jaro": [
+        os.path.join(_VENDORED_FONT_DIR, "Jaro-VF.ttf"),
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -950,6 +959,7 @@ FONT_FRAME_CATEGORY = {
     "tourney": "retro",
     "kablammo": "sketchy",
     "unkempt": "sketchy",
+    "jaro": "bauhaus",
 }
 
 
