@@ -796,6 +796,13 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Impact.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
+    # Brushed sumi-e display — thick rounded strokes with sharp tapered terminals,
+    # Japanese brush-calligraphy interpretation of Latin caps.
+    "shojumaru": [
+        os.path.join(_VENDORED_FONT_DIR, "Shojumaru-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
+        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -960,6 +967,7 @@ FONT_FRAME_CATEGORY = {
     "kablammo": "sketchy",
     "unkempt": "sketchy",
     "jaro": "bauhaus",
+    "shojumaru": "sketchy",
 }
 
 

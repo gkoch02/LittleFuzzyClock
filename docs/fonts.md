@@ -447,7 +447,12 @@ Maximum-weight display serif — brutal ink coverage, deep ink traps.
 <sup>OFL · variable · opsz axis</sup><br>
 Global display sans inspired by Jaroslav Benda — heavy geometric caps with quirky terminals and tight counters.
 </td>
-<td></td>
+<td align="center">
+<img src="preview-shojumaru.png" alt="shojumaru"><br><br>
+<strong><code>shojumaru</code></strong><br>
+<sup>OFL · static</sup><br>
+Sumi-e brush-calligraphy interpretation of Latin caps — thick rounded strokes with sharp tapered terminals.
+</td>
 </tr>
 </table>
 
