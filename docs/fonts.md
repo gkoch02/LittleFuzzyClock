@@ -761,6 +761,15 @@ Decorative pirate / treasure-map blackletter.
 Full gothic blackletter — medieval manuscript feel.
 </td>
 </tr>
+<tr>
+<td align="center">
+<img src="preview-manufacturing-consent.png" alt="manufacturing-consent"><br><br>
+<strong><code>manufacturing-consent</code></strong><br>
+<sup>OFL · static</sup><br>
+NYT-masthead Fraktur — editorial blackletter forked from Chomsky, named for the Chomsky/Herman book.
+</td>
+<td></td>
+</tr>
 </table>
 
 ---

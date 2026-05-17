@@ -803,6 +803,13 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
         "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
     ],
+    # NYT-masthead-style Fraktur blackletter — forked from Chomsky, named after
+    # the Chomsky/Herman book. Authoritative editorial gravitas.
+    "manufacturing-consent": [
+        os.path.join(_VENDORED_FONT_DIR, "ManufacturingConsent-Regular.ttf"),
+        "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+        "/Library/Fonts/Times New Roman Bold.ttf",
+    ],
 }
 
 DEFAULT_FONT = "dejavu"
@@ -968,6 +975,7 @@ FONT_FRAME_CATEGORY = {
     "unkempt": "sketchy",
     "jaro": "bauhaus",
     "shojumaru": "sketchy",
+    "manufacturing-consent": "rustic",
 }
 
 
