@@ -17,9 +17,7 @@ from PIL import Image, ImageDraw
 from fuzzyclock_core import (
     _BODY_MAX_SIZE,
     _BODY_MIN_SIZE,
-    _BORDER_MARGIN,
     _CONTENT_PAD,
-    _CORNER_R,
     _TINY_SIZE,
     AUTO_FRAME,
     DEFAULT_DIALECT,
@@ -634,22 +632,16 @@ class _RecordingDraw:
 
 
 class RenderClockOverflowTests(unittest.TestCase):
-    """Every text bbox drawn by render_clock must respect the border geometry.
+    """Every text bbox drawn by render_clock must stay inside _CONTENT_PAD.
 
     Smoke tests elsewhere only count pixels, so a regression that overflowed
     the phrase past the border or into a corner decoration would still pass
-    them. This class spies on draw.text() and asserts two invariants:
-
-      (a) the bbox stays inside the visible border line (margin = _BORDER_MARGIN),
-          so text never overprints the frame rectangle itself; and
-      (b) the bbox doesn't intersect any of the four corner-decoration squares
-          (each of side _BORDER_MARGIN + _CORNER_R + 2 from its corner), so
-          text never collides with the per-frame corner ornaments.
-
-    Together these are the actual visible "no overflow" contract — looser than
-    the documented _CONTENT_PAD strip (which renders_clock's vertical centering
-    can technically encroach on without producing any visible artefact, since
-    horizontally-centered text is far from the corners).
+    them. This class spies on draw.text() and asserts the documented contract:
+    every text bbox sits within
+        [_CONTENT_PAD, width - _CONTENT_PAD] × [_CONTENT_PAD, height - _CONTENT_PAD]
+    — the same exclusion zone _fit_body_font uses for sizing, which by
+    construction stays clear of both the visible border and all four
+    corner-decoration ink regions.
     """
 
     # Five minute-marks per hour that exercise the full range of phrase
@@ -657,46 +649,24 @@ class RenderClockOverflowTests(unittest.TestCase):
     # rounding-cliff longer phrases, half-past ("half past"), and "almost".
     _STRESS_MINUTES = (0, 15, 27, 35, 58)
 
-    # Each corner is reserved for decoration ink plus a 2-px breathing buffer.
-    # Text bboxes must not intersect any of the four corner squares.
-    _CORNER_ZONE = _BORDER_MARGIN + _CORNER_R + 2  # = 12
-
-    def _corner_zones(self, width, height):
-        z = self._CORNER_ZONE
-        return [
-            (0, 0, z, z),  # top-left
-            (width - z, 0, width, z),  # top-right
-            (0, height - z, z, height),  # bottom-left
-            (width - z, height - z, width, height),  # bottom-right
-        ]
-
-    @staticmethod
-    def _rects_intersect(a, b):
-        return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
-
     def _assert_no_overflow(self, bbox, width, height, label):
         left, top, right, bottom = bbox
         self.assertGreaterEqual(
-            left, _BORDER_MARGIN + 1, f"{label}: bbox left {left} crosses border"
+            left, _CONTENT_PAD, f"{label}: bbox left {left} < _CONTENT_PAD {_CONTENT_PAD}"
         )
         self.assertLessEqual(
-            right,
-            width - _BORDER_MARGIN - 1,
-            f"{label}: bbox right {right} crosses border (canvas={width})",
+            right, width - _CONTENT_PAD, f"{label}: bbox right {right} > {width - _CONTENT_PAD}"
         )
-        self.assertGreaterEqual(top, _BORDER_MARGIN + 1, f"{label}: bbox top {top} crosses border")
+        self.assertGreaterEqual(
+            top, _CONTENT_PAD, f"{label}: bbox top {top} < _CONTENT_PAD {_CONTENT_PAD}"
+        )
         self.assertLessEqual(
             bottom,
-            height - _BORDER_MARGIN - 1,
-            f"{label}: bbox bottom {bottom} crosses border (canvas={height})",
+            height - _CONTENT_PAD,
+            f"{label}: bbox bottom {bottom} > {height - _CONTENT_PAD}",
         )
-        for corner in self._corner_zones(width, height):
-            self.assertFalse(
-                self._rects_intersect(bbox, corner),
-                f"{label}: bbox {bbox} intrudes into corner zone {corner}",
-            )
 
-    def test_every_dialect_keeps_text_inside_border(self):
+    def test_every_dialect_keeps_text_inside_content_area(self):
         for dialect in sorted(DIALECTS):
             for minute in self._STRESS_MINUTES:
                 when = datetime(2026, 4, 25, 9, minute)
@@ -715,7 +685,7 @@ class RenderClockOverflowTests(unittest.TestCase):
                             bbox, WIDTH, HEIGHT, f"{dialect}@{minute:02d} {text!r}@{xy}"
                         )
 
-    def test_every_hour_keeps_text_inside_border(self):
+    def test_every_hour_keeps_text_inside_content_area(self):
         # Hour-words vary in length across the day and across dialects (latin
         # numerals, klingon words, cthulhu ordinals). Sweep all 24 hours at one
         # stress minute to catch a long hour-string overflow that the
@@ -732,7 +702,7 @@ class RenderClockOverflowTests(unittest.TestCase):
                             bbox, WIDTH, HEIGHT, f"{dialect} {hour:02d}:27 {text!r}@{xy}"
                         )
 
-    def test_every_frame_keeps_text_inside_border(self):
+    def test_every_frame_keeps_text_inside_content_area(self):
         # The frame doesn't influence text placement, but rendering through
         # each frame exercises the full pipeline; a frame whose corner ink
         # extended further than _CORNER_R would still need text to avoid it.
