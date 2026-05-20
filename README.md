@@ -106,7 +106,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## Fonts
 
-130 font variants are available — 123 open-source fonts vendored in `fonts/` (clean & literary serifs, slab serifs, soft & rounded, geometric & condensed, bold display, retro & computing, vintage/deco/futuristic, blackletter & fantasy, handwriting & script, hand-drawn, textured & experimental, horror & macabre, weird & unique), and 7 commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
+141 font variants are available — 134 open-source fonts vendored in `fonts/` (clean & literary serifs, slab serifs, soft & rounded, geometric & condensed, bold display, retro & computing, vintage/deco/futuristic, blackletter & fantasy, handwriting & script, hand-drawn, textured & experimental, horror & macabre, weird & unique), and 7 commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
 
 Pick one with `--font`:
 
@@ -187,7 +187,7 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | `test_daemon_import.py` | Smoke test: bare `import fuzzyclock_daemon` to catch eager hardware calls |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
-| `fuzzyclock_config.yaml` | Dialect, font, and latitude/longitude for the after-hours sunset/sunrise calculation |
+| `fuzzyclock_config.yaml` | Dialect, font, frame, and latitude/longitude for the after-hours sunset/sunrise calculation |
 | `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
 | `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |
 | `waveshare_epd/` | Waveshare e-Paper Python library (MIT, from [Waveshare's e-Paper repo](https://github.com/waveshare/e-Paper)) |
