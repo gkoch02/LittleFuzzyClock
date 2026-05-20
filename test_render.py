@@ -606,5 +606,115 @@ class FitBodyFontTests(unittest.TestCase):
             )
 
 
+class _RecordingDraw:
+    """ImageDraw wrapper that records every text() call.
+
+    Delegates everything else (rectangle, line, textbbox, …) to the real
+    ImageDraw so render_clock's auto-sizing logic still measures actual
+    glyph metrics. Each .text() call is forwarded but also captured along
+    with the textbbox of the actual glyphs at the chosen draw position,
+    which is what callers need to verify containment within the content
+    area.
+    """
+
+    def __init__(self, image):
+        self._inner = ImageDraw.Draw(image)
+        self.text_calls = []  # list of (xy, text, font, bbox_at_draw_position)
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+    def text(self, xy, text, *args, **kwargs):
+        font = kwargs.get("font")
+        bbox = self._inner.textbbox(xy, text, font=font)
+        self.text_calls.append((xy, text, font, bbox))
+        return self._inner.text(xy, text, *args, **kwargs)
+
+
+class RenderClockOverflowTests(unittest.TestCase):
+    """Every text bbox drawn by render_clock must stay inside _CONTENT_PAD.
+
+    Smoke tests elsewhere only count pixels, so a regression that overflowed
+    the phrase past the border or into a corner decoration would still pass
+    them. This class spies on draw.text() and asserts the documented contract:
+    every text bbox sits within
+        [_CONTENT_PAD, width - _CONTENT_PAD] × [_CONTENT_PAD, height - _CONTENT_PAD]
+    — the same exclusion zone _fit_body_font uses for sizing, which by
+    construction stays clear of both the visible border and all four
+    corner-decoration ink regions.
+    """
+
+    # Five minute-marks per hour that exercise the full range of phrase
+    # lengths: on-the-hour ("ten"), quarter-past ("quarter past"), the
+    # rounding-cliff longer phrases, half-past ("half past"), and "almost".
+    _STRESS_MINUTES = (0, 15, 27, 35, 58)
+
+    def _assert_no_overflow(self, bbox, width, height, label):
+        left, top, right, bottom = bbox
+        self.assertGreaterEqual(
+            left, _CONTENT_PAD, f"{label}: bbox left {left} < _CONTENT_PAD {_CONTENT_PAD}"
+        )
+        self.assertLessEqual(
+            right, width - _CONTENT_PAD, f"{label}: bbox right {right} > {width - _CONTENT_PAD}"
+        )
+        self.assertGreaterEqual(
+            top, _CONTENT_PAD, f"{label}: bbox top {top} < _CONTENT_PAD {_CONTENT_PAD}"
+        )
+        self.assertLessEqual(
+            bottom,
+            height - _CONTENT_PAD,
+            f"{label}: bbox bottom {bottom} > {height - _CONTENT_PAD}",
+        )
+
+    def test_every_dialect_keeps_text_inside_content_area(self):
+        for dialect in sorted(DIALECTS):
+            for minute in self._STRESS_MINUTES:
+                when = datetime(2026, 4, 25, 9, minute)
+                with self.subTest(dialect=dialect, minute=minute):
+                    image = Image.new("1", (WIDTH, HEIGHT), 255)
+                    draw = _RecordingDraw(image)
+                    render_clock(draw, WIDTH, HEIGHT, when, dialect=dialect)
+                    self.assertEqual(
+                        len(draw.text_calls),
+                        3,
+                        "render_clock should emit exactly three text() calls "
+                        "(phrase, hour, day footer)",
+                    )
+                    for xy, text, _font, bbox in draw.text_calls:
+                        self._assert_no_overflow(
+                            bbox, WIDTH, HEIGHT, f"{dialect}@{minute:02d} {text!r}@{xy}"
+                        )
+
+    def test_every_hour_keeps_text_inside_content_area(self):
+        # Hour-words vary in length across the day and across dialects (latin
+        # numerals, klingon words, cthulhu ordinals). Sweep all 24 hours at one
+        # stress minute to catch a long hour-string overflow that the
+        # dialect/minute test above might miss.
+        for hour in range(24):
+            for dialect in ("classic", "latin", "klingon", "cthulhu"):
+                when = datetime(2026, 4, 25, hour, 27)  # "twenty-five past" — long
+                with self.subTest(dialect=dialect, hour=hour):
+                    image = Image.new("1", (WIDTH, HEIGHT), 255)
+                    draw = _RecordingDraw(image)
+                    render_clock(draw, WIDTH, HEIGHT, when, dialect=dialect)
+                    for xy, text, _font, bbox in draw.text_calls:
+                        self._assert_no_overflow(
+                            bbox, WIDTH, HEIGHT, f"{dialect} {hour:02d}:27 {text!r}@{xy}"
+                        )
+
+    def test_every_frame_keeps_text_inside_content_area(self):
+        # The frame doesn't influence text placement, but rendering through
+        # each frame exercises the full pipeline; a frame whose corner ink
+        # extended further than _CORNER_R would still need text to avoid it.
+        when = datetime(2026, 4, 25, 9, 27)
+        for frame in sorted(FRAME_VARIANTS):
+            with self.subTest(frame=frame):
+                image = Image.new("1", (WIDTH, HEIGHT), 255)
+                draw = _RecordingDraw(image)
+                render_clock(draw, WIDTH, HEIGHT, when, frame=frame)
+                for xy, text, _font, bbox in draw.text_calls:
+                    self._assert_no_overflow(bbox, WIDTH, HEIGHT, f"frame={frame} {text!r}@{xy}")
+
+
 if __name__ == "__main__":
     unittest.main()

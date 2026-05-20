@@ -1721,13 +1721,17 @@ def render_clock(
     phrase_ink_h = phrase_bbox[3] - phrase_bbox[1]
     hour_ink_h = hour_bbox[3] - hour_bbox[1]
 
-    # Phrase + hour block: center their ink in the space above the footer.
+    # Phrase + hour block: center their ink in the space between the top
+    # _CONTENT_PAD strip and the footer ink top. Centering in [_CONTENT_PAD,
+    # footer_ink_top] (not [0, footer_ink_top]) keeps the top edge inside
+    # _CONTENT_PAD even when the body fills the entire available height —
+    # matches _fit_body_font's exclusion zone on both the top and bottom.
     # Working in ink coordinates avoids bbox[1] artefacts shifting the visual
     # centre — fonts like Pacifico or Charis SIL carry large top offsets that
     # would otherwise push the block up or compress the inter-line gap.
     LINE_GAP = 4
     block_ink_h = phrase_ink_h + LINE_GAP + hour_ink_h
-    phrase_ink_y = (footer_ink_top - block_ink_h) // 2
+    phrase_ink_y = _CONTENT_PAD + (footer_ink_top - _CONTENT_PAD - block_ink_h) // 2
 
     # Back-calculate draw positions from desired ink positions.
     phrase_draw_y = phrase_ink_y - phrase_bbox[1]

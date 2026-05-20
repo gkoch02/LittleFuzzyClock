@@ -11,10 +11,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime
+from unittest import mock
 
 from PIL import Image
 
-from fuzzyclock_core import DIALECTS
+import fuzzyClock2
+from fuzzyclock_core import DIALECTS, FONT_VARIANTS, RANDOM_FONT
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -178,6 +181,105 @@ class DryRunTimeArgTests(unittest.TestCase):
             i1.load()
             i2.load()
             self.assertNotEqual(list(i1.getdata()), list(i2.getdata()))
+
+
+class DrawFuzzyClockInProcessTests(unittest.TestCase):
+    """Direct in-process tests for fuzzyClock2.draw_fuzzy_clock().
+
+    The subprocess-based DryRunCLITests cover the CLI surface end-to-end but
+    don't let `coverage` instrument fuzzyClock2's internals. These tests
+    import draw_fuzzy_clock() directly so the dry-run branch, the random-font
+    resolution, the EPD-unavailable error path, and the hardware-write
+    rotation are all visible to coverage and unit-mockable for finer-grained
+    assertions than a "PNG exists and has the right size" check.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.out = os.path.join(self.tmp.name, "preview.png")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_dry_run_writes_landscape_png_in_process(self):
+        fuzzyClock2.draw_fuzzy_clock(
+            dry_run=True,
+            output=self.out,
+            now=datetime(2026, 4, 25, 9, 15),
+        )
+        with Image.open(self.out) as img:
+            img.load()
+            self.assertEqual(img.size, (250, 122))
+            self.assertEqual(img.mode, "1")
+
+    def test_random_font_is_resolved_to_a_registered_variant(self):
+        # `RANDOM_FONT` is a config sentinel; draw_fuzzy_clock must resolve it
+        # to a concrete vendored variant before handing it to render_clock,
+        # otherwise load_font() would receive an unknown key and SystemExit.
+        with mock.patch("fuzzyClock2.render_clock") as m_render:
+            fuzzyClock2.draw_fuzzy_clock(
+                dry_run=True,
+                output=self.out,
+                font=RANDOM_FONT,
+                now=datetime(2026, 4, 25, 9, 15),
+            )
+        self.assertEqual(m_render.call_count, 1)
+        resolved = m_render.call_args.kwargs["font_variant"]
+        self.assertNotEqual(resolved, RANDOM_FONT)
+        self.assertIn(resolved, FONT_VARIANTS)
+
+    def test_default_now_uses_wall_clock(self):
+        # now=None must fall back to datetime.now(); patching the import-site
+        # alias proves the lookup happens at call time, not at import time.
+        sentinel = datetime(2026, 1, 2, 3, 4)
+        with mock.patch("fuzzyClock2.datetime") as m_dt:
+            m_dt.now.return_value = sentinel
+            with mock.patch("fuzzyClock2.render_clock") as m_render:
+                fuzzyClock2.draw_fuzzy_clock(dry_run=True, output=self.out)
+        self.assertEqual(m_render.call_args.args[3], sentinel)
+
+    def test_systemexit_when_epd_unavailable_and_not_dry_run(self):
+        # On a non-Pi host the EPD driver import sets EPD_AVAILABLE=False;
+        # asking for a hardware render then must SystemExit with a clear
+        # message instead of NameError'ing on the missing module attribute.
+        with mock.patch.object(fuzzyClock2, "EPD_AVAILABLE", False):
+            with self.assertRaises(SystemExit):
+                fuzzyClock2.draw_fuzzy_clock(dry_run=False)
+
+    def test_hardware_path_rotates_and_sleeps(self):
+        # When EPD is available, the script must init the panel, push a
+        # rotated buffer (the panel is mounted upside down — CLAUDE.md
+        # gotcha #2), and put it back to sleep. Inject a fake epd2in13_V4
+        # because the real module isn't importable in CI.
+        fake_epd = mock.Mock()
+        fake_epd.width = 122  # portrait dims; landscape swaps them
+        fake_epd.height = 250
+        fake_module = mock.Mock()
+        fake_module.EPD.return_value = fake_epd
+
+        captured_buf_images = []
+        fake_epd.getbuffer.side_effect = lambda img: captured_buf_images.append(img) or b"buf"
+
+        with (
+            mock.patch.object(fuzzyClock2, "EPD_AVAILABLE", True),
+            mock.patch.object(fuzzyClock2, "epd2in13_V4", fake_module, create=True),
+        ):
+            fuzzyClock2.draw_fuzzy_clock(
+                dry_run=False,
+                now=datetime(2026, 4, 25, 9, 15),
+            )
+
+        fake_epd.init.assert_called_once()
+        fake_epd.display.assert_called_once()
+        fake_epd.sleep.assert_called_once()
+        self.assertEqual(len(captured_buf_images), 1)
+        # The buffer the panel receives must be the rotated image. We can't
+        # easily compare images, but the panel's portrait dimensions (height,
+        # width) match the rotated image's (width, height) — rotate(180) on a
+        # landscape image keeps its size, so this is really an "image was
+        # passed through" assertion: size matches what the script promised.
+        rotated = captured_buf_images[0]
+        self.assertEqual(rotated.size, (250, 122))
 
 
 if __name__ == "__main__":

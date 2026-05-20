@@ -965,5 +965,335 @@ class MainSignalHandlerTests(unittest.TestCase):
         self.assertTrue(d._stop_event.is_set())
 
 
+class MainLoopTests(unittest.TestCase):
+    """Drive `main()`'s control flow through a scripted sequence of modes.
+
+    The MainSignalHandlerTests sister class above only exercises the night
+    branch (and the SIGTERM/SIGINT handlers). This class fills in the rest of
+    the loop body — mode transitions that reseed the partial-refresh base
+    image, the every-5-minute render cadence, the `_needs_recovery` re-init
+    path after consecutive failures, the fatal-threshold break, and the
+    cleanup epd.sleep() that runs after the loop exits.
+
+    Strategy: mock `_current_mode_now` with a scripted iterator over modes;
+    after the iterator is exhausted, set `_stop_event` so main() exits. Drop
+    in mocks for `draw_clock`, `display_goodnight`, `reset_base_image`, and
+    `epd2in13_V4` so we can assert their call sequences and inject failures.
+    """
+
+    def setUp(self):
+        d._stop_event.clear()
+        d._on_render_success()
+        self._saved = {
+            "DIALECT": d.DIALECT,
+            "FONT_VARIANT": d.FONT_VARIANT,
+            "FRAME_VARIANT": d.FRAME_VARIANT,
+            "LATITUDE": d.LATITUDE,
+            "LONGITUDE": d.LONGITUDE,
+            "AFTER_HOURS_ENABLED": d.AFTER_HOURS_ENABLED,
+            "font_goodnight": d.font_goodnight,
+        }
+
+    def tearDown(self):
+        d._stop_event.clear()
+        d._on_render_success()
+        for attr, val in self._saved.items():
+            setattr(d, attr, val)
+
+    def _run_main(self, mode_sequence, draw_side_effect=None, force_render_every_tick=True):
+        """Run main() driving _current_mode_now through `mode_sequence`.
+
+        Returns (fake_epd, m_draw, m_goodnight, m_reset, mode_calls). After
+        the last mode is returned, _stop_event is set so the next iteration
+        of `while not _stop_event.is_set()` exits — giving exactly
+        len(mode_sequence) iterations. `force_render_every_tick=True` pins
+        the wall-clock minute to a multiple of 5 so the should_render check
+        fires on every tick even when the mode doesn't change — needed for
+        the recovery / fatal-threshold tests where the mode is constant.
+        """
+        epd = _FakeEPD()
+
+        modes = list(mode_sequence)
+        if not modes:
+            self.fail("mode_sequence must contain at least one mode")
+        total_calls = [0]
+        loop_iter = [0]
+        mode_calls = []
+
+        def mode_fn():
+            # main() calls _current_mode_now() once before the loop to pick
+            # the initial reset_base_image invert, then again on each loop
+            # iteration. We hand the first call modes[0] without consuming
+            # it, so mode_sequence semantically describes LOOP iterations.
+            total_calls[0] += 1
+            if total_calls[0] == 1:
+                return modes[0]
+            i = loop_iter[0]
+            if i >= len(modes):
+                d._stop_event.set()  # defensive
+                return modes[-1]
+            loop_iter[0] += 1
+            mode_calls.append(modes[i])
+            if i == len(modes) - 1:
+                d._stop_event.set()
+            return modes[i]
+
+        m_draw = mock.Mock(side_effect=draw_side_effect)
+        m_goodnight = mock.Mock()
+        m_reset = mock.Mock()
+
+        # Patch datetime in the daemon module so the minute check is
+        # deterministic. Mocking the whole class is heavy-handed but the only
+        # caller is `datetime.now().minute` on the render-cadence line.
+        m_dt = mock.MagicMock()
+        m_dt.now.return_value = mock.Mock(minute=0 if force_render_every_tick else 1)
+
+        with (
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "draw_clock", m_draw),
+            mock.patch.object(d, "display_goodnight", m_goodnight),
+            mock.patch.object(d, "reset_base_image", m_reset),
+            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
+            # Honor the stop event so the loop actually exits after the last
+            # scripted mode. Returning the event's state mirrors what real
+            # Event.wait does once it's been set.
+            mock.patch.object(
+                d._stop_event,
+                "wait",
+                side_effect=lambda timeout=None: d._stop_event.is_set(),
+            ),
+            mock.patch("fuzzyclock_daemon.signal.signal"),
+            # Button is None in CI (no gpiozero backend); the try/except in
+            # main() handles that gracefully. Keep it that way so we don't
+            # accidentally start a real thread.
+            mock.patch("fuzzyclock_daemon.Button", None),
+            mock.patch("fuzzyclock_daemon.datetime", m_dt),
+        ):
+            m_epd_mod.EPD.return_value = epd
+            d.main()
+
+        return epd, m_draw, m_goodnight, m_reset, mode_calls
+
+    def test_night_only_uses_display_goodnight_and_skips_draw_clock(self):
+        epd, m_draw, m_goodnight, _m_reset, _ = self._run_main(["night"])
+        m_goodnight.assert_called_once_with(epd)
+        m_draw.assert_not_called()
+        # Initial reset_base_image + display_goodnight + final epd.sleep().
+        self.assertIn(("sleep",), epd.calls)
+
+    def test_day_mode_invokes_draw_clock_without_invert(self):
+        epd, m_draw, m_goodnight, _m_reset, _ = self._run_main(["day"])
+        m_draw.assert_called_once_with(epd, invert=False)
+        m_goodnight.assert_not_called()
+
+    def test_after_hours_mode_invokes_draw_clock_with_invert(self):
+        epd, m_draw, _m_goodnight, _m_reset, _ = self._run_main(["after_hours"])
+        m_draw.assert_called_once_with(epd, invert=True)
+
+    def test_mode_change_into_clock_mode_reseeds_base_image(self):
+        # day → after_hours flips invert; the partial-refresh base must be
+        # re-seeded before the next displayPartial or the inverted clock face
+        # will diff against the old (non-inverted) base.
+        _epd, m_draw, _m_goodnight, m_reset, _ = self._run_main(["day", "after_hours"])
+        # Initial seed (white/day) + the day→after_hours transition seed (black).
+        self.assertEqual(m_reset.call_count, 2)
+        initial_call, transition_call = m_reset.call_args_list
+        self.assertEqual(initial_call.kwargs.get("invert"), False)
+        self.assertEqual(transition_call.kwargs.get("invert"), True)
+        # Both ticks rendered the clock at their respective inverts.
+        self.assertEqual(
+            [c.kwargs.get("invert") for c in m_draw.call_args_list],
+            [False, True],
+        )
+
+    def test_night_to_day_transition_reseeds_base(self):
+        # Coming out of night must re-seed the base before the first
+        # partial-refresh render of the day, otherwise displayPartial would
+        # diff against a base painted around the full-screen goodnight slide.
+        _epd, m_draw, m_goodnight, m_reset, _ = self._run_main(["night", "day"])
+        m_goodnight.assert_called_once()
+        m_draw.assert_called_once_with(mock.ANY, invert=False)
+        # Initial seed (white) + the night→day transition seed.
+        self.assertEqual(m_reset.call_count, 2)
+
+    def test_day_to_night_transition_runs_goodnight_without_extra_reset(self):
+        # Night mode doesn't paint a clock face, so it does NOT reseed the
+        # base. The base will be reseeded again on the next morning's first
+        # non-night mode (see test_night_to_day_transition_reseeds_base).
+        _epd, m_draw, m_goodnight, m_reset, _ = self._run_main(["day", "night"])
+        self.assertEqual(m_draw.call_count, 1)
+        m_goodnight.assert_called_once()
+        # Only the initial seed at startup — no transition-into-night seed.
+        self.assertEqual(m_reset.call_count, 1)
+
+    def test_consecutive_failures_trigger_recovery_reinit_before_next_render(self):
+        # After RENDER_RETRY_REINIT (3) draw_clock failures, the next render
+        # path must re-init the EPD (epd.init() inside epd_lock) and reseed
+        # the base before calling draw_clock again. We check this by counting
+        # epd.init() invocations in the fake panel's call log: the panel
+        # records one init at the top of main() (the real epd.init() call,
+        # which we don't mock), so we expect one MORE init after the 4th
+        # tick fires the recovery path.
+        call_count = [0]
+
+        def failing_then_succeeding(*_args, **_kwargs):
+            call_count[0] += 1
+            if call_count[0] <= d.RENDER_RETRY_REINIT:
+                raise RuntimeError("simulated SPI hiccup")
+            # success on the 4th attempt
+
+        epd, m_draw, _m_goodnight, m_reset, _ = self._run_main(
+            ["day"] * (d.RENDER_RETRY_REINIT + 1),
+            draw_side_effect=failing_then_succeeding,
+        )
+        # 4 draw attempts total: 3 failures + 1 recovered success.
+        self.assertEqual(m_draw.call_count, d.RENDER_RETRY_REINIT + 1)
+        # Initial reset + the recovery reset before the 4th draw.
+        self.assertGreaterEqual(m_reset.call_count, 2)
+        # The recovery path re-inits the panel inside epd_lock; the fake
+        # records ("init",). Startup init plus the recovery init = 2.
+        init_calls = [c for c in epd.calls if c == ("init",)]
+        self.assertEqual(len(init_calls), 2, f"expected one recovery init; got {epd.calls}")
+
+    def test_fatal_threshold_breaks_main_loop(self):
+        # RENDER_RETRY_FATAL (10) consecutive failures must break out of the
+        # main loop so systemd can restart us with a clean slate, rather
+        # than burning through StartLimitBurst with stale state.
+        def always_fails(*_args, **_kwargs):
+            raise RuntimeError("simulated permanent SPI failure")
+
+        # Provide more ticks than the fatal threshold so we can be sure the
+        # loop broke on its own rather than at sequence exhaustion.
+        epd, m_draw, _m_goodnight, _m_reset, mode_calls = self._run_main(
+            ["day"] * (d.RENDER_RETRY_FATAL + 5),
+            draw_side_effect=always_fails,
+        )
+        # The loop must have broken at exactly RENDER_RETRY_FATAL failures —
+        # not consumed the extra ticks we provided.
+        self.assertEqual(m_draw.call_count, d.RENDER_RETRY_FATAL)
+        self.assertLess(len(mode_calls), d.RENDER_RETRY_FATAL + 5)
+        # Cleanup must still run on the fatal-break path.
+        self.assertIn(("sleep",), epd.calls)
+
+    def test_cleanup_sleeps_epd_after_normal_loop_exit(self):
+        # Stop-event-driven shutdown (SIGTERM/SIGINT path) must call
+        # epd.sleep() so the panel doesn't burn in. We verify by running
+        # one night tick and confirming sleep() lands in the fake's log.
+        epd, _m_draw, _m_goodnight, _m_reset, _ = self._run_main(["day"])
+        self.assertEqual(epd.calls[-1], ("sleep",))
+
+    def test_cleanup_sleep_failure_does_not_propagate(self):
+        # The final epd.sleep() is wrapped in try/except so an SPI hiccup
+        # during shutdown can't poison the exit path.
+        epd = _FakeEPD()
+        epd.sleep = mock.Mock(side_effect=RuntimeError("sleep failed"))
+
+        def mode_fn():
+            d._stop_event.set()
+            return "day"
+
+        with (
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "draw_clock"),
+            mock.patch.object(d, "reset_base_image"),
+            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
+            mock.patch.object(d._stop_event, "wait", return_value=False),
+            mock.patch("fuzzyclock_daemon.signal.signal"),
+            mock.patch("fuzzyclock_daemon.Button", None),
+        ):
+            m_epd_mod.EPD.return_value = epd
+            d.main()  # must not raise
+
+        epd.sleep.assert_called_once()
+
+    def test_after_hours_enabled_logs_coordinates(self):
+        # When _load_config returns lat/lon, main() must log the after-hours
+        # banner. We assert by inspecting the logging output.
+        epd = _FakeEPD()
+
+        def mode_fn():
+            d._stop_event.set()
+            return "day"
+
+        with (
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, 51.5, -0.1),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "draw_clock"),
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(d, "reset_base_image"),
+            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
+            mock.patch.object(d._stop_event, "wait", return_value=False),
+            mock.patch("fuzzyclock_daemon.signal.signal"),
+            mock.patch("fuzzyclock_daemon.Button", None),
+            self.assertLogs("root", level="INFO") as cm,
+        ):
+            m_epd_mod.EPD.return_value = epd
+            d.main()
+
+        self.assertTrue(
+            any("After-hours mode enabled" in msg for msg in cm.output),
+            f"expected after-hours banner; got {cm.output}",
+        )
+        self.assertTrue(d.AFTER_HOURS_ENABLED)
+
+    def test_after_hours_disabled_when_coords_missing(self):
+        # No coords → after-hours stays off and the disabled-banner is logged.
+        epd = _FakeEPD()
+
+        def mode_fn():
+            d._stop_event.set()
+            return "day"
+
+        with (
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "draw_clock"),
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(d, "reset_base_image"),
+            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
+            mock.patch.object(d._stop_event, "wait", return_value=False),
+            mock.patch("fuzzyclock_daemon.signal.signal"),
+            mock.patch("fuzzyclock_daemon.Button", None),
+            self.assertLogs("root", level="INFO") as cm,
+        ):
+            m_epd_mod.EPD.return_value = epd
+            d.main()
+
+        self.assertTrue(
+            any("After-hours mode disabled" in msg for msg in cm.output),
+            f"expected after-hours-disabled banner; got {cm.output}",
+        )
+        self.assertFalse(d.AFTER_HOURS_ENABLED)
+
+    def test_systemexit_when_epd_driver_missing(self):
+        # If the waveshare_epd driver is not importable, main() must refuse
+        # to start with a clear message rather than NameError'ing later.
+        with mock.patch("fuzzyclock_daemon.epd2in13_V4", None):
+            with self.assertRaises(SystemExit):
+                d.main()
+
+
 if __name__ == "__main__":
     unittest.main()
