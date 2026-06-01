@@ -27,6 +27,20 @@ except (ImportError, RuntimeError):
     EPD_AVAILABLE = False
 
 
+def pin_time_to_today(time_str, today=None):
+    """Combine an ``HH:MM`` string with today's date for --time previews.
+
+    Returns a datetime on today's date (or ``today`` if supplied, for tests)
+    at the parsed hour/minute. Using today's date instead of strptime's
+    1900-01-01 default keeps the rendered date footer meaningful. Raises
+    ValueError on malformed input; the CLI turns that into a clean argparse
+    error instead of a traceback.
+    """
+    pinned = datetime.strptime(time_str, "%H:%M")
+    base = today if today is not None else datetime.now()
+    return base.replace(hour=pinned.hour, minute=pinned.minute, second=0, microsecond=0)
+
+
 def draw_fuzzy_clock(
     dry_run=False,
     output="dry_run.png",
@@ -122,7 +136,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     now = None
     if args.time is not None:
-        now = datetime.strptime(args.time, "%H:%M")
+        try:
+            now = pin_time_to_today(args.time)
+        except ValueError:
+            parser.error(f"argument --time: invalid time {args.time!r} (expected HH:MM)")
     draw_fuzzy_clock(
         dry_run=args.dry_run,
         output=args.output,
