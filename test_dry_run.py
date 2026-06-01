@@ -282,5 +282,33 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         self.assertEqual(rotated.size, (250, 122))
 
 
+class PinTimeToTodayTests(unittest.TestCase):
+    """Tests for fuzzyClock2.pin_time_to_today() — the --time helper."""
+
+    def test_combines_pinned_time_with_supplied_date(self):
+        # The hour/minute come from the string; the date comes from `today`,
+        # not strptime's 1900-01-01 default, so the rendered footer is real.
+        today = datetime(2026, 4, 25, 18, 37, 12)
+        pinned = fuzzyClock2.pin_time_to_today("09:15", today=today)
+        self.assertEqual(pinned, datetime(2026, 4, 25, 9, 15))
+
+    def test_zeroes_seconds_and_microseconds(self):
+        # Pinned previews must be deterministic to the minute, so sub-minute
+        # components are dropped regardless of when the helper is called.
+        today = datetime(2026, 4, 25, 18, 37, 42, 123456)
+        pinned = fuzzyClock2.pin_time_to_today("23:59", today=today)
+        self.assertEqual(pinned, datetime(2026, 4, 25, 23, 59, 0, 0))
+
+    def test_defaults_to_today_when_no_date_supplied(self):
+        pinned = fuzzyClock2.pin_time_to_today("09:15")
+        self.assertEqual((pinned.hour, pinned.minute), (9, 15))
+        self.assertEqual(pinned.date(), datetime.now().date())
+
+    def test_malformed_time_raises_valueerror(self):
+        for bad in ("25:00", "abc", "9:5:5", ""):
+            with self.assertRaises(ValueError):
+                fuzzyClock2.pin_time_to_today(bad)
+
+
 if __name__ == "__main__":
     unittest.main()

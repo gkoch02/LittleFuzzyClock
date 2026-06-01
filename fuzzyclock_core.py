@@ -1643,6 +1643,10 @@ def draw_border(draw, width, height, margin=_BORDER_MARGIN, invert=False, frame=
 _TINY_SIZE = 14
 _BODY_MAX_SIZE = 40
 _BODY_MIN_SIZE = 14
+# Vertical gap between the phrase line and the hour line. Shared by
+# _fit_body_font's height check and render_clock's actual layout so the
+# size that "fits" matches what gets drawn — keep them reading the same value.
+_LINE_GAP = 4
 
 
 def _fit_body_font(draw, phrase, hour_str, variant, available_w, available_h):
@@ -1660,7 +1664,7 @@ def _fit_body_font(draw, phrase, hour_str, variant, available_w, available_h):
         ):
             pb = draw.textbbox((0, 0), phrase, font=font)
             hb = draw.textbbox((0, 0), hour_str, font=font)
-            if (pb[3] - pb[1]) + 4 + (hb[3] - hb[1]) <= available_h:
+            if (pb[3] - pb[1]) + _LINE_GAP + (hb[3] - hb[1]) <= available_h:
                 return font
     return load_font(_BODY_MIN_SIZE, variant=variant)
 
@@ -1729,7 +1733,7 @@ def render_clock(
     # Working in ink coordinates avoids bbox[1] artefacts shifting the visual
     # centre — fonts like Pacifico or Charis SIL carry large top offsets that
     # would otherwise push the block up or compress the inter-line gap.
-    LINE_GAP = 4
+    LINE_GAP = _LINE_GAP
     block_ink_h = phrase_ink_h + LINE_GAP + hour_ink_h
     phrase_ink_y = _CONTENT_PAD + (footer_ink_top - _CONTENT_PAD - block_ink_h) // 2
 
