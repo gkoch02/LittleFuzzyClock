@@ -475,6 +475,10 @@ def shutdown_procedure(epd):
     Each step is independently guarded so that a transient SPI hiccup on the
     goodnight screen or epd.sleep() doesn't prevent the actual `shutdown -h`
     call — the user pressed-and-held for five seconds, they want a shutdown.
+
+    The unit file runs the daemon as a regular user, so a bare `shutdown`
+    would be denied by polkit; `sudo -n` relies on the NOPASSWD rule that
+    deploy.sh installs at /etc/sudoers.d/fuzzyclock.
     """
     logging.info("Button long press detected — shutting down.")
     try:
@@ -486,7 +490,13 @@ def shutdown_procedure(epd):
             epd.sleep()
     except Exception:
         logging.exception("epd.sleep() failed during shutdown; continuing.")
-    run(["shutdown", "-h", "now"])
+    result = run(["sudo", "-n", "shutdown", "-h", "now"])
+    if result.returncode != 0:
+        logging.error(
+            "shutdown command failed (exit %d). The daemon user needs the "
+            "sudoers rule deploy.sh installs at /etc/sudoers.d/fuzzyclock.",
+            result.returncode,
+        )
 
 
 def button_listener(button, epd):
@@ -502,9 +512,18 @@ def button_listener(button, epd):
         if duration >= LONG_PRESS_SECONDS:
             shutdown_procedure(epd)
         elif SHORT_PRESS_MIN_SECONDS < duration < SHORT_PRESS_MAX_SECONDS:
+            mode = _current_mode_now()
+            if mode == "night":
+                # The panel is deep-asleep behind the goodnight slide. A render
+                # here would write to a sleeping controller and, even if it
+                # succeeded, leave a frozen clock face up until morning — the
+                # main loop never repaints goodnight while the mode stays
+                # "night".
+                logging.info("Short press ignored during night mode.")
+                continue
             logging.info("Short press — forcing update.")
             try:
-                draw_clock(epd, invert=_current_mode_now() == "after_hours")
+                draw_clock(epd, invert=mode == "after_hours")
                 _on_render_success()
             except Exception:
                 count, fatal = _on_render_failure()
@@ -602,6 +621,10 @@ def main():
     )
 
     last_state = None
+    # True while the panel is in deep sleep behind the goodnight slide. The
+    # controller must be re-inited before the next SPI write; the button
+    # thread can't race this because it ignores short presses in night mode.
+    panel_asleep = False
 
     while not _stop_event.is_set():
         mode = _current_mode_now()
@@ -620,6 +643,18 @@ def main():
                     # immediately — fine once, but a stuck panel could burn
                     # through StartLimitBurst and disable the unit overnight.
                     logging.exception("display_goodnight() failed")
+                else:
+                    # Deep-sleep the controller until morning — the goodnight
+                    # image persists on the e-ink without power, and Waveshare
+                    # advises against leaving the panel driven for hours with
+                    # no refresh. Skipped if goodnight failed: the panel state
+                    # is unknown and the morning render path can recover it.
+                    try:
+                        with epd_lock:
+                            epd.sleep()
+                        panel_asleep = True
+                    except Exception:
+                        logging.exception("epd.sleep() failed entering night mode")
         else:
             invert = mode == "after_hours"
             # Any transition into a clock-displaying mode (or a swap between
@@ -629,6 +664,12 @@ def main():
             if last_state is not None and last_state != mode:
                 logging.info("Entering %s mode.", mode.replace("_", "-"))
                 try:
+                    if panel_asleep:
+                        # Waking from the overnight deep sleep: the controller
+                        # needs a full re-init before any SPI write.
+                        with epd_lock:
+                            epd.init()
+                        panel_asleep = False
                     reset_base_image(
                         epd,
                         invert=invert,
@@ -647,6 +688,10 @@ def main():
                     if _needs_recovery:
                         with epd_lock:
                             epd.init()
+                        # A full init also wakes a slept controller, e.g. when
+                        # the morning wake-up init itself failed and recovery
+                        # is what actually brought the panel back.
+                        panel_asleep = False
                         reset_base_image(
                             epd,
                             invert=invert,
@@ -673,12 +718,17 @@ def main():
         _stop_event.wait(timeout=_sleep_to_next_tick(TICK_INTERVAL))
 
     # Cooperative shutdown: put the panel to sleep so it doesn't burn in.
-    logging.info("Main loop exited; sleeping display.")
-    try:
-        with epd_lock:
-            epd.sleep()
-    except Exception:
-        logging.exception("epd.sleep() failed during shutdown")
+    # Skipped if the overnight sleep already ran — epd.sleep() tears down the
+    # SPI handle, so a second call would just raise.
+    if panel_asleep:
+        logging.info("Main loop exited; panel already asleep.")
+    else:
+        logging.info("Main loop exited; sleeping display.")
+        try:
+            with epd_lock:
+                epd.sleep()
+        except Exception:
+            logging.exception("epd.sleep() failed during shutdown")
 
 
 if __name__ == "__main__":

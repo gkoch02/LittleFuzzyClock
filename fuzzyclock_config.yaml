@@ -2,26 +2,40 @@
 # Options: classic, shakespeare, klingon, belter, german, hal, cthulhu, latin
 dialect: classic
 
-# Font variant. For the full list and previews see docs/fonts.md.
-# Apt-installed:  dejavu (default), dejavu-serif, liberation-serif, roboto-slab,
-#                 cantarell, ubuntu, jetbrains-mono
-# Vendored OFL:   fredoka, bitter, literata, libertinus, charis-sil, playfair,
-#                 pacifico, lilita-one, righteous, comfortaa, nunito, jost, bangers
-# Slab serif:     arvo, zilla-slab, rokkitt, crete-round, josefin-slab
-# Display/themed: vt323, press-start-2p, silkscreen, monoton, limelight, abril-fatface,
-#                 unifraktur-maguntia, medieval-sharp, pirata-one, bungee, alfa-slab-one,
-#                 anton, staatliches, special-elite, permanent-marker, creepster,
-#                 audiowide, orbitron, lobster
-# Monospace:      fira-mono, courier-prime, share-tech-mono
-# Deco & techno:  poiret-one, syncopate, exo-2
-# Hand-drawn:     caveat, kalam, architects-daughter, indie-flower, patrick-hand,
-#                 shadows-into-light, gloria-hallelujah, amatic-sc, reenie-beanie,
-#                 homemade-apple
-# Script:         dancing-script, tangerine, parisienne, clicker-script, yellowtail
-# Geometric:      poppins, raleway, oswald, work-sans, cabin
-# Commercial:     bookerly, minion, livory, chaparral, arno, malabar, pigeonette
-# Special:        random (shuffle through every vendored variant before any repeats,
-#                          re-rolling on each phrase change)
+# Font variant. For the full list and previews see docs/fonts.md. Grouped by
+# the frame each one gets under `frame: auto`; "dejavu" is the default.
+# Clean sans/serif/slab/mono & bold display (bauhaus frame):
+#   alfa-slab-one, anton, arvo, balthazar, bangers, bitter, boogaloo, cabin,
+#   cantarell, chango, charis-sil, comfortaa, courier-prime, crete-round, dejavu,
+#   dejavu-serif, fira-mono, forum, fredoka, gravitas-one, jaro, jetbrains-mono,
+#   josefin-slab, jost, liberation-serif, libertinus, lilita-one, literata,
+#   luckiest-guy, modak, nunito, oswald, playfair, poppins, raleway, righteous,
+#   roboto-slab, rokkitt, shrikhand, space-grotesk, staatliches, titan-one, ubuntu,
+#   work-sans, zilla-slab
+# Blackletter, medieval, horror & ornate (rustic frame):
+#   almendra-display, astloch, butcherman, cinzel-decorative, creepster, eater,
+#   emblema-one, flamenco, jolly-lodger, lacquer, manufacturing-consent,
+#   medieval-sharp, nosifer, oi, pirata-one, rye, sancreek, smokum,
+#   unifraktur-maguntia
+# Hand-drawn, script & textured (sketchy frame):
+#   akronim, amatic-sc, architects-daughter, caveat, clicker-script, dancing-script,
+#   freckle-face, gloria-hallelujah, henny-penny, homemade-apple, indie-flower,
+#   kablammo, kalam, lobster, pacifico, parisienne, patrick-hand, patrick-hand-sc,
+#   permanent-marker, plaster, reenie-beanie, ribeye-marrow, rubik-beastly,
+#   rubik-dirt, rubik-distressed, rubik-glitch, rubik-iso, rubik-maze, rubik-microbe,
+#   rubik-puddles, rubik-spray-paint, rubik-wet-paint, shadows-into-light, shojumaru,
+#   special-elite, splash, tangerine, tfoust, unkempt, yellowtail
+# Pixel, deco, techno & vintage display (retro frame):
+#   abril-fatface, atomic-age, audiowide, baumans, bungee, bungee-shade, codystar,
+#   diplomata, exo-2, fascinate, faster-one, foldit, iceland, limelight, megrim,
+#   monoton, mystery-quest, nabla, orbitron, poiret-one, press-start-2p, rampart-one,
+#   share-tech-mono, silkscreen, sixtyfour, syncopate, tourney, vt323, wallpoet,
+#   workbench
+# Commercial (drop a licensed file into fonts/ to unlock):
+#   arno, bookerly, chaparral, livory, malabar, minion, pigeonette
+# Special:
+#   random (shuffle through every vendored variant before any repeats,
+#           re-rolling on each phrase change)
 font: dejavu
 
 # Border frame style. "auto" picks one matched to the active font's category;

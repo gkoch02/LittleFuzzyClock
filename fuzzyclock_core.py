@@ -4,6 +4,7 @@ import math
 import os
 import random as _random
 import threading as _threading
+import zlib
 from datetime import datetime, timedelta, timezone
 
 from PIL import ImageFont
@@ -1496,8 +1497,11 @@ def _sketch_jitter(coord):
     Random per-render jitter would change the border every partial refresh and
     leave visible flicker; keying off the coordinate makes the same canvas
     position always wobble the same way, so successive frames diff cleanly.
+    crc32 rather than hash() because the latter is salted per process
+    (PYTHONHASHSEED), which would re-roll the wobble on every daemon restart
+    and make --dry-run previews non-reproducible across runs.
     """
-    return (hash(("sketch", coord)) % 3) - 1
+    return zlib.crc32(str(coord).encode()) % 3 - 1
 
 
 def _draw_frame_sketchy(draw, width, height, margin, ink):
