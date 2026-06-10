@@ -57,13 +57,26 @@ echo "==> Installing $SERVICE_NAME (user=$TARGET_USER, dir=$REPO_DIR)..."
 # prevents a partial write from leaving systemd with a malformed unit if the
 # script is interrupted mid-tee.
 TMP_UNIT="$(mktemp)"
-trap 'rm -f "$TMP_UNIT"' EXIT
+TMP_SUDOERS="$(mktemp)"
+trap 'rm -f "$TMP_UNIT" "$TMP_SUDOERS"' EXIT
 sed \
     -e "s|__REPO_DIR__|$REPO_DIR|g" \
     -e "s|__USER__|$TARGET_USER|g" \
     "$REPO_DIR/systemd/$SERVICE_NAME" \
     > "$TMP_UNIT"
 install -m 0644 "$TMP_UNIT" "$SERVICE_PATH"
+
+echo "==> Installing sudoers rule for the button shutdown..."
+# The daemon runs as $TARGET_USER, not root, so the long-press handler's
+# `sudo -n shutdown -h now` needs a NOPASSWD rule. Validated with visudo
+# before install — a malformed file in /etc/sudoers.d locks out sudo entirely.
+printf '%s ALL=(root) NOPASSWD: /usr/sbin/shutdown -h now\n' "$TARGET_USER" > "$TMP_SUDOERS"
+if visudo -cf "$TMP_SUDOERS" >/dev/null; then
+    install -m 0440 "$TMP_SUDOERS" /etc/sudoers.d/fuzzyclock
+else
+    echo "ERROR: generated sudoers rule failed visudo validation; not installing." >&2
+    exit 1
+fi
 
 systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"

@@ -31,6 +31,7 @@ from fuzzyclock_core import (
     RANDOM_FONT,
     _fit_body_font,
     _reset_random_font_bag,
+    _sketch_jitter,
     draw_border,
     frame_for_font,
     load_font,
@@ -438,6 +439,25 @@ class FrameVariantsTests(unittest.TestCase):
                 black = _count_black_pixels(image)
                 self.assertGreater(WIDTH * HEIGHT - black, 0)
                 self.assertGreater(black, (WIDTH * HEIGHT) * 3 // 4)
+
+    def test_sketch_jitter_is_bounded_and_stable(self):
+        for coord in range(-10, 4000, 13):
+            with self.subTest(coord=coord):
+                value = _sketch_jitter(coord)
+                self.assertIn(value, (-1, 0, 1))
+                self.assertEqual(value, _sketch_jitter(coord))
+
+    def test_sketch_jitter_is_process_independent(self):
+        # The sketchy frame's wobble must survive a daemon restart, so the
+        # jitter has to come from a salt-free hash — hash() varies with
+        # PYTHONHASHSEED across processes. These golden values pin the
+        # crc32-based implementation; if they fail, the border would
+        # subtly change on every restart and dry-run previews would not be
+        # reproducible.
+        self.assertEqual(
+            [_sketch_jitter(c) for c in (0, 4, 100, 1004, 2000, 3050)],
+            [1, 0, -1, 0, -1, -1],
+        )
 
     def test_unknown_frame_falls_back_to_default(self):
         # Mirror the unknown-font behaviour: don't crash on a typo, just

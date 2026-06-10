@@ -39,8 +39,8 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 - **Day mode (sunrise – sunset, within 7 AM – 10:59 PM):** display updates every 5 minutes via partial refresh, black ink on white
 - **After-hours mode (sunset – 10:59 PM):** same clock face but with the colours inverted (white ink on black). Opt-in — see [After-hours mode](#after-hours-mode) below
 - **Night mode (11 PM – 6:59 AM):** shows "Goodnight" and the display sleeps
-- **Short button press (0.05–2 s):** forces an immediate refresh
-- **Long button press (≥ 5 s):** graceful shutdown (`shutdown -h now`)
+- **Short button press (0.05–2 s):** forces an immediate refresh (ignored during night mode, where the panel is asleep)
+- **Long button press (≥ 5 s):** graceful shutdown via `sudo -n shutdown -h now`. The daemon runs as a regular user, so this relies on the NOPASSWD rule `deploy.sh` installs at `/etc/sudoers.d/fuzzyclock`
 
 ## Rebuilding from scratch
 

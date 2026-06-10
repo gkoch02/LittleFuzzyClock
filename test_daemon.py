@@ -496,6 +496,22 @@ class ButtonListenerTests(unittest.TestCase):
         _args, kwargs = draw.call_args
         self.assertTrue(kwargs.get("invert"))
 
+    def test_short_press_during_night_mode_is_ignored(self):
+        # The panel is deep-asleep behind the goodnight slide at night; a
+        # render would write to a sleeping controller and leave a frozen
+        # clock face up until morning (the main loop never repaints goodnight
+        # while the mode stays "night").
+        shutdown, draw = self._run_listener([0.5], mode="night")
+        draw.assert_not_called()
+        shutdown.assert_not_called()
+
+    def test_long_press_during_night_mode_still_shuts_down(self):
+        # Only the refresh is gated on mode — the user must always be able
+        # to power the clock off.
+        shutdown, draw = self._run_listener([d.LONG_PRESS_SECONDS], mode="night")
+        shutdown.assert_called_once()
+        draw.assert_not_called()
+
     def test_debounce_noise_is_ignored(self):
         # Anything <= SHORT_PRESS_MIN_SECONDS (0.05) is below the noise floor.
         shutdown, draw = self._run_listener([0.01])
@@ -594,47 +610,80 @@ class ButtonSupervisorTests(unittest.TestCase):
 
 class ShutdownProcedureTests(unittest.TestCase):
     """The three steps must be independently guarded — a goodnight or sleep
-    failure must not prevent `shutdown -h now` from running."""
+    failure must not prevent the shutdown command from running. The command
+    goes through `sudo -n` because the unit runs the daemon as a non-root
+    user, whom polkit denies a bare `shutdown`."""
+
+    _SHUTDOWN_ARGV = ["sudo", "-n", "shutdown", "-h", "now"]
+
+    def _run_mock(self):
+        return mock.Mock(return_value=mock.Mock(returncode=0))
 
     def test_invokes_shutdown_command(self):
         epd = mock.Mock()
+        run_mock = self._run_mock()
         with (
             mock.patch.object(d, "display_goodnight"),
-            mock.patch.object(d, "run") as run_mock,
+            mock.patch.object(d, "run", run_mock),
         ):
             d.shutdown_procedure(epd)
         epd.sleep.assert_called_once()
-        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+        run_mock.assert_called_once_with(self._SHUTDOWN_ARGV)
 
     def test_goodnight_failure_still_sleeps_and_shuts_down(self):
         epd = mock.Mock()
+        run_mock = self._run_mock()
         with (
             mock.patch.object(d, "display_goodnight", side_effect=RuntimeError("panel hang")),
-            mock.patch.object(d, "run") as run_mock,
+            mock.patch.object(d, "run", run_mock),
         ):
             d.shutdown_procedure(epd)
         epd.sleep.assert_called_once()
-        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+        run_mock.assert_called_once_with(self._SHUTDOWN_ARGV)
 
     def test_sleep_failure_still_shuts_down(self):
         epd = mock.Mock()
         epd.sleep.side_effect = RuntimeError("SPI gone")
+        run_mock = self._run_mock()
         with (
             mock.patch.object(d, "display_goodnight"),
-            mock.patch.object(d, "run") as run_mock,
+            mock.patch.object(d, "run", run_mock),
         ):
             d.shutdown_procedure(epd)
-        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+        run_mock.assert_called_once_with(self._SHUTDOWN_ARGV)
 
     def test_both_failures_still_shut_down(self):
         epd = mock.Mock()
         epd.sleep.side_effect = RuntimeError("SPI gone")
+        run_mock = self._run_mock()
         with (
             mock.patch.object(d, "display_goodnight", side_effect=RuntimeError("panel hang")),
-            mock.patch.object(d, "run") as run_mock,
+            mock.patch.object(d, "run", run_mock),
         ):
             d.shutdown_procedure(epd)
-        run_mock.assert_called_once_with(["shutdown", "-h", "now"])
+        run_mock.assert_called_once_with(self._SHUTDOWN_ARGV)
+
+    def test_failed_shutdown_command_logs_an_error(self):
+        # A denied sudo (missing sudoers rule) must surface in the journal,
+        # not vanish silently — it's the only breadcrumb the user gets.
+        run_mock = mock.Mock(return_value=mock.Mock(returncode=1))
+        with (
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(d, "run", run_mock),
+            self.assertLogs(level="ERROR") as captured,
+        ):
+            d.shutdown_procedure(mock.Mock())
+        self.assertTrue(any("sudoers" in msg for msg in captured.output))
+
+    def test_successful_shutdown_command_logs_no_error(self):
+        run_mock = self._run_mock()
+        with (
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(d, "run", run_mock),
+            mock.patch.object(d.logging, "error") as error_mock,
+        ):
+            d.shutdown_procedure(mock.Mock())
+        error_mock.assert_not_called()
 
 
 class ConcurrentRenderCounterTests(unittest.TestCase):
@@ -1000,7 +1049,13 @@ class MainLoopTests(unittest.TestCase):
         for attr, val in self._saved.items():
             setattr(d, attr, val)
 
-    def _run_main(self, mode_sequence, draw_side_effect=None, force_render_every_tick=True):
+    def _run_main(
+        self,
+        mode_sequence,
+        draw_side_effect=None,
+        force_render_every_tick=True,
+        goodnight_side_effect=None,
+    ):
         """Run main() driving _current_mode_now through `mode_sequence`.
 
         Returns (fake_epd, m_draw, m_goodnight, m_reset, mode_calls). After
@@ -1039,7 +1094,7 @@ class MainLoopTests(unittest.TestCase):
             return modes[i]
 
         m_draw = mock.Mock(side_effect=draw_side_effect)
-        m_goodnight = mock.Mock()
+        m_goodnight = mock.Mock(side_effect=goodnight_side_effect)
         m_reset = mock.Mock()
 
         # Patch datetime in the daemon module so the minute check is
@@ -1084,8 +1139,44 @@ class MainLoopTests(unittest.TestCase):
         epd, m_draw, m_goodnight, _m_reset, _ = self._run_main(["night"])
         m_goodnight.assert_called_once_with(epd)
         m_draw.assert_not_called()
-        # Initial reset_base_image + display_goodnight + final epd.sleep().
+        # The overnight deep sleep right after the goodnight slide.
         self.assertIn(("sleep",), epd.calls)
+
+    def test_entering_night_deep_sleeps_the_panel_exactly_once(self):
+        # The controller goes into deep sleep right after the goodnight
+        # slide; the post-loop cleanup must NOT sleep it a second time —
+        # epd.sleep() tears down the SPI handle, so a second call would raise.
+        epd, _m_draw, m_goodnight, _m_reset, _ = self._run_main(["night"])
+        m_goodnight.assert_called_once()
+        self.assertEqual(epd.calls.count(("sleep",)), 1)
+
+    def test_waking_from_night_reinits_panel_before_first_render(self):
+        # night → day: startup init, overnight sleep, wake-up init, then the
+        # loop-exit cleanup sleeps the (now awake) panel again.
+        epd, m_draw, _m_goodnight, m_reset, _ = self._run_main(["night", "day"])
+        self.assertEqual(
+            [c for c in epd.calls if c in (("init",), ("sleep",))],
+            [("init",), ("sleep",), ("init",), ("sleep",)],
+        )
+        m_draw.assert_called_once_with(mock.ANY, invert=False)
+        # The wake-up init must come before the base reseed (reset_base_image
+        # writes to SPI); both happen, reseed count unchanged from the plain
+        # night→day transition.
+        self.assertEqual(m_reset.call_count, 2)
+
+    def test_goodnight_failure_skips_the_overnight_sleep(self):
+        # If the goodnight render failed, the panel state is unknown — keep
+        # the controller awake so the morning render path can recover it.
+        # The only sleep is then the post-loop cleanup.
+        epd, _m_draw, m_goodnight, _m_reset, _ = self._run_main(
+            ["night"],
+            goodnight_side_effect=RuntimeError("panel hang"),
+        )
+        m_goodnight.assert_called_once()
+        self.assertEqual(epd.calls.count(("sleep",)), 1)
+        # ... and it ran at loop exit, not as the overnight sleep: a wake-up
+        # init is never needed because panel_asleep stayed False.
+        self.assertEqual(epd.calls.count(("init",)), 1)
 
     def test_day_mode_invokes_draw_clock_without_invert(self):
         epd, m_draw, m_goodnight, _m_reset, _ = self._run_main(["day"])
