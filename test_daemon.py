@@ -14,6 +14,7 @@ so this test file imports the module directly without stubbing GPIO/EPD.
 import os
 import tempfile
 import threading
+import time
 import unittest
 from datetime import date, datetime, timezone
 from unittest import mock
@@ -255,6 +256,84 @@ class LoadConfigTests(unittest.TestCase):
 
     def test_non_numeric_coords_disable_after_hours_with_warning(self):
         path = self._write_yaml({"latitude": "north", "longitude": -0.1})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_nan_latitude_disables_after_hours_with_warning(self):
+        path = self._write_yaml({"latitude": float("nan"), "longitude": -0.1})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_nan_longitude_disables_after_hours_with_warning(self):
+        path = self._write_yaml({"latitude": 51.5, "longitude": float("nan")})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_positive_infinity_latitude_disables_after_hours_with_warning(self):
+        path = self._write_yaml({"latitude": float("inf"), "longitude": -0.1})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_negative_infinity_longitude_disables_after_hours_with_warning(self):
+        path = self._write_yaml({"latitude": 51.5, "longitude": float("-inf")})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_out_of_range_latitude_disables_after_hours_with_warning(self):
+        # 100 is a finite float but not a real latitude (valid range [-90, 90]).
+        path = self._write_yaml({"latitude": 100.0, "longitude": -0.1})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_out_of_range_longitude_disables_after_hours_with_warning(self):
+        # 181 is a finite float but not a real longitude (valid range [-180, 180]).
+        path = self._write_yaml({"latitude": 51.5, "longitude": 181.0})
+        with self.assertLogs("root", level="WARNING"):
+            _dialect, _font, _frame, lat, lon = d._load_config(path)
+        self.assertIsNone(lat)
+        self.assertIsNone(lon)
+
+    def test_boundary_coordinates_are_accepted(self):
+        # Exactly +/-90 latitude and +/-180 longitude are valid extremes and
+        # must not be rejected as out-of-range.
+        for lat_val, lon_val in ((90.0, 180.0), (-90.0, -180.0), (90.0, -180.0), (-90.0, 180.0)):
+            with self.subTest(lat=lat_val, lon=lon_val):
+                path = self._write_yaml({"latitude": lat_val, "longitude": lon_val})
+                with self.assertNoLogs("root", level="WARNING"):
+                    _dialect, _font, _frame, lat, lon = d._load_config(path)
+                self.assertEqual(lat, lat_val)
+                self.assertEqual(lon, lon_val)
+
+    def test_just_out_of_range_coordinates_are_rejected(self):
+        for lat_val, lon_val in (
+            (90.001, -0.1),
+            (-90.001, -0.1),
+            (51.5, 180.001),
+            (51.5, -180.001),
+        ):
+            with self.subTest(lat=lat_val, lon=lon_val):
+                path = self._write_yaml({"latitude": lat_val, "longitude": lon_val})
+                with self.assertLogs("root", level="WARNING"):
+                    _dialect, _font, _frame, lat, lon = d._load_config(path)
+                self.assertIsNone(lat)
+                self.assertIsNone(lon)
+
+    def test_one_valid_one_out_of_range_coordinate_disables_after_hours(self):
+        # A partial validity (one coordinate fine, the other impossible) must
+        # still disable after-hours entirely rather than half-configuring it.
+        path = self._write_yaml({"latitude": 45.0, "longitude": float("nan")})
         with self.assertLogs("root", level="WARNING"):
             _dialect, _font, _frame, lat, lon = d._load_config(path)
         self.assertIsNone(lat)
@@ -910,6 +989,133 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
                 )
 
 
+class CallWithTimeoutTests(unittest.TestCase):
+    """`_call_with_timeout` is what bounds every blocking EPD driver call
+    (issue #43: the vendored ReadBusy() loops on the BUSY pin with no
+    timeout of its own). It must return the wrapped call's result on the
+    fast path, re-raise the wrapped call's own exceptions unchanged, and
+    raise EPDTimeoutError -- promptly, not after the real call eventually
+    returns -- when the call doesn't finish in time.
+    """
+
+    def test_returns_value_on_fast_call(self):
+        self.assertEqual(d._call_with_timeout(lambda: 42), 42)
+
+    def test_reraises_the_wrapped_calls_own_exception(self):
+        def boom():
+            raise ValueError("bad SPI response")
+
+        with self.assertRaises(ValueError):
+            d._call_with_timeout(boom)
+
+    def test_raises_epd_timeout_error_on_stuck_call(self):
+        # Simulates a BUSY pin that never goes low: the target function
+        # blocks forever on an Event that's never set. _call_with_timeout
+        # must return control to the caller promptly regardless -- the
+        # worker thread is simply abandoned (Python can't kill a thread).
+        stuck = threading.Event()
+        start = time.monotonic()
+        with self.assertRaises(d.EPDTimeoutError):
+            d._call_with_timeout(stuck.wait, timeout=0.05)
+        elapsed = time.monotonic() - start
+        self.assertLess(elapsed, 2.0, "timeout wrapper did not return promptly")
+
+    def test_passes_through_arguments(self):
+        self.assertEqual(d._call_with_timeout(lambda a, b: a + b, 2, 3), 5)
+
+
+class EPDInitTests(unittest.TestCase):
+    """`_epd_init` wraps epd.init() with the same timeout guard and hands
+    the raw return value back untouched -- callers are responsible for
+    rejecting a -1 (module_init failure) return, per issue #43."""
+
+    def test_returns_driver_success_value(self):
+        epd = _FakeEPD()
+        epd.init = mock.Mock(return_value=0)
+        self.assertEqual(d._epd_init(epd), 0)
+        epd.init.assert_called_once()
+
+    def test_surfaces_driver_failure_return_value(self):
+        # The vendored driver returns -1 (not an exception) when
+        # epdconfig.module_init() fails. _epd_init must not swallow that.
+        epd = _FakeEPD()
+        epd.init = mock.Mock(return_value=-1)
+        self.assertEqual(d._epd_init(epd), -1)
+
+    def test_stuck_init_raises_epd_timeout_error_promptly(self):
+        epd = _FakeEPD()
+        stuck = threading.Event()
+        epd.init = lambda: stuck.wait()
+        start = time.monotonic()
+        with self.assertRaises(d.EPDTimeoutError):
+            d._call_with_timeout(epd.init, timeout=0.05)
+        self.assertLess(time.monotonic() - start, 2.0)
+
+
+class BusyPinTimeoutTests(_FontFixtureMixin, unittest.TestCase):
+    """Simulates a stuck BUSY pin at each production EPD call site by
+    handing draw_clock/reset_base_image/display_goodnight a fake driver
+    method that blocks forever, and confirming the call site still returns
+    (via EPDTimeoutError) within a bounded time instead of hanging.
+
+    The default EPD_CALL_TIMEOUT_SEC (10s) is real-hardware-appropriate but
+    too slow for a test; `_patch_fast_timeout` swaps in a small explicit
+    timeout for the duration of the test without touching the call sites.
+    """
+
+    def setUp(self):
+        self._saved_frame = d._last_applied_frame
+        d._last_applied_frame = "bauhaus"
+        # Each test below hands the driver a call that blocks forever, so
+        # the worker thread _call_with_timeout spawns for it never returns
+        # and never releases the lock it's holding (Python can't kill a
+        # thread — see _call_with_timeout's docstring). Swap in a throwaway
+        # lock per test so that permanently-held lock doesn't leak into
+        # (and poison) every other test's use of the real module-level
+        # epd_lock for the rest of the process.
+        self._saved_epd_lock = d.epd_lock
+        d.epd_lock = threading.Lock()
+
+    def tearDown(self):
+        d._last_applied_frame = self._saved_frame
+        d.epd_lock = self._saved_epd_lock
+
+    def _patch_fast_timeout(self, seconds=0.05):
+        real_call_with_timeout = d._call_with_timeout
+
+        def _fast(func, *args, timeout=seconds, **kwargs):
+            return real_call_with_timeout(func, *args, timeout=timeout, **kwargs)
+
+        return mock.patch.object(d, "_call_with_timeout", side_effect=_fast)
+
+    def test_draw_clock_bounds_a_stuck_displaypartial(self):
+        epd = _FakeEPD()
+        epd.displayPartial = lambda buf: threading.Event().wait()
+        with self._patch_fast_timeout():
+            start = time.monotonic()
+            with self.assertRaises(d.EPDTimeoutError):
+                d.draw_clock(epd, invert=False)
+            self.assertLess(time.monotonic() - start, 2.0)
+
+    def test_reset_base_image_bounds_a_stuck_displaypartbaseimage(self):
+        epd = _FakeEPD()
+        epd.displayPartBaseImage = lambda buf: threading.Event().wait()
+        with self._patch_fast_timeout():
+            start = time.monotonic()
+            with self.assertRaises(d.EPDTimeoutError):
+                d.reset_base_image(epd, invert=False)
+            self.assertLess(time.monotonic() - start, 2.0)
+
+    def test_display_goodnight_bounds_a_stuck_display(self):
+        epd = _FakeEPD()
+        epd.display = lambda buf: threading.Event().wait()
+        with self._patch_fast_timeout(), mock.patch.object(d.time, "sleep"):
+            start = time.monotonic()
+            with self.assertRaises(d.EPDTimeoutError):
+                d.display_goodnight(epd)
+            self.assertLess(time.monotonic() - start, 2.0)
+
+
 class RequireFontsTests(unittest.TestCase):
     """`_require_fonts` exists so a missed `_init_fonts()` fails loudly
     instead of letting PIL silently fall back to its default bitmap font."""
@@ -1272,6 +1478,25 @@ class MainLoopTests(unittest.TestCase):
         # Cleanup must still run on the fatal-break path.
         self.assertIn(("sleep",), epd.calls)
 
+    def test_stuck_busy_pin_timeouts_count_toward_fatal_threshold(self):
+        # Issue #43: a BUSY pin that never releases must not hang the daemon
+        # forever. draw_clock (mocked here to isolate main()'s loop logic --
+        # BusyPinTimeoutTests in the class above exercises the real
+        # draw_clock/_call_with_timeout path) raises EPDTimeoutError, a
+        # RuntimeError subclass, on every tick; it has to feed the same
+        # consecutive-failure counter as any other render failure and
+        # eventually hit RENDER_RETRY_FATAL so systemd can restart us.
+        def always_times_out(*_args, **_kwargs):
+            raise d.EPDTimeoutError("epd.displayPartial() did not return within 10s")
+
+        epd, m_draw, _m_goodnight, _m_reset, mode_calls = self._run_main(
+            ["day"] * (d.RENDER_RETRY_FATAL + 5),
+            draw_side_effect=always_times_out,
+        )
+        self.assertEqual(m_draw.call_count, d.RENDER_RETRY_FATAL)
+        self.assertLess(len(mode_calls), d.RENDER_RETRY_FATAL + 5)
+        self.assertIn(("sleep",), epd.calls)
+
     def test_cleanup_sleeps_epd_after_normal_loop_exit(self):
         # Stop-event-driven shutdown (SIGTERM/SIGINT path) must call
         # epd.sleep() so the panel doesn't burn in. We verify by running
@@ -1384,6 +1609,28 @@ class MainLoopTests(unittest.TestCase):
         with mock.patch("fuzzyclock_daemon.epd2in13_V4", None):
             with self.assertRaises(SystemExit):
                 d.main()
+
+    def test_systemexit_when_startup_init_returns_negative_one(self):
+        # Issue #43: the vendored driver's init() returns -1 (not an
+        # exception) when epdconfig.module_init() fails. main() must reject
+        # that explicitly at startup instead of continuing as if init
+        # succeeded and blasting SPI writes at an unconfigured panel.
+        epd = mock.Mock()
+        epd.init.return_value = -1
+
+        with (
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+        ):
+            m_epd_mod.EPD.return_value = epd
+            with self.assertRaises(SystemExit):
+                d.main()
+        epd.init.assert_called_once()
 
 
 if __name__ == "__main__":
