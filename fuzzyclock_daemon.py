@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import signal
 import threading
@@ -56,6 +57,13 @@ TICK_INTERVAL = 60  # main loop wakes every minute to check mode transitions
 # we exit and let systemd restart us cleanly (RestartSec=10 in the unit file).
 RENDER_RETRY_REINIT = 3
 RENDER_RETRY_FATAL = 10
+
+# Bounded wait for any single blocking call into the vendored EPD driver
+# (init/display/displayPartial/displayPartBaseImage/sleep). The driver's
+# ReadBusy() (waveshare_epd/epd2in13_V4.py) polls the BUSY pin in a plain
+# `while` loop with no timeout of its own, and every one of those calls goes
+# through ReadBusy() at least once. See _call_with_timeout below.
+EPD_CALL_TIMEOUT_SEC = 10
 
 # Day mode runs from DAY_START_HOUR up to (but not including) DAY_END_HOUR.
 DAY_START_HOUR = 7
@@ -140,7 +148,7 @@ def _load_config(path=CONFIG_PATH):
     if lat_raw is None and lon_raw is None:
         return dialect, font, frame, None, None
     try:
-        return dialect, font, frame, float(lat_raw), float(lon_raw)
+        latitude, longitude = float(lat_raw), float(lon_raw)
     except (TypeError, ValueError) as exc:
         logging.warning(
             "Config file %s has invalid latitude/longitude (%s); after-hours mode disabled.",
@@ -148,6 +156,27 @@ def _load_config(path=CONFIG_PATH):
             exc,
         )
         return dialect, font, frame, None, None
+
+    # Reject NaN/inf (math.isfinite) and finite-but-impossible coordinates —
+    # sun_times() does trigonometry/timedelta math on these and raises
+    # ValueError/OverflowError on bad input, which would otherwise crash the
+    # daemon at every startup once after-hours mode is (wrongly) enabled.
+    if (
+        not math.isfinite(latitude)
+        or not math.isfinite(longitude)
+        or not (-90.0 <= latitude <= 90.0)
+        or not (-180.0 <= longitude <= 180.0)
+    ):
+        logging.warning(
+            "Config file %s has out-of-range latitude/longitude (%r, %r); "
+            "after-hours mode disabled.",
+            path,
+            lat_raw,
+            lon_raw,
+        )
+        return dialect, font, frame, None, None
+
+    return dialect, font, frame, latitude, longitude
 
 
 # Daemon config. These are populated in main() rather than at import time so
@@ -258,6 +287,68 @@ def _require_fonts():
 
 # === EPD LOCK — protects all SPI writes to the display ===
 epd_lock = threading.Lock()
+
+
+class EPDTimeoutError(RuntimeError):
+    """A blocking EPD driver call exceeded EPD_CALL_TIMEOUT_SEC.
+
+    Raised by `_call_with_timeout` when the vendored driver's ReadBusy()
+    (waveshare_epd/epd2in13_V4.py) is stuck polling a BUSY pin that never
+    goes low. It's a RuntimeError subclass so existing `except Exception`
+    render-failure handling in draw_clock/reset_base_image/main() catches it
+    without any changes there.
+    """
+
+
+def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, **kwargs):
+    """Run `func(*args, **kwargs)` on a worker thread, bounded by `timeout`.
+
+    Every blocking call into the vendored EPD driver (init, display*, sleep)
+    ultimately loops on ReadBusy() with no timeout of its own, and both the
+    main loop and the button thread can call into the driver — so a naive
+    SIGALRM-based timeout won't work (signals only interrupt the main
+    thread). Running the call on a daemon thread and bounding how long we
+    *wait* for it works from either caller.
+
+    Python has no supported way to kill a running thread, so a timed-out
+    call leaves its worker thread running in the background against a
+    (presumably wedged) SPI bus. That's an accepted trade-off here: the
+    caller gets a prompt EPDTimeoutError it can feed into the render-failure
+    counter instead of hanging the daemon forever, and the next successful
+    epd.init() (post-recovery) starts the driver over from a clean slate.
+    """
+    outcome = {}
+
+    def _run():
+        try:
+            outcome["value"] = func(*args, **kwargs)
+        except BaseException as exc:  # re-raised on the caller's thread below
+            outcome["error"] = exc
+
+    worker = threading.Thread(target=_run, daemon=True)
+    worker.start()
+    worker.join(timeout)
+    if worker.is_alive():
+        name = getattr(func, "__name__", repr(func))
+        raise EPDTimeoutError(
+            f"{name}() did not return within {timeout}s (EPD BUSY pin likely stuck)"
+        )
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome.get("value")
+
+
+def _epd_init(epd):
+    """Timeout- and lock-guarded `epd.init()`.
+
+    Callers MUST check the return value: the vendored driver's init()
+    returns -1 when epdconfig.module_init() fails and otherwise proceeds as
+    if nothing were wrong — a bare `epd.init()` call site silently continues
+    with an unconfigured panel. -1 must be treated as a failure, not success.
+    """
+    with epd_lock:
+        return _call_with_timeout(epd.init)
+
 
 # Render lock — serializes the check-then-reseed sequence on _last_applied_frame
 # and the surrounding render/displayPartial so the main loop and the button
@@ -375,7 +466,7 @@ def reset_base_image(epd, invert=False, frame=None):
         with epd_lock:
             base = Image.new("1", (epd.height, epd.width), bg)
             draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert, frame=frame)
-            epd.displayPartBaseImage(epd.getbuffer(base.rotate(180)))
+            _call_with_timeout(epd.displayPartBaseImage, epd.getbuffer(base.rotate(180)))
         _last_applied_frame = frame
 
 
@@ -423,7 +514,7 @@ def display_goodnight(epd):
     draw.text((x, y), text, font=font, fill=255)
 
     with epd_lock:
-        epd.display(epd.getbuffer(image.rotate(180)))
+        _call_with_timeout(epd.display, epd.getbuffer(image.rotate(180)))
     time.sleep(2)
 
 
@@ -466,7 +557,7 @@ def draw_clock(epd, invert=False):
         )
 
         with epd_lock:
-            epd.displayPartial(epd.getbuffer(image.rotate(180)))
+            _call_with_timeout(epd.displayPartial, epd.getbuffer(image.rotate(180)))
 
 
 def shutdown_procedure(epd):
@@ -487,7 +578,7 @@ def shutdown_procedure(epd):
         logging.exception("display_goodnight() failed during shutdown; continuing.")
     try:
         with epd_lock:
-            epd.sleep()
+            _call_with_timeout(epd.sleep)
     except Exception:
         logging.exception("epd.sleep() failed during shutdown; continuing.")
     result = run(["sudo", "-n", "shutdown", "-h", "now"])
@@ -576,7 +667,10 @@ def main():
     _init_fonts()
 
     epd = epd2in13_V4.EPD()
-    epd.init()
+    if _epd_init(epd) == -1:
+        raise SystemExit(
+            "epd.init() failed (returned -1); check the panel's SPI/GPIO wiring and power."
+        )
 
     if AFTER_HOURS_ENABLED:
         logging.info(
@@ -651,7 +745,7 @@ def main():
                     # is unknown and the morning render path can recover it.
                     try:
                         with epd_lock:
-                            epd.sleep()
+                            _call_with_timeout(epd.sleep)
                         panel_asleep = True
                     except Exception:
                         logging.exception("epd.sleep() failed entering night mode")
@@ -667,8 +761,10 @@ def main():
                     if panel_asleep:
                         # Waking from the overnight deep sleep: the controller
                         # needs a full re-init before any SPI write.
-                        with epd_lock:
-                            epd.init()
+                        if _epd_init(epd) == -1:
+                            raise RuntimeError(
+                                "epd.init() failed (returned -1) while waking the panel"
+                            )
                         panel_asleep = False
                     reset_base_image(
                         epd,
@@ -686,8 +782,10 @@ def main():
             if should_render:
                 try:
                     if _needs_recovery:
-                        with epd_lock:
-                            epd.init()
+                        if _epd_init(epd) == -1:
+                            raise RuntimeError(
+                                "epd.init() failed (returned -1) during recovery re-init"
+                            )
                         # A full init also wakes a slept controller, e.g. when
                         # the morning wake-up init itself failed and recovery
                         # is what actually brought the panel back.
@@ -726,7 +824,7 @@ def main():
         logging.info("Main loop exited; sleeping display.")
         try:
             with epd_lock:
-                epd.sleep()
+                _call_with_timeout(epd.sleep)
         except Exception:
             logging.exception("epd.sleep() failed during shutdown")
 
