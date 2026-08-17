@@ -1066,9 +1066,19 @@ class BusyPinTimeoutTests(_FontFixtureMixin, unittest.TestCase):
     def setUp(self):
         self._saved_frame = d._last_applied_frame
         d._last_applied_frame = "bauhaus"
+        # Each test below hands the driver a call that blocks forever, so
+        # the worker thread _call_with_timeout spawns for it never returns
+        # and never releases the lock it's holding (Python can't kill a
+        # thread — see _call_with_timeout's docstring). Swap in a throwaway
+        # lock per test so that permanently-held lock doesn't leak into
+        # (and poison) every other test's use of the real module-level
+        # epd_lock for the rest of the process.
+        self._saved_epd_lock = d.epd_lock
+        d.epd_lock = threading.Lock()
 
     def tearDown(self):
         d._last_applied_frame = self._saved_frame
+        d.epd_lock = self._saved_epd_lock
 
     def _patch_fast_timeout(self, seconds=0.05):
         real_call_with_timeout = d._call_with_timeout

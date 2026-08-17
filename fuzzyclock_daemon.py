@@ -300,7 +300,7 @@ class EPDTimeoutError(RuntimeError):
     """
 
 
-def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, **kwargs):
+def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, lock=None, **kwargs):
     """Run `func(*args, **kwargs)` on a worker thread, bounded by `timeout`.
 
     Every blocking call into the vendored EPD driver (init, display*, sleep)
@@ -312,11 +312,24 @@ def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, **kwargs):
 
     Python has no supported way to kill a running thread, so a timed-out
     call leaves its worker thread running in the background against a
-    (presumably wedged) SPI bus. That's an accepted trade-off here: the
-    caller gets a prompt EPDTimeoutError it can feed into the render-failure
-    counter instead of hanging the daemon forever, and the next successful
-    epd.init() (post-recovery) starts the driver over from a clean slate.
+    (presumably wedged) SPI bus. If `lock` is given, it's acquired here —
+    also bounded by `timeout` — *before* starting the worker, and released
+    by the worker itself once the call actually returns, not by this
+    (already-timed-out) caller. That way a still-running abandoned call
+    keeps holding the lock for as long as it's actually touching the
+    driver, so a subsequent call (e.g. a post-timeout recovery re-init)
+    can't start talking to SPI/GPIO concurrently with it and corrupt panel
+    state — instead it blocks on lock acquisition, gets its own bounded
+    EPDTimeoutError, and feeds the same render-failure counter as any other
+    failure. Enough consecutive timeouts eventually reach
+    RENDER_RETRY_FATAL and exit the process, which is the only way to
+    actually get rid of a permanently wedged worker thread.
     """
+    if lock is not None and not lock.acquire(timeout=timeout):
+        raise EPDTimeoutError(
+            f"timed out waiting {timeout}s for epd_lock (a previous call "
+            "may still be wedged against the driver)"
+        )
     outcome = {}
 
     def _run():
@@ -324,6 +337,9 @@ def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, **kwargs):
             outcome["value"] = func(*args, **kwargs)
         except BaseException as exc:  # re-raised on the caller's thread below
             outcome["error"] = exc
+        finally:
+            if lock is not None:
+                lock.release()
 
     worker = threading.Thread(target=_run, daemon=True)
     worker.start()
@@ -346,8 +362,7 @@ def _epd_init(epd):
     if nothing were wrong — a bare `epd.init()` call site silently continues
     with an unconfigured panel. -1 must be treated as a failure, not success.
     """
-    with epd_lock:
-        return _call_with_timeout(epd.init)
+    return _call_with_timeout(epd.init, lock=epd_lock)
 
 
 # Render lock — serializes the check-then-reseed sequence on _last_applied_frame
@@ -463,10 +478,9 @@ def reset_base_image(epd, invert=False, frame=None):
         if frame is None:
             frame = _resolve_frame(FONT_VARIANT)
         bg = 0 if invert else 255
-        with epd_lock:
-            base = Image.new("1", (epd.height, epd.width), bg)
-            draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert, frame=frame)
-            _call_with_timeout(epd.displayPartBaseImage, epd.getbuffer(base.rotate(180)))
+        base = Image.new("1", (epd.height, epd.width), bg)
+        draw_border(ImageDraw.Draw(base), epd.height, epd.width, invert=invert, frame=frame)
+        _call_with_timeout(epd.displayPartBaseImage, epd.getbuffer(base.rotate(180)), lock=epd_lock)
         _last_applied_frame = frame
 
 
@@ -513,8 +527,7 @@ def display_goodnight(epd):
     y = (height - text_ink_h) // 2 - bbox[1]
     draw.text((x, y), text, font=font, fill=255)
 
-    with epd_lock:
-        _call_with_timeout(epd.display, epd.getbuffer(image.rotate(180)))
+    _call_with_timeout(epd.display, epd.getbuffer(image.rotate(180)), lock=epd_lock)
     time.sleep(2)
 
 
@@ -556,8 +569,7 @@ def draw_clock(epd, invert=False):
             frame=frame,
         )
 
-        with epd_lock:
-            _call_with_timeout(epd.displayPartial, epd.getbuffer(image.rotate(180)))
+        _call_with_timeout(epd.displayPartial, epd.getbuffer(image.rotate(180)), lock=epd_lock)
 
 
 def shutdown_procedure(epd):
@@ -577,8 +589,7 @@ def shutdown_procedure(epd):
     except Exception:
         logging.exception("display_goodnight() failed during shutdown; continuing.")
     try:
-        with epd_lock:
-            _call_with_timeout(epd.sleep)
+        _call_with_timeout(epd.sleep, lock=epd_lock)
     except Exception:
         logging.exception("epd.sleep() failed during shutdown; continuing.")
     result = run(["sudo", "-n", "shutdown", "-h", "now"])
@@ -744,8 +755,7 @@ def main():
                     # no refresh. Skipped if goodnight failed: the panel state
                     # is unknown and the morning render path can recover it.
                     try:
-                        with epd_lock:
-                            _call_with_timeout(epd.sleep)
+                        _call_with_timeout(epd.sleep, lock=epd_lock)
                         panel_asleep = True
                     except Exception:
                         logging.exception("epd.sleep() failed entering night mode")
@@ -823,8 +833,7 @@ def main():
     else:
         logging.info("Main loop exited; sleeping display.")
         try:
-            with epd_lock:
-                _call_with_timeout(epd.sleep)
+            _call_with_timeout(epd.sleep, lock=epd_lock)
         except Exception:
             logging.exception("epd.sleep() failed during shutdown")
 
