@@ -41,6 +41,7 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 - **Night mode (11 PM – 6:59 AM):** shows "Goodnight" and the display sleeps
 - **Short button press (0.05–2 s):** forces an immediate refresh (ignored during night mode, where the panel is asleep)
 - **Long button press (≥ 5 s):** graceful shutdown via `sudo -n shutdown -h now`. The daemon runs as a regular user, so this relies on the NOPASSWD rule `deploy.sh` installs at `/etc/sudoers.d/fuzzyclock`
+- **Unresponsive panel:** every call into the e-paper driver is bounded by a 10-second deadline, so a stuck BUSY pin (usually a loose ribbon cable) surfaces as a logged render failure instead of a silently frozen daemon. Repeated failures re-init the panel, and if that doesn't help the daemon exits so `systemd` restarts it cleanly.
 
 ## Rebuilding from scratch
 
@@ -158,7 +159,7 @@ latitude: 51.4769
 longitude: 0.0005
 ```
 
-Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is missing or malformed, after-hours mode stays off too.
+Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is missing or malformed, after-hours mode stays off too — as it does for a value that isn't a number, or one outside the real ranges (latitude −90…90, longitude −180…180). A bad coordinate logs a warning and disables after-hours rather than taking the daemon down, so a typo here can't leave the clock stuck in a restart loop.
 
 The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked once per refresh tick (every 5 minutes), so the swap happens at the next tick after the sun crosses the horizon.
 
