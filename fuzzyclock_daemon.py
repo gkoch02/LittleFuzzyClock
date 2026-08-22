@@ -61,8 +61,11 @@ RENDER_RETRY_FATAL = 10
 # Bounded wait for any single blocking call into the vendored EPD driver
 # (init/display/displayPartial/displayPartBaseImage/sleep). The driver's
 # ReadBusy() (waveshare_epd/epd2in13_V4.py) polls the BUSY pin in a plain
-# `while` loop with no timeout of its own, and every one of those calls goes
-# through ReadBusy() at least once. See _call_with_timeout below.
+# `while` loop with no timeout of its own, and every *rendering* call above
+# goes through ReadBusy() at least once. sleep() is the exception — it sends
+# DEEP_SLEEP, waits a fixed 2s and calls module_exit() without reading BUSY —
+# so its timeout guards a wedged SPI write instead. Wrapped anyway, for that
+# reason and to keep one call convention. See _call_with_timeout below.
 EPD_CALL_TIMEOUT_SEC = 10
 
 # Day mode runs from DAY_START_HOUR up to (but not including) DAY_END_HOUR.
@@ -303,9 +306,10 @@ class EPDTimeoutError(RuntimeError):
 def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, lock=None, **kwargs):
     """Run `func(*args, **kwargs)` on a worker thread, bounded by `timeout`.
 
-    Every blocking call into the vendored EPD driver (init, display*, sleep)
-    ultimately loops on ReadBusy() with no timeout of its own, and both the
-    main loop and the button thread can call into the driver — so a naive
+    The rendering calls into the vendored EPD driver (init, display*) each
+    loop on ReadBusy() with no timeout of its own (sleep() doesn't read BUSY;
+    it's bounded against a wedged SPI write), and both the main loop and the
+    button thread can call into the driver — so a naive
     SIGALRM-based timeout won't work (signals only interrupt the main
     thread). Running the call on a daemon thread and bounding how long we
     *wait* for it works from either caller.
