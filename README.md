@@ -196,7 +196,8 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 |------|---------|
 | `fuzzyclock_daemon.py` | Production daemon — runs continuously, handles day/night mode and button presses |
 | `fuzzyclock_preview.py` | Standalone dev script with `--dry-run` PNG output |
-| `fuzzyclock_core.py` | Shared rendering logic (fuzzy time phrasing, font loading, clock layout) used by both of the above |
+| `fuzzyclock_core.py` | The shared public API both of the above import from — a thin facade over `fuzzyclock/` |
+| `fuzzyclock/` | The implementation, split by concern: `dialects`, `fonts`, `frames`, `render`, `sun` |
 | `tests/` | The test suite — see [Tests](#tests) below for what each file covers |
 | `docs/fonts.md` + `docs/previews/` | Font catalog with a rendered preview per variant |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
