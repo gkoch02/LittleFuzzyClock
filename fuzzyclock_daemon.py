@@ -668,7 +668,7 @@ def main():
     if epd2in13_V4 is None:
         raise SystemExit(
             "waveshare_epd is not installed; the fuzzy-clock daemon requires the "
-            "EPD driver. Use fuzzyClock2.py --dry-run for hardware-free testing."
+            "EPD driver. Use fuzzyclock_preview.py --dry-run for hardware-free testing."
         )
 
     # Load configuration here rather than at import time so tests can import

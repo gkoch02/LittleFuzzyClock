@@ -1,4 +1,4 @@
-"""End-to-end test for fuzzyClock2.py --dry-run.
+"""End-to-end test for fuzzyclock_preview.py --dry-run.
 
 Exercises the CLI surface and the EPD-not-available fallback that the
 dev script uses on non-Pi machines.
@@ -16,10 +16,10 @@ from unittest import mock
 
 from PIL import Image
 
-import fuzzyClock2
+import fuzzyclock_preview
 from fuzzyclock_core import DIALECTS, FONT_VARIANTS, RANDOM_FONT
 
-# This file lives in tests/, so the repo root — where fuzzyClock2.py sits and
+# This file lives in tests/, so the repo root — where fuzzyclock_preview.py sits and
 # where the subprocesses below are run — is one level up.
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -33,7 +33,7 @@ class DryRunCLITests(unittest.TestCase):
             result = subprocess.run(
                 [
                     sys.executable,
-                    "fuzzyClock2.py",
+                    "fuzzyclock_preview.py",
                     "--dry-run",
                     "--output",
                     out_path,
@@ -72,7 +72,7 @@ class DryRunCLITests(unittest.TestCase):
     def test_unknown_dialect_is_rejected_by_argparse(self):
         # argparse `choices=` should refuse the value with a non-zero exit.
         result = subprocess.run(
-            [sys.executable, "fuzzyClock2.py", "--dry-run", "--dialect", "esperanto"],
+            [sys.executable, "fuzzyclock_preview.py", "--dry-run", "--dialect", "esperanto"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
@@ -94,7 +94,14 @@ class DryRunTimeArgTests(unittest.TestCase):
         """Return (CompletedProcess, out_path). out_path is valid while self.tmp is alive."""
         out_path = os.path.join(self.tmp.name, "preview.png")
         result = subprocess.run(
-            [sys.executable, "fuzzyClock2.py", "--dry-run", "--output", out_path, *extra_args],
+            [
+                sys.executable,
+                "fuzzyclock_preview.py",
+                "--dry-run",
+                "--output",
+                out_path,
+                *extra_args,
+            ],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
@@ -141,7 +148,7 @@ class DryRunTimeArgTests(unittest.TestCase):
             r = subprocess.run(
                 [
                     sys.executable,
-                    "fuzzyClock2.py",
+                    "fuzzyclock_preview.py",
                     "--dry-run",
                     "--output",
                     out,
@@ -167,7 +174,7 @@ class DryRunTimeArgTests(unittest.TestCase):
             r = subprocess.run(
                 [
                     sys.executable,
-                    "fuzzyClock2.py",
+                    "fuzzyclock_preview.py",
                     "--dry-run",
                     "--output",
                     out,
@@ -186,10 +193,10 @@ class DryRunTimeArgTests(unittest.TestCase):
 
 
 class DrawFuzzyClockInProcessTests(unittest.TestCase):
-    """Direct in-process tests for fuzzyClock2.draw_fuzzy_clock().
+    """Direct in-process tests for fuzzyclock_preview.draw_fuzzy_clock().
 
     The subprocess-based DryRunCLITests cover the CLI surface end-to-end but
-    don't let `coverage` instrument fuzzyClock2's internals. These tests
+    don't let `coverage` instrument fuzzyclock_preview's internals. These tests
     import draw_fuzzy_clock() directly so the dry-run branch, the random-font
     resolution, the EPD-unavailable error path, and the hardware-write
     rotation are all visible to coverage and unit-mockable for finer-grained
@@ -204,7 +211,7 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_dry_run_writes_landscape_png_in_process(self):
-        fuzzyClock2.draw_fuzzy_clock(
+        fuzzyclock_preview.draw_fuzzy_clock(
             dry_run=True,
             output=self.out,
             now=datetime(2026, 4, 25, 9, 15),
@@ -218,8 +225,8 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         # `RANDOM_FONT` is a config sentinel; draw_fuzzy_clock must resolve it
         # to a concrete vendored variant before handing it to render_clock,
         # otherwise load_font() would receive an unknown key and SystemExit.
-        with mock.patch("fuzzyClock2.render_clock") as m_render:
-            fuzzyClock2.draw_fuzzy_clock(
+        with mock.patch("fuzzyclock_preview.render_clock") as m_render:
+            fuzzyclock_preview.draw_fuzzy_clock(
                 dry_run=True,
                 output=self.out,
                 font=RANDOM_FONT,
@@ -234,19 +241,19 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         # now=None must fall back to datetime.now(); patching the import-site
         # alias proves the lookup happens at call time, not at import time.
         sentinel = datetime(2026, 1, 2, 3, 4)
-        with mock.patch("fuzzyClock2.datetime") as m_dt:
+        with mock.patch("fuzzyclock_preview.datetime") as m_dt:
             m_dt.now.return_value = sentinel
-            with mock.patch("fuzzyClock2.render_clock") as m_render:
-                fuzzyClock2.draw_fuzzy_clock(dry_run=True, output=self.out)
+            with mock.patch("fuzzyclock_preview.render_clock") as m_render:
+                fuzzyclock_preview.draw_fuzzy_clock(dry_run=True, output=self.out)
         self.assertEqual(m_render.call_args.args[3], sentinel)
 
     def test_systemexit_when_epd_unavailable_and_not_dry_run(self):
         # On a non-Pi host the EPD driver import sets EPD_AVAILABLE=False;
         # asking for a hardware render then must SystemExit with a clear
         # message instead of NameError'ing on the missing module attribute.
-        with mock.patch.object(fuzzyClock2, "EPD_AVAILABLE", False):
+        with mock.patch.object(fuzzyclock_preview, "EPD_AVAILABLE", False):
             with self.assertRaises(SystemExit):
-                fuzzyClock2.draw_fuzzy_clock(dry_run=False)
+                fuzzyclock_preview.draw_fuzzy_clock(dry_run=False)
 
     def test_hardware_path_rotates_and_sleeps(self):
         # When EPD is available, the script must init the panel, push a
@@ -263,10 +270,10 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         fake_epd.getbuffer.side_effect = lambda img: captured_buf_images.append(img) or b"buf"
 
         with (
-            mock.patch.object(fuzzyClock2, "EPD_AVAILABLE", True),
-            mock.patch.object(fuzzyClock2, "epd2in13_V4", fake_module, create=True),
+            mock.patch.object(fuzzyclock_preview, "EPD_AVAILABLE", True),
+            mock.patch.object(fuzzyclock_preview, "epd2in13_V4", fake_module, create=True),
         ):
-            fuzzyClock2.draw_fuzzy_clock(
+            fuzzyclock_preview.draw_fuzzy_clock(
                 dry_run=False,
                 now=datetime(2026, 4, 25, 9, 15),
             )
@@ -285,31 +292,31 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
 
 
 class PinTimeToTodayTests(unittest.TestCase):
-    """Tests for fuzzyClock2.pin_time_to_today() — the --time helper."""
+    """Tests for fuzzyclock_preview.pin_time_to_today() — the --time helper."""
 
     def test_combines_pinned_time_with_supplied_date(self):
         # The hour/minute come from the string; the date comes from `today`,
         # not strptime's 1900-01-01 default, so the rendered footer is real.
         today = datetime(2026, 4, 25, 18, 37, 12)
-        pinned = fuzzyClock2.pin_time_to_today("09:15", today=today)
+        pinned = fuzzyclock_preview.pin_time_to_today("09:15", today=today)
         self.assertEqual(pinned, datetime(2026, 4, 25, 9, 15))
 
     def test_zeroes_seconds_and_microseconds(self):
         # Pinned previews must be deterministic to the minute, so sub-minute
         # components are dropped regardless of when the helper is called.
         today = datetime(2026, 4, 25, 18, 37, 42, 123456)
-        pinned = fuzzyClock2.pin_time_to_today("23:59", today=today)
+        pinned = fuzzyclock_preview.pin_time_to_today("23:59", today=today)
         self.assertEqual(pinned, datetime(2026, 4, 25, 23, 59, 0, 0))
 
     def test_defaults_to_today_when_no_date_supplied(self):
-        pinned = fuzzyClock2.pin_time_to_today("09:15")
+        pinned = fuzzyclock_preview.pin_time_to_today("09:15")
         self.assertEqual((pinned.hour, pinned.minute), (9, 15))
         self.assertEqual(pinned.date(), datetime.now().date())
 
     def test_malformed_time_raises_valueerror(self):
         for bad in ("25:00", "abc", "9:5:5", ""):
             with self.assertRaises(ValueError):
-                fuzzyClock2.pin_time_to_today(bad)
+                fuzzyclock_preview.pin_time_to_today(bad)
 
 
 if __name__ == "__main__":
