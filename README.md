@@ -19,6 +19,7 @@ Instead of showing an exact time, it displays natural-language phrases like "qua
 - [Fonts](#fonts)
 - [Border frame styles](#border-frame-styles)
 - [After-hours mode](#after-hours-mode)
+- [Tests](#tests)
 - [Files](#files)
 - [License](#license)
 
@@ -165,11 +166,27 @@ The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever i
 
 Sunrise/sunset are computed via NOAA's simplified solar-position equation, accurate to roughly a minute outside polar regions. At extreme latitudes where the sun never rises or never sets on a given day, the daemon stays in normal day mode.
 
-There's also a unit test suite covering the time-phrasing logic and a render smoke test for the clock face:
+## Tests
+
+The suite lives in `tests/` and covers the time-phrasing logic, the sunrise/sunset
+approximation, the daemon's mode/config/retry logic, and a render smoke test for the
+clock face. Run it from the repo root:
 
 ```bash
 python3 -m unittest discover
+
+# a single file
+python3 -m unittest tests.test_fuzzy_time
 ```
+
+| File | Covers |
+|------|--------|
+| `tests/test_fuzzy_time.py` | `fuzzy_time()` edge cases across every dialect |
+| `tests/test_render.py` | `draw_border`, `render_clock`, body-font auto-sizing, frame styles |
+| `tests/test_dry_run.py` | End-to-end run of `fuzzyClock2.py --dry-run` |
+| `tests/test_sun.py` | The sunrise/sunset approximation used by after-hours mode |
+| `tests/test_daemon.py` | `current_mode`, tick sleep, config loading, render-retry logic |
+| `tests/test_daemon_import.py` | Bare `import fuzzyclock_daemon`, to catch eager hardware calls |
 
 The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`.
 
@@ -180,12 +197,8 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | `fuzzyclock_daemon.py` | Production daemon — runs continuously, handles day/night mode and button presses |
 | `fuzzyClock2.py` | Standalone dev script with `--dry-run` PNG output |
 | `fuzzyclock_core.py` | Shared rendering logic (fuzzy time phrasing, font loading, clock layout) used by both of the above |
-| `test_fuzzy_time.py` | Unit tests for `fuzzy_time()` edge cases |
-| `test_render.py` | Smoke tests for `draw_border` and `render_clock` |
-| `test_dry_run.py` | End-to-end test that invokes `fuzzyClock2.py --dry-run` |
-| `test_sun.py` | Unit tests for the sunrise/sunset approximation used by after-hours mode |
-| `test_daemon.py` | Unit tests for `current_mode`, tick sleep, config loading, and render-retry logic |
-| `test_daemon_import.py` | Smoke test: bare `import fuzzyclock_daemon` to catch eager hardware calls |
+| `tests/` | The test suite — see [Tests](#tests) below for what each file covers |
+| `docs/fonts.md` + `docs/previews/` | Font catalog with a rendered preview per variant |
 | `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
 | `deploy.sh` | One-shot deploy script for fresh Pi setup |
 | `fuzzyclock_config.yaml` | Dialect, font, frame, and latitude/longitude for the after-hours sunset/sunrise calculation |

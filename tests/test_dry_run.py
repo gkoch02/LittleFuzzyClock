@@ -19,7 +19,9 @@ from PIL import Image
 import fuzzyClock2
 from fuzzyclock_core import DIALECTS, FONT_VARIANTS, RANDOM_FONT
 
-REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+# This file lives in tests/, so the repo root — where fuzzyClock2.py sits and
+# where the subprocesses below are run — is one level up.
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class DryRunCLITests(unittest.TestCase):
