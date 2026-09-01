@@ -14,10 +14,10 @@ from unittest import mock
 
 from PIL import Image, ImageDraw
 
+from fuzzyclock.frames import _CONTENT_PAD, _sketch_jitter
 from fuzzyclock_core import (
     _BODY_MAX_SIZE,
     _BODY_MIN_SIZE,
-    _CONTENT_PAD,
     _TINY_SIZE,
     AUTO_FRAME,
     DEFAULT_DIALECT,
@@ -31,7 +31,6 @@ from fuzzyclock_core import (
     RANDOM_FONT,
     _fit_body_font,
     _reset_random_font_bag,
-    _sketch_jitter,
     draw_border,
     frame_for_font,
     load_font,
