@@ -16,10 +16,13 @@ from PIL import Image, ImageDraw
 
 from fuzzyclock.fonts import _reset_random_font_bag
 from fuzzyclock.frames import _CONTENT_PAD, _sketch_jitter
-from fuzzyclock_core import (
+from fuzzyclock.render import (
     _BODY_MAX_SIZE,
     _BODY_MIN_SIZE,
     _TINY_SIZE,
+    _fit_body_font,
+)
+from fuzzyclock_core import (
     AUTO_FRAME,
     DEFAULT_DIALECT,
     DEFAULT_FONT,
@@ -30,7 +33,6 @@ from fuzzyclock_core import (
     FONT_VARIANTS,
     FRAME_VARIANTS,
     RANDOM_FONT,
-    _fit_body_font,
     draw_border,
     frame_for_font,
     load_font,
