@@ -45,13 +45,13 @@ Neutral, readable workhorses — for when you want the time to feel ordinary.
 <table>
 <tr>
 <td align="center">
-<img src="preview-cantarell.png" alt="cantarell"><br><br>
+<img src="previews/cantarell.png" alt="cantarell"><br><br>
 <strong><code>cantarell</code></strong><br>
 <sup>apt: fonts-cantarell</sup><br>
 GNOME's humanist sans — tall x-height, friendly curves.
 </td>
 <td align="center">
-<img src="preview-dejavu.png" alt="dejavu"><br><br>
+<img src="previews/dejavu.png" alt="dejavu"><br><br>
 <strong><code>dejavu</code></strong> <em>(default)</em><br>
 <sup>apt: fonts-dejavu-core</sup><br>
 Clean humanist sans — high x-height, broad Unicode coverage.
@@ -59,7 +59,7 @@ Clean humanist sans — high x-height, broad Unicode coverage.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-ubuntu.png" alt="ubuntu"><br><br>
+<img src="previews/ubuntu.png" alt="ubuntu"><br><br>
 <strong><code>ubuntu</code></strong><br>
 <sup>apt: fonts-ubuntu</sup><br>
 Distinctive warm sans with subtle calligraphic terminals.
@@ -77,13 +77,13 @@ Reading-focused serifs with traditional proportions — book pages and printed e
 <table>
 <tr>
 <td align="center">
-<img src="preview-bitter.png" alt="bitter"><br><br>
+<img src="previews/bitter.png" alt="bitter"><br><br>
 <strong><code>bitter</code></strong><br>
 <sup>OFL · variable</sup><br>
 High-contrast slab serif — confident vertical stress on e-ink.
 </td>
 <td align="center">
-<img src="preview-charis-sil.png" alt="charis-sil"><br><br>
+<img src="previews/charis-sil.png" alt="charis-sil"><br><br>
 <strong><code>charis-sil</code></strong><br>
 <sup>SIL OFL · static · apt: fonts-sil-charis</sup><br>
 Warm humanist serif — generous x-height, broad glyph coverage.
@@ -91,13 +91,13 @@ Warm humanist serif — generous x-height, broad glyph coverage.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-dejavu-serif.png" alt="dejavu-serif"><br><br>
+<img src="previews/dejavu-serif.png" alt="dejavu-serif"><br><br>
 <strong><code>dejavu-serif</code></strong><br>
 <sup>apt: fonts-dejavu</sup><br>
 Elegant transitional serif companion to DejaVu Sans.
 </td>
 <td align="center">
-<img src="preview-liberation-serif.png" alt="liberation-serif"><br><br>
+<img src="previews/liberation-serif.png" alt="liberation-serif"><br><br>
 <strong><code>liberation-serif</code></strong><br>
 <sup>apt: fonts-liberation2</sup><br>
 Times-metric serif — newspaper feel, very readable at small sizes.
@@ -105,13 +105,13 @@ Times-metric serif — newspaper feel, very readable at small sizes.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-libertinus.png" alt="libertinus"><br><br>
+<img src="previews/libertinus.png" alt="libertinus"><br><br>
 <strong><code>libertinus</code></strong><br>
 <sup>OFL · static OTF</sup><br>
 Open successor to Linux Libertine — classical book serif.
 </td>
 <td align="center">
-<img src="preview-literata.png" alt="literata"><br><br>
+<img src="previews/literata.png" alt="literata"><br><br>
 <strong><code>literata</code></strong><br>
 <sup>OFL · variable</sup><br>
 Optically sized book serif — refined and even-toned.
@@ -119,13 +119,13 @@ Optically sized book serif — refined and even-toned.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-roboto-slab.png" alt="roboto-slab"><br><br>
+<img src="previews/roboto-slab.png" alt="roboto-slab"><br><br>
 <strong><code>roboto-slab</code></strong><br>
 <sup>apt: fonts-roboto-slab</sup><br>
 Chunky slab serif — renders especially crisply on e-ink.
 </td>
 <td align="center">
-<img src="preview-balthazar.png" alt="balthazar"><br><br>
+<img src="previews/balthazar.png" alt="balthazar"><br><br>
 <strong><code>balthazar</code></strong><br>
 <sup>OFL · static</sup><br>
 Copperplate-Gothic-inspired bistro serif — high x-height with delicate serifs, NYC/Paris menu vibe.
@@ -153,13 +153,13 @@ Sturdy bracketed slabs — from crisp geometric (Arvo, Josefin Slab) to warm hum
 <table>
 <tr>
 <td align="center">
-<img src="preview-arvo.png" alt="arvo"><br><br>
+<img src="previews/arvo.png" alt="arvo"><br><br>
 <strong><code>arvo</code></strong><br>
 <sup>OFL · static</sup><br>
 Clean geometric slab — high contrast, confident strokes.
 </td>
 <td align="center">
-<img src="preview-crete-round.png" alt="crete-round"><br><br>
+<img src="previews/crete-round.png" alt="crete-round"><br><br>
 <strong><code>crete-round</code></strong><br>
 <sup>OFL · static</sup><br>
 Rounded slab terminals — soft-but-solid, distinctive feel.
@@ -167,13 +167,13 @@ Rounded slab terminals — soft-but-solid, distinctive feel.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-josefin-slab.png" alt="josefin-slab"><br><br>
+<img src="previews/josefin-slab.png" alt="josefin-slab"><br><br>
 <strong><code>josefin-slab</code></strong><br>
 <sup>OFL · variable</sup><br>
 Geometric slab — strong thin/thick contrast; elegant at display sizes.
 </td>
 <td align="center">
-<img src="preview-rokkitt.png" alt="rokkitt"><br><br>
+<img src="previews/rokkitt.png" alt="rokkitt"><br><br>
 <strong><code>rokkitt</code></strong><br>
 <sup>OFL · variable</sup><br>
 Chunky literary slab — confident and even-toned on e-ink.
@@ -181,7 +181,7 @@ Chunky literary slab — confident and even-toned on e-ink.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-zilla-slab.png" alt="zilla-slab"><br><br>
+<img src="previews/zilla-slab.png" alt="zilla-slab"><br><br>
 <strong><code>zilla-slab</code></strong><br>
 <sup>OFL · static</sup><br>
 Mozilla humanist slab — warm and screen-optimised.
@@ -199,13 +199,13 @@ Friendly geometric curves — informal warmth, approachable at any size.
 <table>
 <tr>
 <td align="center">
-<img src="preview-comfortaa.png" alt="comfortaa"><br><br>
+<img src="previews/comfortaa.png" alt="comfortaa"><br><br>
 <strong><code>comfortaa</code></strong><br>
 <sup>OFL · variable · apt: fonts-comfortaa</sup><br>
 Rounded geometric sans — warm and friendly.
 </td>
 <td align="center">
-<img src="preview-fredoka.png" alt="fredoka"><br><br>
+<img src="previews/fredoka.png" alt="fredoka"><br><br>
 <strong><code>fredoka</code></strong><br>
 <sup>OFL · variable · apt: fonts-fredoka</sup><br>
 Rounded display — soft, friendly geometric shapes.
@@ -213,13 +213,13 @@ Rounded display — soft, friendly geometric shapes.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-jost.png" alt="jost"><br><br>
+<img src="previews/jost.png" alt="jost"><br><br>
 <strong><code>jost</code></strong><br>
 <sup>OFL · variable</sup><br>
 Geometric sans inspired by Futura — clean and modern.
 </td>
 <td align="center">
-<img src="preview-lilita-one.png" alt="lilita-one"><br><br>
+<img src="previews/lilita-one.png" alt="lilita-one"><br><br>
 <strong><code>lilita-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Chunky Latin display — bold and cartoonish in the best way.
@@ -227,13 +227,13 @@ Chunky Latin display — bold and cartoonish in the best way.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-modak.png" alt="modak"><br><br>
+<img src="previews/modak.png" alt="modak"><br><br>
 <strong><code>modak</code></strong><br>
 <sup>OFL · static</sup><br>
 Extreme inflated bubble — letters look pressurized, Devanagari-inspired.
 </td>
 <td align="center">
-<img src="preview-nunito.png" alt="nunito"><br><br>
+<img src="previews/nunito.png" alt="nunito"><br><br>
 <strong><code>nunito</code></strong><br>
 <sup>OFL · variable</sup><br>
 Rounded sans — generous x-height, approachable at any size.
@@ -250,13 +250,13 @@ Clean geometric proportions and condensed widths — from balanced all-round wor
 <table>
 <tr>
 <td align="center">
-<img src="preview-cabin.png" alt="cabin"><br><br>
+<img src="previews/cabin.png" alt="cabin"><br><br>
 <strong><code>cabin</code></strong><br>
 <sup>OFL · variable</sup><br>
 Humanist geometric sans — slightly warmer than Poppins.
 </td>
 <td align="center">
-<img src="preview-oswald.png" alt="oswald"><br><br>
+<img src="previews/oswald.png" alt="oswald"><br><br>
 <strong><code>oswald</code></strong><br>
 <sup>OFL · variable</sup><br>
 Condensed sans — fits long dialect phrases at a larger size.
@@ -264,13 +264,13 @@ Condensed sans — fits long dialect phrases at a larger size.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-poppins.png" alt="poppins"><br><br>
+<img src="previews/poppins.png" alt="poppins"><br><br>
 <strong><code>poppins</code></strong><br>
 <sup>OFL · static</sup><br>
 Balanced geometric sans — uniform stroke, contemporary feel.
 </td>
 <td align="center">
-<img src="preview-raleway.png" alt="raleway"><br><br>
+<img src="previews/raleway.png" alt="raleway"><br><br>
 <strong><code>raleway</code></strong><br>
 <sup>OFL · variable</sup><br>
 Art Deco geometric — distinctive double-storey 'W'.
@@ -278,13 +278,13 @@ Art Deco geometric — distinctive double-storey 'W'.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-space-grotesk.png" alt="space-grotesk"><br><br>
+<img src="previews/space-grotesk.png" alt="space-grotesk"><br><br>
 <strong><code>space-grotesk</code></strong><br>
 <sup>OFL · static</sup><br>
 Quirky geometric sans — slightly irregular strokes give it personality.
 </td>
 <td align="center">
-<img src="preview-work-sans.png" alt="work-sans"><br><br>
+<img src="previews/work-sans.png" alt="work-sans"><br><br>
 <strong><code>work-sans</code></strong><br>
 <sup>OFL · variable</sup><br>
 Utilitarian geometric sans — clean and legible at any size.
@@ -301,13 +301,13 @@ Big shouty character — signage, comic, slab, condensed. The clock as a poster.
 <table>
 <tr>
 <td align="center">
-<img src="preview-abril-fatface.png" alt="abril-fatface"><br><br>
+<img src="previews/abril-fatface.png" alt="abril-fatface"><br><br>
 <strong><code>abril-fatface</code></strong><br>
 <sup>OFL · static</sup><br>
 Fashion-magazine ultra-bold display serif — high contrast.
 </td>
 <td align="center">
-<img src="preview-akronim.png" alt="akronim"><br><br>
+<img src="previews/akronim.png" alt="akronim"><br><br>
 <strong><code>akronim</code></strong><br>
 <sup>OFL · static</sup><br>
 Frantic outlined italic — loose hand-drawn caps, kinetic and untidy.
@@ -315,13 +315,13 @@ Frantic outlined italic — loose hand-drawn caps, kinetic and untidy.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-alfa-slab-one.png" alt="alfa-slab-one"><br><br>
+<img src="previews/alfa-slab-one.png" alt="alfa-slab-one"><br><br>
 <strong><code>alfa-slab-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Chunky bold slab — confident, immovable.
 </td>
 <td align="center">
-<img src="preview-anton.png" alt="anton"><br><br>
+<img src="previews/anton.png" alt="anton"><br><br>
 <strong><code>anton</code></strong><br>
 <sup>OFL · static</sup><br>
 Tall condensed poster sans — fits long phrases easily.
@@ -329,13 +329,13 @@ Tall condensed poster sans — fits long phrases easily.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-bangers.png" alt="bangers"><br><br>
+<img src="previews/bangers.png" alt="bangers"><br><br>
 <strong><code>bangers</code></strong><br>
 <sup>OFL · static</sup><br>
 Comic-book display — bold, condensed, pop-art energy.
 </td>
 <td align="center">
-<img src="preview-boogaloo.png" alt="boogaloo"><br><br>
+<img src="previews/boogaloo.png" alt="boogaloo"><br><br>
 <strong><code>boogaloo</code></strong><br>
 <sup>OFL · static</sup><br>
 Retro casual comic/poster — lighter and breezier than Bangers.
@@ -343,13 +343,13 @@ Retro casual comic/poster — lighter and breezier than Bangers.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-bungee.png" alt="bungee"><br><br>
+<img src="previews/bungee.png" alt="bungee"><br><br>
 <strong><code>bungee</code></strong><br>
 <sup>OFL · static</sup><br>
 David Jonathan Ross signage face — architectural and bold.
 </td>
 <td align="center">
-<img src="preview-bungee-shade.png" alt="bungee-shade"><br><br>
+<img src="previews/bungee-shade.png" alt="bungee-shade"><br><br>
 <strong><code>bungee-shade</code></strong><br>
 <sup>OFL · static</sup><br>
 3D perspective shadow block below each letter — architectural and striking.
@@ -357,13 +357,13 @@ David Jonathan Ross signage face — architectural and bold.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-faster-one.png" alt="faster-one"><br><br>
+<img src="previews/faster-one.png" alt="faster-one"><br><br>
 <strong><code>faster-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Extreme italic condensed — maximum rightward lean, racing energy.
 </td>
 <td align="center">
-<img src="preview-henny-penny.png" alt="henny-penny"><br><br>
+<img src="previews/henny-penny.png" alt="henny-penny"><br><br>
 <strong><code>henny-penny</code></strong><br>
 <sup>OFL · static</sup><br>
 Wobbly storybook display — organic stroke widths, pleasantly falling apart.
@@ -371,13 +371,13 @@ Wobbly storybook display — organic stroke widths, pleasantly falling apart.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-luckiest-guy.png" alt="luckiest-guy"><br><br>
+<img src="previews/luckiest-guy.png" alt="luckiest-guy"><br><br>
 <strong><code>luckiest-guy</code></strong><br>
 <sup>OFL · static</sup><br>
 Cereal-box cartoon — irregular baseline, high-energy retro fun.
 </td>
 <td align="center">
-<img src="preview-playfair.png" alt="playfair"><br><br>
+<img src="previews/playfair.png" alt="playfair"><br><br>
 <strong><code>playfair</code></strong><br>
 <sup>OFL · variable</sup><br>
 High-contrast display serif — dramatic stroke variation.
@@ -385,13 +385,13 @@ High-contrast display serif — dramatic stroke variation.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-ribeye-marrow.png" alt="ribeye-marrow"><br><br>
+<img src="previews/ribeye-marrow.png" alt="ribeye-marrow"><br><br>
 <strong><code>ribeye-marrow</code></strong><br>
 <sup>OFL · static</sup><br>
 Hollow inline display serif — only the outline remains, marrow scooped out.
 </td>
 <td align="center">
-<img src="preview-righteous.png" alt="righteous"><br><br>
+<img src="previews/righteous.png" alt="righteous"><br><br>
 <strong><code>righteous</code></strong><br>
 <sup>OFL · static</sup><br>
 Art Deco geometric sans — retro-modern personality.
@@ -399,13 +399,13 @@ Art Deco geometric sans — retro-modern personality.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-shrikhand.png" alt="shrikhand"><br><br>
+<img src="previews/shrikhand.png" alt="shrikhand"><br><br>
 <strong><code>shrikhand</code></strong><br>
 <sup>OFL · static</sup><br>
 Gujarati calligraphy-inspired bold — ink traps and terminals unlike any Latin font.
 </td>
 <td align="center">
-<img src="preview-staatliches.png" alt="staatliches"><br><br>
+<img src="previews/staatliches.png" alt="staatliches"><br><br>
 <strong><code>staatliches</code></strong><br>
 <sup>OFL · static</sup><br>
 Bauhaus all-caps — extreme width contrast.
@@ -413,7 +413,7 @@ Bauhaus all-caps — extreme width contrast.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-titan-one.png" alt="titan-one"><br><br>
+<img src="previews/titan-one.png" alt="titan-one"><br><br>
 <strong><code>titan-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Super-chunky rounded bold — compact punch, maximum presence.
@@ -433,13 +433,13 @@ Super-chunky rounded bold — compact punch, maximum presence.
 <table>
 <tr>
 <td align="center">
-<img src="preview-chango.png" alt="chango"><br><br>
+<img src="previews/chango.png" alt="chango"><br><br>
 <strong><code>chango</code></strong><br>
 <sup>OFL · static</sup><br>
 Single-weight ultra-heavy Latin display — fills every pixel with imposing mass.
 </td>
 <td align="center">
-<img src="preview-gravitas-one.png" alt="gravitas-one"><br><br>
+<img src="previews/gravitas-one.png" alt="gravitas-one"><br><br>
 <strong><code>gravitas-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Maximum-weight display serif — brutal ink coverage, deep ink traps.
@@ -447,13 +447,13 @@ Maximum-weight display serif — brutal ink coverage, deep ink traps.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-jaro.png" alt="jaro"><br><br>
+<img src="previews/jaro.png" alt="jaro"><br><br>
 <strong><code>jaro</code></strong><br>
 <sup>OFL · variable · opsz axis</sup><br>
 Global display sans inspired by Jaroslav Benda — heavy geometric caps with quirky terminals and tight counters.
 </td>
 <td align="center">
-<img src="preview-shojumaru.png" alt="shojumaru"><br><br>
+<img src="previews/shojumaru.png" alt="shojumaru"><br><br>
 <strong><code>shojumaru</code></strong><br>
 <sup>OFL · static</sup><br>
 Sumi-e brush-calligraphy interpretation of Latin caps — thick rounded strokes with sharp tapered terminals.
@@ -470,13 +470,13 @@ Sumi-e brush-calligraphy interpretation of Latin caps — thick rounded strokes 
 <table>
 <tr>
 <td align="center">
-<img src="preview-atomic-age.png" alt="atomic-age"><br><br>
+<img src="previews/atomic-age.png" alt="atomic-age"><br><br>
 <strong><code>atomic-age</code></strong><br>
 <sup>OFL · static</sup><br>
 Outlined Space Age display — '50s science-fiction inline.
 </td>
 <td align="center">
-<img src="preview-audiowide.png" alt="audiowide"><br><br>
+<img src="previews/audiowide.png" alt="audiowide"><br><br>
 <strong><code>audiowide</code></strong><br>
 <sup>OFL · static</sup><br>
 Retro-futuristic chrome — hi-fi receiver vibe.
@@ -484,13 +484,13 @@ Retro-futuristic chrome — hi-fi receiver vibe.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-cinzel-decorative.png" alt="cinzel-decorative"><br><br>
+<img src="previews/cinzel-decorative.png" alt="cinzel-decorative"><br><br>
 <strong><code>cinzel-decorative</code></strong><br>
 <sup>OFL · static</sup><br>
 Ornate Roman capitals with Art Deco serifs — regal, all-caps only.
 </td>
 <td align="center">
-<img src="preview-diplomata.png" alt="diplomata"><br><br>
+<img src="previews/diplomata.png" alt="diplomata"><br><br>
 <strong><code>diplomata</code></strong><br>
 <sup>OFL · static</sup><br>
 Heavily ornamented Art Deco caps — diploma-grade engraving.
@@ -498,13 +498,13 @@ Heavily ornamented Art Deco caps — diploma-grade engraving.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-exo-2.png" alt="exo-2"><br><br>
+<img src="previews/exo-2.png" alt="exo-2"><br><br>
 <strong><code>exo-2</code></strong><br>
 <sup>OFL · variable</sup><br>
 Techno-geometric variable — bridges vintage and sci-fi.
 </td>
 <td align="center">
-<img src="preview-fascinate.png" alt="fascinate"><br><br>
+<img src="previews/fascinate.png" alt="fascinate"><br><br>
 <strong><code>fascinate</code></strong><br>
 <sup>OFL · static</sup><br>
 Art Deco inline — white channel through each stroke, striking on e-ink.
@@ -512,13 +512,13 @@ Art Deco inline — white channel through each stroke, striking on e-ink.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-forum.png" alt="forum"><br><br>
+<img src="previews/forum.png" alt="forum"><br><br>
 <strong><code>forum</code></strong><br>
 <sup>OFL · static</sup><br>
 Elegant Art Nouveau Roman — calligraphic influence, lighter than Cinzel.
 </td>
 <td align="center">
-<img src="preview-iceland.png" alt="iceland"><br><br>
+<img src="previews/iceland.png" alt="iceland"><br><br>
 <strong><code>iceland</code></strong><br>
 <sup>OFL · static</sup><br>
 Geometric blocky display — Nordic rune-like construction.
@@ -526,13 +526,13 @@ Geometric blocky display — Nordic rune-like construction.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-limelight.png" alt="limelight"><br><br>
+<img src="previews/limelight.png" alt="limelight"><br><br>
 <strong><code>limelight</code></strong><br>
 <sup>OFL · static</sup><br>
 1920s theatre marquee — vintage display serif.
 </td>
 <td align="center">
-<img src="preview-megrim.png" alt="megrim"><br><br>
+<img src="previews/megrim.png" alt="megrim"><br><br>
 <strong><code>megrim</code></strong><br>
 <sup>OFL · static</sup><br>
 Constructed thin-stroke Art Nouveau — built from straight lines and circles.
@@ -540,13 +540,13 @@ Constructed thin-stroke Art Nouveau — built from straight lines and circles.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-monoton.png" alt="monoton"><br><br>
+<img src="previews/monoton.png" alt="monoton"><br><br>
 <strong><code>monoton</code></strong><br>
 <sup>OFL · static</sup><br>
 Multi-line striped art-deco caps — striking silhouette.
 </td>
 <td align="center">
-<img src="preview-orbitron.png" alt="orbitron"><br><br>
+<img src="previews/orbitron.png" alt="orbitron"><br><br>
 <strong><code>orbitron</code></strong><br>
 <sup>OFL · variable</sup><br>
 Geometric sci-fi display — clean techno feel.
@@ -554,13 +554,13 @@ Geometric sci-fi display — clean techno feel.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-poiret-one.png" alt="poiret-one"><br><br>
+<img src="previews/poiret-one.png" alt="poiret-one"><br><br>
 <strong><code>poiret-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Art Deco hairline geometric — distinctive thin strokes.
 </td>
 <td align="center">
-<img src="preview-rye.png" alt="rye"><br><br>
+<img src="previews/rye.png" alt="rye"><br><br>
 <strong><code>rye</code></strong><br>
 <sup>OFL · static</sup><br>
 Wild West poster — ornate inline decorations inside every bracketed serif.
@@ -568,13 +568,13 @@ Wild West poster — ornate inline decorations inside every bracketed serif.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-sancreek.png" alt="sancreek"><br><br>
+<img src="previews/sancreek.png" alt="sancreek"><br><br>
 <strong><code>sancreek</code></strong><br>
 <sup>OFL · static</sup><br>
 Wild West cracked engraved poster serif — wanted-poster energy.
 </td>
 <td align="center">
-<img src="preview-smokum.png" alt="smokum"><br><br>
+<img src="previews/smokum.png" alt="smokum"><br><br>
 <strong><code>smokum</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Western circus marquee — outlined slab with curling smoke wisps.
@@ -582,13 +582,13 @@ Western circus marquee — outlined slab with curling smoke wisps.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-syncopate.png" alt="syncopate"><br><br>
+<img src="previews/syncopate.png" alt="syncopate"><br><br>
 <strong><code>syncopate</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 All-caps techno geometric — architectural, no lowercase glyphs.
 </td>
 <td align="center">
-<img src="preview-wallpoet.png" alt="wallpoet"><br><br>
+<img src="previews/wallpoet.png" alt="wallpoet"><br><br>
 <strong><code>wallpoet</code></strong><br>
 <sup>OFL · static</sup><br>
 Chiselled stone techno — block letters with horizontal grooves cut through every stroke.
@@ -596,13 +596,13 @@ Chiselled stone techno — block letters with horizontal grooves cut through eve
 </tr>
 <tr>
 <td align="center">
-<img src="preview-baumans.png" alt="baumans"><br><br>
+<img src="previews/baumans.png" alt="baumans"><br><br>
 <strong><code>baumans</code></strong><br>
 <sup>OFL · static</sup><br>
 Techno-mechanical constructed from circles and straight rules — hi-fi instrument dials.
 </td>
 <td align="center">
-<img src="preview-mystery-quest.png" alt="mystery-quest"><br><br>
+<img src="previews/mystery-quest.png" alt="mystery-quest"><br><br>
 <strong><code>mystery-quest</code></strong><br>
 <sup>OFL · static</sup><br>
 Alien sci-fi display — letterforms with UFO-landing-zone cut-outs and strange angular gaps.
@@ -610,13 +610,13 @@ Alien sci-fi display — letterforms with UFO-landing-zone cut-outs and strange 
 </tr>
 <tr>
 <td align="center">
-<img src="preview-oi.png" alt="oi"><br><br>
+<img src="previews/oi.png" alt="oi"><br><br>
 <strong><code>oi</code></strong><br>
 <sup>OFL · static</sup><br>
 Victorian ornamental display — elaborate swash caps with inline filigree decoration.
 </td>
 <td align="center">
-<img src="preview-emblema-one.png" alt="emblema-one"><br><br>
+<img src="previews/emblema-one.png" alt="emblema-one"><br><br>
 <strong><code>emblema-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Outlined decorative display — inline channels carved through bold exotic caps.
@@ -624,13 +624,13 @@ Outlined decorative display — inline channels carved through bold exotic caps.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-flamenco.png" alt="flamenco"><br><br>
+<img src="previews/flamenco.png" alt="flamenco"><br><br>
 <strong><code>flamenco</code></strong><br>
 <sup>OFL · static</sup><br>
 Art Nouveau calligraphic display — organic curved spurs growing from every terminal.
 </td>
 <td align="center">
-<img src="preview-tourney.png" alt="tourney"><br><br>
+<img src="previews/tourney.png" alt="tourney"><br><br>
 <strong><code>tourney</code></strong><br>
 <sup>OFL · variable</sup><br>
 Racing championship variable — extreme condensed wdth axis, chequered-flag energy.
@@ -647,13 +647,13 @@ Terminal, pixel, 8-bit nostalgia — plus the variable oddities that warp throug
 <table>
 <tr>
 <td align="center">
-<img src="preview-courier-prime.png" alt="courier-prime"><br><br>
+<img src="previews/courier-prime.png" alt="courier-prime"><br><br>
 <strong><code>courier-prime</code></strong><br>
 <sup>OFL · static</sup><br>
 Refined typewriter serif — more character than Courier New.
 </td>
 <td align="center">
-<img src="preview-fira-mono.png" alt="fira-mono"><br><br>
+<img src="previews/fira-mono.png" alt="fira-mono"><br><br>
 <strong><code>fira-mono</code></strong><br>
 <sup>OFL · static</sup><br>
 Clean coding mono — readable and refined at small sizes.
@@ -661,13 +661,13 @@ Clean coding mono — readable and refined at small sizes.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-foldit.png" alt="foldit"><br><br>
+<img src="previews/foldit.png" alt="foldit"><br><br>
 <strong><code>foldit</code></strong><br>
 <sup>OFL · variable</sup><br>
 Origami creased letterforms — every stroke looks like folded paper.
 </td>
 <td align="center">
-<img src="preview-jetbrains-mono.png" alt="jetbrains-mono"><br><br>
+<img src="previews/jetbrains-mono.png" alt="jetbrains-mono"><br><br>
 <strong><code>jetbrains-mono</code></strong><br>
 <sup>apt: fonts-jetbrains-mono</sup><br>
 Modern monospaced — typewriter personality on e-ink.
@@ -675,13 +675,13 @@ Modern monospaced — typewriter personality on e-ink.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-press-start-2p.png" alt="press-start-2p"><br><br>
+<img src="previews/press-start-2p.png" alt="press-start-2p"><br><br>
 <strong><code>press-start-2p</code></strong><br>
 <sup>OFL · static</sup><br>
 8-bit arcade pixel font — quarter-eating energy.
 </td>
 <td align="center">
-<img src="preview-share-tech-mono.png" alt="share-tech-mono"><br><br>
+<img src="previews/share-tech-mono.png" alt="share-tech-mono"><br><br>
 <strong><code>share-tech-mono</code></strong><br>
 <sup>OFL · static</sup><br>
 Techno grid mono — sci-fi terminal aesthetic.
@@ -689,13 +689,13 @@ Techno grid mono — sci-fi terminal aesthetic.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-silkscreen.png" alt="silkscreen"><br><br>
+<img src="previews/silkscreen.png" alt="silkscreen"><br><br>
 <strong><code>silkscreen</code></strong><br>
 <sup>OFL · static</sup><br>
 Bitmap-style display — late-90s desktop UI nostalgia.
 </td>
 <td align="center">
-<img src="preview-sixtyfour.png" alt="sixtyfour"><br><br>
+<img src="previews/sixtyfour.png" alt="sixtyfour"><br><br>
 <strong><code>sixtyfour</code></strong><br>
 <sup>OFL · variable</sup><br>
 C64 CRT scanlines — retro-computing pixel grid with deliberate bleed.
@@ -703,13 +703,13 @@ C64 CRT scanlines — retro-computing pixel grid with deliberate bleed.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-vt323.png" alt="vt323"><br><br>
+<img src="previews/vt323.png" alt="vt323"><br><br>
 <strong><code>vt323</code></strong><br>
 <sup>OFL · static</sup><br>
 CRT terminal — chunky monospace, late-70s computing.
 </td>
 <td align="center">
-<img src="preview-workbench.png" alt="workbench"><br><br>
+<img src="previews/workbench.png" alt="workbench"><br><br>
 <strong><code>workbench</code></strong><br>
 <sup>OFL · variable</sup><br>
 Machined dot-matrix industrial — bled and scanned axes give workshop-printer feel.
@@ -726,13 +726,13 @@ Medieval, gothic, storybook — manuscripts, spellbooks, and angular runic geome
 <table>
 <tr>
 <td align="center">
-<img src="preview-almendra-display.png" alt="almendra-display"><br><br>
+<img src="previews/almendra-display.png" alt="almendra-display"><br><br>
 <strong><code>almendra-display</code></strong><br>
 <sup>OFL · static</sup><br>
 Pen-drawn Gothic calligraphic — elaborate ink swells, medieval fantasy.
 </td>
 <td align="center">
-<img src="preview-astloch.png" alt="astloch"><br><br>
+<img src="previews/astloch.png" alt="astloch"><br><br>
 <strong><code>astloch</code></strong><br>
 <sup>OFL · static</sup><br>
 Bold runic medieval — angular geometric blackletter built from sharp wedges.
@@ -740,13 +740,13 @@ Bold runic medieval — angular geometric blackletter built from sharp wedges.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-medieval-sharp.png" alt="medieval-sharp"><br><br>
+<img src="previews/medieval-sharp.png" alt="medieval-sharp"><br><br>
 <strong><code>medieval-sharp</code></strong><br>
 <sup>OFL · static</sup><br>
 Storybook fantasy — readable medieval display.
 </td>
 <td align="center">
-<img src="preview-nabla.png" alt="nabla"><br><br>
+<img src="previews/nabla.png" alt="nabla"><br><br>
 <strong><code>nabla</code></strong><br>
 <sup>OFL · variable · COLR/CPAL</sup><br>
 3D faceted extrusion designed as a colour font; renders on e-ink as nested outlined geometry — gothic, structural, unlike anything else here.
@@ -754,13 +754,13 @@ Storybook fantasy — readable medieval display.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-pirata-one.png" alt="pirata-one"><br><br>
+<img src="previews/pirata-one.png" alt="pirata-one"><br><br>
 <strong><code>pirata-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Decorative pirate / treasure-map blackletter.
 </td>
 <td align="center">
-<img src="preview-unifraktur-maguntia.png" alt="unifraktur-maguntia"><br><br>
+<img src="previews/unifraktur-maguntia.png" alt="unifraktur-maguntia"><br><br>
 <strong><code>unifraktur-maguntia</code></strong><br>
 <sup>OFL · static</sup><br>
 Full gothic blackletter — medieval manuscript feel.
@@ -768,7 +768,7 @@ Full gothic blackletter — medieval manuscript feel.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-manufacturing-consent.png" alt="manufacturing-consent"><br><br>
+<img src="previews/manufacturing-consent.png" alt="manufacturing-consent"><br><br>
 <strong><code>manufacturing-consent</code></strong><br>
 <sup>OFL · static</sup><br>
 NYT-masthead Fraktur — editorial blackletter forked from Chomsky, named for the Chomsky/Herman book.
@@ -786,13 +786,13 @@ Flowing connected cursives and formal calligraphic scripts — elegant, personal
 <table>
 <tr>
 <td align="center">
-<img src="preview-clicker-script.png" alt="clicker-script"><br><br>
+<img src="previews/clicker-script.png" alt="clicker-script"><br><br>
 <strong><code>clicker-script</code></strong><br>
 <sup>OFL · static</sup><br>
 Thick connecting brush script — bold and legible on e-ink.
 </td>
 <td align="center">
-<img src="preview-dancing-script.png" alt="dancing-script"><br><br>
+<img src="previews/dancing-script.png" alt="dancing-script"><br><br>
 <strong><code>dancing-script</code></strong><br>
 <sup>OFL · variable</sup><br>
 Flowing connected cursive — the most popular script on Google Fonts.
@@ -800,13 +800,13 @@ Flowing connected cursive — the most popular script on Google Fonts.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-parisienne.png" alt="parisienne"><br><br>
+<img src="previews/parisienne.png" alt="parisienne"><br><br>
 <strong><code>parisienne</code></strong><br>
 <sup>OFL · static</sup><br>
 French ornamental script — decorative loops and flourishes.
 </td>
 <td align="center">
-<img src="preview-splash.png" alt="splash"><br><br>
+<img src="previews/splash.png" alt="splash"><br><br>
 <strong><code>splash</code></strong><br>
 <sup>OFL · static</sup><br>
 Liquid brush splash — connected calligraphic ink, very wet.
@@ -814,13 +814,13 @@ Liquid brush splash — connected calligraphic ink, very wet.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-tangerine.png" alt="tangerine"><br><br>
+<img src="previews/tangerine.png" alt="tangerine"><br><br>
 <strong><code>tangerine</code></strong><br>
 <sup>OFL · static</sup><br>
 Elegant copperplate calligraphy — refined and formal.
 </td>
 <td align="center">
-<img src="preview-yellowtail.png" alt="yellowtail"><br><br>
+<img src="previews/yellowtail.png" alt="yellowtail"><br><br>
 <strong><code>yellowtail</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Condensed calligraphic brush — stylish and compact.
@@ -837,13 +837,13 @@ Cursive, brush, typewriter, marker — informal, hand-made character.
 <table>
 <tr>
 <td align="center">
-<img src="preview-lobster.png" alt="lobster"><br><br>
+<img src="previews/lobster.png" alt="lobster"><br><br>
 <strong><code>lobster</code></strong><br>
 <sup>OFL · static</sup><br>
 Bold script — heavier and more decorative than Pacifico.
 </td>
 <td align="center">
-<img src="preview-pacifico.png" alt="pacifico"><br><br>
+<img src="previews/pacifico.png" alt="pacifico"><br><br>
 <strong><code>pacifico</code></strong><br>
 <sup>OFL · static</sup><br>
 Casual brush-script — maximally playful.
@@ -851,13 +851,13 @@ Casual brush-script — maximally playful.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-permanent-marker.png" alt="permanent-marker"><br><br>
+<img src="previews/permanent-marker.png" alt="permanent-marker"><br><br>
 <strong><code>permanent-marker</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Felt-tip handwriting — looks like whiteboard scribble.
 </td>
 <td align="center">
-<img src="preview-special-elite.png" alt="special-elite"><br><br>
+<img src="previews/special-elite.png" alt="special-elite"><br><br>
 <strong><code>special-elite</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Distressed typewriter — uneven inking, ribbon strikes.
@@ -865,7 +865,7 @@ Distressed typewriter — uneven inking, ribbon strikes.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-unkempt.png" alt="unkempt"><br><br>
+<img src="previews/unkempt.png" alt="unkempt"><br><br>
 <strong><code>unkempt</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Scrawly asymmetric handwriting — deliberately wild loops, uneven baseline, zero composure.
@@ -883,13 +883,13 @@ Ballpoint, marker, classroom print — neat hand-made character that still reads
 <table>
 <tr>
 <td align="center">
-<img src="preview-amatic-sc.png" alt="amatic-sc"><br><br>
+<img src="previews/amatic-sc.png" alt="amatic-sc"><br><br>
 <strong><code>amatic-sc</code></strong><br>
 <sup>OFL · static</sup><br>
 Tall thin all-caps handwritten — fits long phrases.
 </td>
 <td align="center">
-<img src="preview-architects-daughter.png" alt="architects-daughter"><br><br>
+<img src="previews/architects-daughter.png" alt="architects-daughter"><br><br>
 <strong><code>architects-daughter</code></strong><br>
 <sup>OFL · static</sup><br>
 Neat block-letter print — drafting-style hand.
@@ -897,13 +897,13 @@ Neat block-letter print — drafting-style hand.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-caveat.png" alt="caveat"><br><br>
+<img src="previews/caveat.png" alt="caveat"><br><br>
 <strong><code>caveat</code></strong><br>
 <sup>OFL · variable</sup><br>
 Connected ballpoint cursive — quick personal notes.
 </td>
 <td align="center">
-<img src="preview-gloria-hallelujah.png" alt="gloria-hallelujah"><br><br>
+<img src="previews/gloria-hallelujah.png" alt="gloria-hallelujah"><br><br>
 <strong><code>gloria-hallelujah</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Loose kid-like print — wobbly baseline, joyful.
@@ -911,13 +911,13 @@ Loose kid-like print — wobbly baseline, joyful.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-homemade-apple.png" alt="homemade-apple"><br><br>
+<img src="previews/homemade-apple.png" alt="homemade-apple"><br><br>
 <strong><code>homemade-apple</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Quick handwritten cursive — looped and personal.
 </td>
 <td align="center">
-<img src="preview-indie-flower.png" alt="indie-flower"><br><br>
+<img src="previews/indie-flower.png" alt="indie-flower"><br><br>
 <strong><code>indie-flower</code></strong><br>
 <sup>Apache 2.0 · static</sup><br>
 Bouncy uneven print — friendly and informal.
@@ -925,13 +925,13 @@ Bouncy uneven print — friendly and informal.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-kalam.png" alt="kalam"><br><br>
+<img src="previews/kalam.png" alt="kalam"><br><br>
 <strong><code>kalam</code></strong><br>
 <sup>OFL · static</sup><br>
 Rounded everyday handwriting — Indian Type Foundry.
 </td>
 <td align="center">
-<img src="preview-patrick-hand.png" alt="patrick-hand"><br><br>
+<img src="previews/patrick-hand.png" alt="patrick-hand"><br><br>
 <strong><code>patrick-hand</code></strong><br>
 <sup>OFL · static</sup><br>
 Open clean handwriting — very legible at small sizes.
@@ -939,13 +939,13 @@ Open clean handwriting — very legible at small sizes.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-patrick-hand-sc.png" alt="patrick-hand-sc"><br><br>
+<img src="previews/patrick-hand-sc.png" alt="patrick-hand-sc"><br><br>
 <strong><code>patrick-hand-sc</code></strong><br>
 <sup>OFL · static</sup><br>
 Small-caps companion to Patrick Hand — same casual hand, but everything renders as steady block letters.
 </td>
 <td align="center">
-<img src="preview-reenie-beanie.png" alt="reenie-beanie"><br><br>
+<img src="previews/reenie-beanie.png" alt="reenie-beanie"><br><br>
 <strong><code>reenie-beanie</code></strong><br>
 <sup>OFL · static</sup><br>
 Slanted notebook scribble — back-of-the-book doodle.
@@ -953,7 +953,7 @@ Slanted notebook scribble — back-of-the-book doodle.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-shadows-into-light.png" alt="shadows-into-light"><br><br>
+<img src="previews/shadows-into-light.png" alt="shadows-into-light"><br><br>
 <strong><code>shadows-into-light</code></strong><br>
 <sup>OFL · static</sup><br>
 Light marker on paper — airy, softly slanted.
@@ -971,13 +971,13 @@ Letterforms filled with pattern, texture, distortion, or melted into puddles —
 <table>
 <tr>
 <td align="center">
-<img src="preview-codystar.png" alt="codystar"><br><br>
+<img src="previews/codystar.png" alt="codystar"><br><br>
 <strong><code>codystar</code></strong><br>
 <sup>OFL · static</sup><br>
 Star-pattern stencil — letterforms assembled from clusters of dots.
 </td>
 <td align="center">
-<img src="preview-freckle-face.png" alt="freckle-face"><br><br>
+<img src="previews/freckle-face.png" alt="freckle-face"><br><br>
 <strong><code>freckle-face</code></strong><br>
 <sup>OFL · static</sup><br>
 Speckled / freckled letterforms — each character has a pressed-in texture.
@@ -985,13 +985,13 @@ Speckled / freckled letterforms — each character has a pressed-in texture.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-plaster.png" alt="plaster"><br><br>
+<img src="previews/plaster.png" alt="plaster"><br><br>
 <strong><code>plaster</code></strong><br>
 <sup>OFL · static</sup><br>
 Heavy stencil plaster — slab industrial relief, feels poured.
 </td>
 <td align="center">
-<img src="preview-rampart-one.png" alt="rampart-one"><br><br>
+<img src="previews/rampart-one.png" alt="rampart-one"><br><br>
 <strong><code>rampart-one</code></strong><br>
 <sup>OFL · static</sup><br>
 Letters built from masonry — towers, ramparts, and brick walls.
@@ -999,13 +999,13 @@ Letters built from masonry — towers, ramparts, and brick walls.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-rubik-beastly.png" alt="rubik-beastly"><br><br>
+<img src="previews/rubik-beastly.png" alt="rubik-beastly"><br><br>
 <strong><code>rubik-beastly</code></strong><br>
 <sup>OFL · static</sup><br>
 Chunky furry-creature shapes — letters that look like tiny beasts.
 </td>
 <td align="center">
-<img src="preview-rubik-dirt.png" alt="rubik-dirt"><br><br>
+<img src="previews/rubik-dirt.png" alt="rubik-dirt"><br><br>
 <strong><code>rubik-dirt</code></strong><br>
 <sup>OFL · static</sup><br>
 Dirt and debris embedded in the strokes — deliberately rough fill.
@@ -1013,13 +1013,13 @@ Dirt and debris embedded in the strokes — deliberately rough fill.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-rubik-distressed.png" alt="rubik-distressed"><br><br>
+<img src="previews/rubik-distressed.png" alt="rubik-distressed"><br><br>
 <strong><code>rubik-distressed</code></strong><br>
 <sup>OFL · static</sup><br>
 Heavily eroded grunge — letters that look worn down by sandpaper.
 </td>
 <td align="center">
-<img src="preview-rubik-glitch.png" alt="rubik-glitch"><br><br>
+<img src="previews/rubik-glitch.png" alt="rubik-glitch"><br><br>
 <strong><code>rubik-glitch</code></strong><br>
 <sup>OFL · static</sup><br>
 Letters torn apart by digital glitch — slipped slices and corrupted shapes.
@@ -1027,13 +1027,13 @@ Letters torn apart by digital glitch — slipped slices and corrupted shapes.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-rubik-iso.png" alt="rubik-iso"><br><br>
+<img src="previews/rubik-iso.png" alt="rubik-iso"><br><br>
 <strong><code>rubik-iso</code></strong><br>
 <sup>OFL · static</sup><br>
 Isometric 3D outlined — architectural perspective on every glyph.
 </td>
 <td align="center">
-<img src="preview-rubik-maze.png" alt="rubik-maze"><br><br>
+<img src="previews/rubik-maze.png" alt="rubik-maze"><br><br>
 <strong><code>rubik-maze</code></strong><br>
 <sup>OFL · static</sup><br>
 Every stroke filled with a continuous maze pattern — genuinely strange.
@@ -1041,13 +1041,13 @@ Every stroke filled with a continuous maze pattern — genuinely strange.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-rubik-microbe.png" alt="rubik-microbe"><br><br>
+<img src="previews/rubik-microbe.png" alt="rubik-microbe"><br><br>
 <strong><code>rubik-microbe</code></strong><br>
 <sup>OFL · static</sup><br>
 Cellular microbe texture across every stroke — petri-dish typography.
 </td>
 <td align="center">
-<img src="preview-rubik-puddles.png" alt="rubik-puddles"><br><br>
+<img src="previews/rubik-puddles.png" alt="rubik-puddles"><br><br>
 <strong><code>rubik-puddles</code></strong><br>
 <sup>OFL · static</sup><br>
 Letterforms melted into puddles — gravity won.
@@ -1055,13 +1055,13 @@ Letterforms melted into puddles — gravity won.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-rubik-spray-paint.png" alt="rubik-spray-paint"><br><br>
+<img src="previews/rubik-spray-paint.png" alt="rubik-spray-paint"><br><br>
 <strong><code>rubik-spray-paint</code></strong><br>
 <sup>OFL · static</sup><br>
 Spray-painted stencil with overspray dots — graffiti-tag energy.
 </td>
 <td align="center">
-<img src="preview-rubik-wet-paint.png" alt="rubik-wet-paint"><br><br>
+<img src="previews/rubik-wet-paint.png" alt="rubik-wet-paint"><br><br>
 <strong><code>rubik-wet-paint</code></strong><br>
 <sup>OFL · static</sup><br>
 Paint dripping down each stroke — fresh-coat-of-paint vandalism.
@@ -1069,13 +1069,13 @@ Paint dripping down each stroke — fresh-coat-of-paint vandalism.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-kablammo.png" alt="kablammo"><br><br>
+<img src="previews/kablammo.png" alt="kablammo"><br><br>
 <strong><code>kablammo</code></strong><br>
 <sup>OFL · variable · MORF axis</sup><br>
 Inflated balloon variable font — the MORF axis bloats letterforms into pressurised rubber bubbles.
 </td>
 <td align="center">
-<img src="preview-tfoust.png" alt="tfoust"><br><br>
+<img src="previews/tfoust.png" alt="tfoust"><br><br>
 <strong><code>tfoust</code></strong><br>
 <sup>vendored · static</sup><br>
 Hollow outlined letterforms with knobbly burst-shaped growths riding every stroke — prickly silhouette, fully open interiors.
@@ -1092,13 +1092,13 @@ Drippy, bitten, blood-spattered, skeletal letterforms — the Halloween / horror
 <table>
 <tr>
 <td align="center">
-<img src="preview-butcherman.png" alt="butcherman"><br><br>
+<img src="previews/butcherman.png" alt="butcherman"><br><br>
 <strong><code>butcherman</code></strong><br>
 <sup>OFL · static</sup><br>
 Splatter horror display — uneven, ragged, slightly threatening.
 </td>
 <td align="center">
-<img src="preview-creepster.png" alt="creepster"><br><br>
+<img src="previews/creepster.png" alt="creepster"><br><br>
 <strong><code>creepster</code></strong><br>
 <sup>OFL · static</sup><br>
 Halloween / horror display — seasonal novelty.
@@ -1106,13 +1106,13 @@ Halloween / horror display — seasonal novelty.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-eater.png" alt="eater"><br><br>
+<img src="previews/eater.png" alt="eater"><br><br>
 <strong><code>eater</code></strong><br>
 <sup>OFL · static</sup><br>
 Bites taken out of the letterforms — gnawed-on type.
 </td>
 <td align="center">
-<img src="preview-jolly-lodger.png" alt="jolly-lodger"><br><br>
+<img src="previews/jolly-lodger.png" alt="jolly-lodger"><br><br>
 <strong><code>jolly-lodger</code></strong><br>
 <sup>OFL · static</sup><br>
 Skeletal carnival display — hollow-bone strokes, slightly creepy fairground.
@@ -1120,13 +1120,13 @@ Skeletal carnival display — hollow-bone strokes, slightly creepy fairground.
 </tr>
 <tr>
 <td align="center">
-<img src="preview-lacquer.png" alt="lacquer"><br><br>
+<img src="previews/lacquer.png" alt="lacquer"><br><br>
 <strong><code>lacquer</code></strong><br>
 <sup>OFL · static</sup><br>
 Thick lacquered marker — wet-glossy painted strokes.
 </td>
 <td align="center">
-<img src="preview-nosifer.png" alt="nosifer"><br><br>
+<img src="previews/nosifer.png" alt="nosifer"><br><br>
 <strong><code>nosifer</code></strong><br>
 <sup>OFL · static</sup><br>
 Blood dripping from every stroke — proper Halloween horror.

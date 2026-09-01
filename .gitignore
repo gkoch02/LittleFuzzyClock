@@ -4,3 +4,4 @@ __pycache__/
 *.egg-info/
 dry_run.png
 .DS_Store
+.ruff_cache/
