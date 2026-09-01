@@ -11,7 +11,7 @@ font: libertinus
 Or try one in a dry-run render:
 
 ```bash
-python3 fuzzyClock2.py --dry-run --font libertinus --output preview.png
+python3 fuzzyclock_preview.py --dry-run --font libertinus --output preview.png
 ```
 
 Unknown values fall back to `dejavu` with a warning in the daemon log.

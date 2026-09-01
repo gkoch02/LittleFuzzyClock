@@ -60,21 +60,21 @@ That's it. The script installs dependencies via `apt` (Raspberry Pi OS Bookworm'
 
 ## Testing without hardware
 
-`fuzzyClock2.py` supports a `--dry-run` mode that renders to a PNG instead of the display — useful for development on a non-Pi machine:
+`fuzzyclock_preview.py` supports a `--dry-run` mode that renders to a PNG instead of the display — useful for development on a non-Pi machine:
 
 ```bash
 pip install -r requirements.txt   # only needed off-Pi; deploy.sh uses apt on-Pi
-python3 fuzzyClock2.py --dry-run --output preview.png
+python3 fuzzyclock_preview.py --dry-run --output preview.png
 ```
 
 Additional flags for previewing specific configurations:
 
 ```bash
 # pin to a specific time (HH:MM)
-python3 fuzzyClock2.py --dry-run --time 09:30 --output preview.png
+python3 fuzzyclock_preview.py --dry-run --time 09:30 --output preview.png
 
 # pick a dialect, font, and frame style
-python3 fuzzyClock2.py --dry-run --dialect shakespeare --font literata --frame rustic --output preview.png
+python3 fuzzyclock_preview.py --dry-run --dialect shakespeare --font literata --frame rustic --output preview.png
 ```
 
 ## Phrasing personalities
@@ -95,7 +95,7 @@ Eight phrasings ship in the box. Examples below all show 9:30 so you can compare
 Pick one with `--dialect`:
 
 ```bash
-python3 fuzzyClock2.py --dry-run --dialect shakespeare --output preview.png
+python3 fuzzyclock_preview.py --dry-run --dialect shakespeare --output preview.png
 ```
 
 The daemon reads the same setting from the `dialect:` field in `fuzzyclock_config.yaml` (next to the daemon). To change it on the Pi, edit that file and restart the service:
@@ -113,7 +113,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 Pick one with `--font`:
 
 ```bash
-python3 fuzzyClock2.py --dry-run --font roboto-slab --output preview.png
+python3 fuzzyclock_preview.py --dry-run --font roboto-slab --output preview.png
 ```
 
 The daemon reads the same setting from the `font:` field in `fuzzyclock_config.yaml`:
@@ -140,7 +140,7 @@ Four border styles are available, each paired by default with a matching font ca
 The default `auto` setting picks the frame that best complements the active font. You can override it for any font with `--frame`:
 
 ```bash
-python3 fuzzyClock2.py --dry-run --font dejavu --frame retro --output preview.png
+python3 fuzzyclock_preview.py --dry-run --font dejavu --frame retro --output preview.png
 ```
 
 The daemon reads the same setting from the `frame:` field in `fuzzyclock_config.yaml`:
@@ -183,7 +183,7 @@ python3 -m unittest tests.test_fuzzy_time
 |------|--------|
 | `tests/test_fuzzy_time.py` | `fuzzy_time()` edge cases across every dialect |
 | `tests/test_render.py` | `draw_border`, `render_clock`, body-font auto-sizing, frame styles |
-| `tests/test_dry_run.py` | End-to-end run of `fuzzyClock2.py --dry-run` |
+| `tests/test_dry_run.py` | End-to-end run of `fuzzyclock_preview.py --dry-run` |
 | `tests/test_sun.py` | The sunrise/sunset approximation used by after-hours mode |
 | `tests/test_daemon.py` | `current_mode`, tick sleep, config loading, render-retry logic |
 | `tests/test_daemon_import.py` | Bare `import fuzzyclock_daemon`, to catch eager hardware calls |
@@ -195,7 +195,7 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 | File | Purpose |
 |------|---------|
 | `fuzzyclock_daemon.py` | Production daemon — runs continuously, handles day/night mode and button presses |
-| `fuzzyClock2.py` | Standalone dev script with `--dry-run` PNG output |
+| `fuzzyclock_preview.py` | Standalone dev script with `--dry-run` PNG output |
 | `fuzzyclock_core.py` | Shared rendering logic (fuzzy time phrasing, font loading, clock layout) used by both of the above |
 | `tests/` | The test suite — see [Tests](#tests) below for what each file covers |
 | `docs/fonts.md` + `docs/previews/` | Font catalog with a rendered preview per variant |
