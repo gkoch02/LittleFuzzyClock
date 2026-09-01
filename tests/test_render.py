@@ -14,6 +14,7 @@ from unittest import mock
 
 from PIL import Image, ImageDraw
 
+from fuzzyclock.fonts import _reset_random_font_bag
 from fuzzyclock.frames import _CONTENT_PAD, _sketch_jitter
 from fuzzyclock_core import (
     _BODY_MAX_SIZE,
@@ -30,7 +31,6 @@ from fuzzyclock_core import (
     FRAME_VARIANTS,
     RANDOM_FONT,
     _fit_body_font,
-    _reset_random_font_bag,
     draw_border,
     frame_for_font,
     load_font,
@@ -71,10 +71,10 @@ class LoadFontTests(unittest.TestCase):
             attempted_dejavu.append(path)
             raise OSError("nope")
 
-        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=fake_truetype_default):
+        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=fake_truetype_default):
             with self.assertRaises(SystemExit):
                 load_font(20)
-        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=fake_truetype_dejavu):
+        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=fake_truetype_dejavu):
             with self.assertRaises(SystemExit):
                 load_font(20, variant="dejavu")
         self.assertEqual(attempted_default, FONT_CANDIDATES)
@@ -91,7 +91,7 @@ class LoadFontTests(unittest.TestCase):
                     _attempted.append(path)
                     raise OSError("nope")
 
-                with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=fake_truetype):
+                with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=fake_truetype):
                     with self.assertRaises(SystemExit):
                         load_font(20, variant=variant)
                 self.assertEqual(attempted, list(paths))
@@ -107,7 +107,7 @@ class LoadFontTests(unittest.TestCase):
         # next candidate or raising.
         mock_font = mock.Mock()
         mock_font.set_variation_by_name.side_effect = ValueError("no Bold instance")
-        with mock.patch("fuzzyclock_core.ImageFont.truetype", return_value=mock_font):
+        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", return_value=mock_font):
             result = load_font(20)
         self.assertIs(result, mock_font)
 
@@ -227,7 +227,7 @@ class LoadFontFailureTests(unittest.TestCase):
         # The clearest failure mode for a missing font: SystemExit with a
         # message listing every path tried. Ensures the daemon fails loud
         # rather than rendering with PIL's default bitmap fallback.
-        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=OSError("nope")):
+        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=OSError("nope")):
             with self.assertRaises(SystemExit) as cm:
                 load_font(20)
         self.assertIn("No usable font", str(cm.exception))
@@ -242,7 +242,7 @@ class LoadFontFailureTests(unittest.TestCase):
         # When a specific variant fails to load, the SystemExit message must
         # name the variant and list its tried paths — not the global default
         # candidates — so the user can see what was attempted.
-        with mock.patch("fuzzyclock_core.ImageFont.truetype", side_effect=OSError("nope")):
+        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=OSError("nope")):
             with self.assertRaises(SystemExit) as cm:
                 load_font(20, variant="roboto-slab")
         message = str(cm.exception)
@@ -283,12 +283,12 @@ class RandomFontTests(unittest.TestCase):
         import os as _os
         from unittest import mock as _mock
 
-        from fuzzyclock_core import _VENDORED_FONT_DIR
+        from fuzzyclock.fonts import _VENDORED_FONT_DIR
 
         primary = _os.path.join(_VENDORED_FONT_DIR, "DoesNotExist-Bold.ttf")
         secondary = _os.path.join(_VENDORED_FONT_DIR, "DejaVuSans-Bold.ttf")  # actually present
         fake_variants = {"synthetic": [primary, secondary, "/System/Library/Fonts/Helvetica.ttc"]}
-        with _mock.patch("fuzzyclock_core.FONT_VARIANTS", fake_variants):
+        with _mock.patch("fuzzyclock.fonts.FONT_VARIANTS", fake_variants):
             self.assertIn("synthetic", vendored_font_variants())
 
     def test_pick_random_returns_a_registered_variant(self):
@@ -311,7 +311,7 @@ class RandomFontTests(unittest.TestCase):
     def test_pick_random_falls_back_when_nothing_vendored(self):
         # Degraded environment (no vendored fonts on disk): rather than
         # raising, fall back to DEFAULT_FONT so callers always get a key.
-        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=[]):
+        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=[]):
             self.assertEqual(pick_random_font(), DEFAULT_FONT)
 
     def test_random_font_renders(self):
@@ -348,7 +348,7 @@ class RandomFontShuffleBagTests(unittest.TestCase):
         # permutation of the set (no repeats), then the next N another
         # permutation. This is the whole point of the change.
         pool = ["alpha", "beta", "gamma", "delta", "epsilon"]
-        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=pool):
+        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=pool):
             first_cycle = [pick_random_font() for _ in pool]
             second_cycle = [pick_random_font() for _ in pool]
         self.assertEqual(sorted(first_cycle), sorted(pool))
@@ -360,7 +360,7 @@ class RandomFontShuffleBagTests(unittest.TestCase):
         # Without the swap-deeper guard, two cycles of length 1...N could
         # legally produce a duplicate at the seam.
         pool = ["alpha", "beta", "gamma"]
-        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=pool):
+        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=pool):
             for _ in range(50):
                 sequence = [pick_random_font() for _ in range(2 * len(pool))]
                 for a, b in zip(sequence, sequence[1:]):
@@ -370,7 +370,7 @@ class RandomFontShuffleBagTests(unittest.TestCase):
         # The back-to-back guard is conditional on len > 1. With a single
         # eligible variant we have no choice but to repeat — and we must
         # not raise.
-        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=["solo"]):
+        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=["solo"]):
             self.assertEqual(pick_random_font(), "solo")
             self.assertEqual(pick_random_font(), "solo")
 
@@ -378,10 +378,10 @@ class RandomFontShuffleBagTests(unittest.TestCase):
         # If a font is dropped into fonts/ mid-session, the new variant
         # should be reachable on the very next pick rather than waiting
         # for the current bag to drain.
-        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=["alpha", "beta"]):
+        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=["alpha", "beta"]):
             pick_random_font()  # partially drains the bag
         with mock.patch(
-            "fuzzyclock_core.vendored_font_variants",
+            "fuzzyclock.fonts.vendored_font_variants",
             return_value=["alpha", "beta", "gamma"],
         ):
             picks = {pick_random_font() for _ in range(3)}
@@ -394,7 +394,7 @@ class RandomFontShuffleBagTests(unittest.TestCase):
         import random as _r
 
         pool = ["alpha", "beta", "gamma"]
-        with mock.patch("fuzzyclock_core.vendored_font_variants", return_value=pool):
+        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=pool):
             pick_random_font(rng=_r.Random(1))
             pick_random_font(rng=_r.Random(2))
             cycle = [pick_random_font() for _ in pool]
