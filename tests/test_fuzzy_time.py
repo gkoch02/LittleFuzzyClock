@@ -378,24 +378,24 @@ class DialectValidatorTests(unittest.TestCase):
         }
 
     def test_advance_below_one_is_rejected(self):
-        from fuzzyclock_core import _validate_dialects
+        from fuzzyclock.dialects import _validate_dialects
 
         with self.assertRaises(ValueError):
             _validate_dialects({"bad": self._spec(0)})
 
     def test_advance_above_eleven_is_rejected(self):
-        from fuzzyclock_core import _validate_dialects
+        from fuzzyclock.dialects import _validate_dialects
 
         with self.assertRaises(ValueError):
             _validate_dialects({"bad": self._spec(12)})
 
     def test_advance_at_boundaries_is_accepted(self):
-        from fuzzyclock_core import _validate_dialects
+        from fuzzyclock.dialects import _validate_dialects
 
         _validate_dialects({"a": self._spec(1), "b": self._spec(11)})  # must not raise
 
     def test_default_advance_is_accepted(self):
-        from fuzzyclock_core import _validate_dialects
+        from fuzzyclock.dialects import _validate_dialects
 
         spec = self._spec(7)
         del spec["hour_advance_at"]  # exercise the default-fallback branch
@@ -405,7 +405,7 @@ class DialectValidatorTests(unittest.TestCase):
         # Belt-and-braces: every entry in the real DIALECTS table satisfies
         # the invariant. Catches a regression where someone adds a dialect
         # but forgets to keep hour_advance_at in 1..11.
-        from fuzzyclock_core import _validate_dialects
+        from fuzzyclock.dialects import _validate_dialects
 
         _validate_dialects(DIALECTS)
 
