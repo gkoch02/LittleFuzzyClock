@@ -42,13 +42,17 @@ from fuzzyclock_core import sun_times as _raw_sun_times
 #
 # Breadth costs diagnosis, so keep the cause: without it a genuine bug in the
 # vendored driver (a NameError, say) would be reported as "driver not installed".
-# main() puts _EPD_IMPORT_ERROR in its SystemExit so the journal names the real
-# reason. The Button failure path already logs its own traceback at the call site.
+# main() surfaces _EPD_IMPORT_ERROR in its SystemExit and _BUTTON_IMPORT_ERROR in
+# the button-init log. The Button call site alone is not enough: with Button None
+# it only ever sees TypeError("'NoneType' object is not callable"), which says
+# nothing about why the import failed.
 _EPD_IMPORT_ERROR = None
+_BUTTON_IMPORT_ERROR = None
 
 try:
     from gpiozero import Button
-except Exception:
+except Exception as exc:
+    _BUTTON_IMPORT_ERROR = exc
     Button = None
 
 try:
@@ -736,6 +740,10 @@ def main():
             daemon=True,
         ).start()
     except Exception:
+        # If the gpiozero import itself failed, Button is None and the traceback
+        # below is only a TypeError — name the import failure that caused it.
+        if _BUTTON_IMPORT_ERROR is not None:
+            logging.error("gpiozero import failed: %r", _BUTTON_IMPORT_ERROR)
         logging.exception("Failed to initialise GPIO button; continuing without it.")
 
     # Seed the partial-refresh base image to match whichever mode we're starting in.

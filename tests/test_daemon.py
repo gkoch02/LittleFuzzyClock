@@ -1612,6 +1612,39 @@ class MainLoopTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 d.main()
 
+    def test_button_init_failure_logs_the_import_cause(self):
+        # With Button None the call site raises only TypeError, so the journal
+        # needs the import failure logged alongside it to be diagnosable.
+        boom = RuntimeError("GPIO busy")
+        d._stop_event.clear()
+        self.addCleanup(d._stop_event.clear)
+        with (
+            mock.patch.object(d, "Button", None),
+            mock.patch.object(d, "_BUTTON_IMPORT_ERROR", boom),
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "reset_base_image"),
+            mock.patch.object(d, "_current_mode_now", return_value="night"),
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(
+                d._stop_event,
+                "wait",
+                side_effect=lambda timeout: d._stop_event.set(),
+            ),
+        ):
+            m_epd.EPD.return_value = mock.Mock()
+            with self.assertLogs("root", level="ERROR") as logs:
+                d.main()
+        self.assertTrue(
+            any("GPIO busy" in line for line in logs.output),
+            f"import cause missing from log output: {logs.output}",
+        )
+
     def test_systemexit_names_the_real_import_failure(self):
         # A busy-pin failure must not be reported as "not installed" — the
         # journal needs the actual cause to be diagnosable.
@@ -1713,6 +1746,10 @@ class GuardedHardwareImportTests(unittest.TestCase):
     def test_gpiozero_import_failure_does_not_escape(self):
         module = self._import_isolated("gpiozero")
         self.assertIsNone(module.Button)
+        # The cause must be kept: the button call site only sees
+        # TypeError("'NoneType' object is not callable"), which does not say
+        # why gpiozero was unavailable.
+        self.assertIsInstance(module._BUTTON_IMPORT_ERROR, self._Boom)
 
     def test_real_module_is_not_replaced_or_reloaded(self):
         # The isolated import must leave the module every other test in this
