@@ -15,16 +15,28 @@ from fuzzyclock_core import (
     render_clock,
 )
 
-# Lazy-import the EPD driver so the script can run in --dry-run mode on
-# machines without the waveshare library — or without Pi hardware. The
-# driver raises RuntimeError (not ImportError) on non-Pi Linux when it
-# can't find the GPIO backend, so catch that too.
-try:
-    from waveshare_epd import epd2in13_V4
 
-    EPD_AVAILABLE = True
-except (ImportError, RuntimeError):
-    EPD_AVAILABLE = False
+def _load_epd():
+    """Import the Waveshare driver on demand. Returns the module, or None.
+
+    Importing ``waveshare_epd`` is *not* side-effect free: ``epdconfig``
+    instantiates its platform implementation at module scope, and on a Pi that
+    constructor claims the GPIO pins via gpiozero. A plain import therefore
+    fails outright whenever the daemon already owns those pins. Deferring the
+    import to the hardware path is what keeps ``--dry-run`` genuinely
+    hardware-free, so a preview works while fuzzyclock.service is running.
+
+    The ``except`` is deliberately broad. The driver can fail in ways that are
+    neither ImportError (library not installed) nor RuntimeError (no GPIO
+    backend on non-Pi Linux): a busy pin surfaces as ``lgpio.error``, which is
+    neither. Any failure here means the panel is not drivable, and the caller
+    turns None into a clear SystemExit rather than a traceback.
+    """
+    try:
+        from waveshare_epd import epd2in13_V4
+    except Exception:
+        return None
+    return epd2in13_V4
 
 
 def pin_time_to_today(time_str, today=None):
@@ -54,11 +66,14 @@ def draw_fuzzy_clock(
         width, height = 250, 122
         image = Image.new("1", (width, height), 255)
     else:
-        if not EPD_AVAILABLE:
+        epd_module = _load_epd()
+        if epd_module is None:
             raise SystemExit(
-                "waveshare_epd is not installed. Use --dry-run for testing without hardware."
+                "waveshare_epd is not usable — it is either not installed, or its "
+                "GPIO pins are held by another process (e.g. a running "
+                "fuzzyclock.service). Use --dry-run for testing without hardware."
             )
-        epd = epd2in13_V4.EPD()
+        epd = epd_module.EPD()
         epd.init()
         # Swapped intentionally: the 2.13" display is 122×250 in portrait;
         # we use it in landscape, so logical width = physical height and vice versa.
