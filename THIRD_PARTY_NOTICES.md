@@ -19,6 +19,11 @@ repository's MIT grant. [`docs/fonts.md`](docs/fonts.md) records the license
 alongside each variant's preview; the great majority are SIL Open Font License
 1.1, with a handful under Apache License 2.0.
 
+Those labels are taken from each vendored file's own name table where it records
+one, since that copy is what this repository redistributes. Some files — mostly
+variable-font builds — carry no license string, and are labelled from the
+upstream project instead.
+
 Two files are worth calling out because they do **not** follow that pattern:
 
 | File | License |
@@ -32,8 +37,12 @@ and carried no grant permitting redistribution. Don't reintroduce it.
 
 ### Known gap
 
-The OFL 1.1 requires its license text to travel with the font files it covers,
-and this repository does not currently ship a copy of the OFL (or of the
-Bitstream Vera / Ubuntu Font Licence texts) next to `fonts/`. Recording the
-license per variant in `docs/fonts.md` documents the intent but does not
-satisfy that condition. Bundling those license texts is outstanding work.
+Several of these licenses require their text to travel with the binaries they
+cover — OFL 1.1 says so directly, and Apache 2.0 §4(a) requires every recipient
+of a redistributed work to get a copy of the license. This repository ships none
+of them next to `fonts/`. Recording the license per variant in `docs/fonts.md`
+documents the intent but does not satisfy those conditions.
+
+Bundling the four texts the vendored set actually needs — OFL 1.1, Apache
+License 2.0, the Bitstream Vera Fonts License, and Ubuntu Font Licence 1.0 — is
+outstanding work.
