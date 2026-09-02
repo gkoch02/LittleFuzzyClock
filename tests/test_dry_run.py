@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from datetime import datetime
 from unittest import mock
@@ -248,10 +249,10 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         self.assertEqual(m_render.call_args.args[3], sentinel)
 
     def test_systemexit_when_epd_unavailable_and_not_dry_run(self):
-        # On a non-Pi host the EPD driver import sets EPD_AVAILABLE=False;
-        # asking for a hardware render then must SystemExit with a clear
-        # message instead of NameError'ing on the missing module attribute.
-        with mock.patch.object(fuzzyclock_preview, "EPD_AVAILABLE", False):
+        # On a non-Pi host (or when the daemon holds the GPIO pins) _load_epd
+        # returns None; asking for a hardware render must then SystemExit with
+        # a clear message rather than AttributeError on a missing module.
+        with mock.patch.object(fuzzyclock_preview, "_load_epd", return_value=None):
             with self.assertRaises(SystemExit):
                 fuzzyclock_preview.draw_fuzzy_clock(dry_run=False)
 
@@ -269,10 +270,7 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         captured_buf_images = []
         fake_epd.getbuffer.side_effect = lambda img: captured_buf_images.append(img) or b"buf"
 
-        with (
-            mock.patch.object(fuzzyclock_preview, "EPD_AVAILABLE", True),
-            mock.patch.object(fuzzyclock_preview, "epd2in13_V4", fake_module, create=True),
-        ):
+        with mock.patch.object(fuzzyclock_preview, "_load_epd", return_value=fake_module):
             fuzzyclock_preview.draw_fuzzy_clock(
                 dry_run=False,
                 now=datetime(2026, 4, 25, 9, 15),
@@ -289,6 +287,99 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         # passed through" assertion: size matches what the script promised.
         rotated = captured_buf_images[0]
         self.assertEqual(rotated.size, (250, 122))
+
+
+class GpioBusyDryRunTests(unittest.TestCase):
+    """Regression tests for issue #50 — --dry-run must not touch the EPD stack.
+
+    Importing waveshare_epd is not side-effect free: epdconfig instantiates its
+    platform implementation at module scope, and on a Pi that constructor claims
+    the GPIO pins. With fuzzyclock.service running, the import failed with
+    lgpio.error("GPIO busy") — which is neither ImportError nor RuntimeError, so
+    the old module-scope guard did not catch it and the CLI died before argparse
+    ever saw --dry-run.
+
+    CI has no GPIO at all, which takes the ImportError path and would pass
+    whether or not the bug exists. So these tests simulate the real condition —
+    an import that raises something exotic — via a meta_path finder.
+    """
+
+    class _Boom(Exception):
+        """Stands in for lgpio.error: not an ImportError, not a RuntimeError."""
+
+    class _Blocker:
+        """meta_path finder that detonates on any waveshare_epd import."""
+
+        def __init__(self, exc):
+            self._exc = exc
+
+        def find_spec(self, fullname, path=None, target=None):
+            if fullname.split(".")[0] == "waveshare_epd":
+                raise self._exc("GPIO busy")
+            return None
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def _block_waveshare(self):
+        """Make importing waveshare_epd raise self._Boom for the test's duration."""
+        blocker = self._Blocker(self._Boom)
+        sys.meta_path.insert(0, blocker)
+        self.addCleanup(lambda: sys.meta_path.remove(blocker))
+        # Drop any cached copy so the finder is consulted on the next import.
+        cached = {k: v for k, v in sys.modules.items() if k.split(".")[0] == "waveshare_epd"}
+        for k in cached:
+            del sys.modules[k]
+        self.addCleanup(sys.modules.update, cached)
+
+    def test_load_epd_returns_none_when_import_raises_non_import_error(self):
+        # The specific gap that caused #50: a broad except is required here,
+        # because the failure is neither ImportError nor RuntimeError.
+        self._block_waveshare()
+        self.assertIsNone(fuzzyclock_preview._load_epd())
+
+    def test_dry_run_never_loads_the_epd_driver(self):
+        # Acceptance criterion: the dry-run path must not import or initialize
+        # Waveshare/GPIO/SPI at all — not merely survive their failure.
+        out = os.path.join(self.tmp.name, "out.png")
+        with mock.patch.object(fuzzyclock_preview, "_load_epd") as m_load:
+            fuzzyclock_preview.draw_fuzzy_clock(dry_run=True, output=out)
+        m_load.assert_not_called()
+        self.assertTrue(os.path.exists(out))
+
+    def test_cli_dry_run_succeeds_while_epd_import_explodes(self):
+        # End-to-end proof, and the test that actually fails against the old
+        # module-scope import: run the real CLI in a subprocess where every
+        # waveshare_epd import raises a non-ImportError exception.
+        out = os.path.join(self.tmp.name, "cli.png")
+        script = textwrap.dedent(f"""
+            import os, sys, runpy
+            sys.path.insert(0, os.getcwd())
+
+            class Boom(Exception):
+                pass
+
+            class Blocker:
+                def find_spec(self, fullname, path=None, target=None):
+                    if fullname.split(".")[0] == "waveshare_epd":
+                        raise Boom("GPIO busy")
+                    return None
+
+            sys.meta_path.insert(0, Blocker())
+            sys.argv = ["fuzzyclock_preview.py", "--dry-run", "--output", {out!r}]
+            runpy.run_path("fuzzyclock_preview.py", run_name="__main__")
+        """)
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, f"stderr:\n{result.stderr}")
+        self.assertTrue(os.path.exists(out), "dry-run produced no PNG")
+        with Image.open(out) as img:
+            self.assertEqual(img.size, (250, 122))
 
 
 class PinTimeToTodayTests(unittest.TestCase):
