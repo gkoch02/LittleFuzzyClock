@@ -11,7 +11,9 @@ The daemon's hardware imports are guarded (see fuzzyclock_daemon top-of-file),
 so this test file imports the module directly without stubbing GPIO/EPD.
 """
 
+import importlib.util
 import os
+import sys
 import tempfile
 import threading
 import time
@@ -1610,6 +1612,51 @@ class MainLoopTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 d.main()
 
+    def test_button_init_failure_logs_the_import_cause(self):
+        # With Button None the call site raises only TypeError, so the journal
+        # needs the import failure logged alongside it to be diagnosable.
+        boom = RuntimeError("GPIO busy")
+        d._stop_event.clear()
+        self.addCleanup(d._stop_event.clear)
+        with (
+            mock.patch.object(d, "Button", None),
+            mock.patch.object(d, "_BUTTON_IMPORT_ERROR", boom),
+            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd,
+            mock.patch.object(
+                d,
+                "_load_config",
+                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+            ),
+            mock.patch.object(d, "_init_fonts"),
+            mock.patch.object(d, "reset_base_image"),
+            mock.patch.object(d, "_current_mode_now", return_value="night"),
+            mock.patch.object(d, "display_goodnight"),
+            mock.patch.object(
+                d._stop_event,
+                "wait",
+                side_effect=lambda timeout: d._stop_event.set(),
+            ),
+        ):
+            m_epd.EPD.return_value = mock.Mock()
+            with self.assertLogs("root", level="ERROR") as logs:
+                d.main()
+        self.assertTrue(
+            any("GPIO busy" in line for line in logs.output),
+            f"import cause missing from log output: {logs.output}",
+        )
+
+    def test_systemexit_names_the_real_import_failure(self):
+        # A busy-pin failure must not be reported as "not installed" — the
+        # journal needs the actual cause to be diagnosable.
+        boom = RuntimeError("GPIO busy")
+        with (
+            mock.patch("fuzzyclock_daemon.epd2in13_V4", None),
+            mock.patch("fuzzyclock_daemon._EPD_IMPORT_ERROR", boom),
+        ):
+            with self.assertRaises(SystemExit) as ctx:
+                d.main()
+        self.assertIn("GPIO busy", str(ctx.exception))
+
     def test_systemexit_when_startup_init_returns_negative_one(self):
         # Issue #43: the vendored driver's init() returns -1 (not an
         # exception) when epdconfig.module_init() fails. main() must reject
@@ -1635,3 +1682,79 @@ class MainLoopTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GuardedHardwareImportTests(unittest.TestCase):
+    """The module-scope hardware guards must not let an exotic exception escape.
+
+    Importing waveshare_epd is not side-effect free: epdconfig instantiates its
+    platform implementation at module scope and that constructor claims the GPIO
+    pins, so with the pins already held the import raises lgpio.error("GPIO
+    busy") — neither ImportError nor RuntimeError. Under the old narrow guard it
+    escaped as a bare traceback at import, before main() could report anything.
+
+    CI has no GPIO at all, so it takes the ImportError path and would pass either
+    way; these tests simulate the real condition with a meta_path finder instead.
+
+    Each test imports a *fresh, independently named* copy of the module rather
+    than reloading fuzzyclock_daemon, so the real module's global state (which
+    CLAUDE.md requires stay clean) is never disturbed.
+    """
+
+    DAEMON_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "fuzzyclock_daemon.py",
+    )
+
+    class _Boom(Exception):
+        """Stands in for lgpio.error: not an ImportError, not a RuntimeError."""
+
+    class _Blocker:
+        def __init__(self, target, exc):
+            self._target = target
+            self._exc = exc
+
+        def find_spec(self, fullname, path=None, target=None):
+            if fullname.split(".")[0] == self._target:
+                raise self._exc(f"{self._target} unavailable")
+            return None
+
+    def _import_isolated(self, blocked_top_level):
+        """Import a throwaway copy of the daemon with `blocked_top_level` armed."""
+        blocker = self._Blocker(blocked_top_level, self._Boom)
+        sys.meta_path.insert(0, blocker)
+        self.addCleanup(lambda: sys.meta_path.remove(blocker))
+
+        cached = {k: v for k, v in sys.modules.items() if k.split(".")[0] == blocked_top_level}
+        for k in cached:
+            del sys.modules[k]
+        self.addCleanup(sys.modules.update, cached)
+
+        name = f"_isolated_daemon_{blocked_top_level}"
+        spec = importlib.util.spec_from_file_location(name, self.DAEMON_PATH)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        self.addCleanup(sys.modules.pop, name, None)
+        spec.loader.exec_module(module)  # must not raise
+        return module
+
+    def test_epd_import_failure_does_not_escape(self):
+        module = self._import_isolated("waveshare_epd")
+        self.assertIsNone(module.epd2in13_V4)
+        self.assertIsInstance(module._EPD_IMPORT_ERROR, self._Boom)
+
+    def test_gpiozero_import_failure_does_not_escape(self):
+        module = self._import_isolated("gpiozero")
+        self.assertIsNone(module.Button)
+        # The cause must be kept: the button call site only sees
+        # TypeError("'NoneType' object is not callable"), which does not say
+        # why gpiozero was unavailable.
+        self.assertIsInstance(module._BUTTON_IMPORT_ERROR, self._Boom)
+
+    def test_real_module_is_not_replaced_or_reloaded(self):
+        # The isolated import must leave the module every other test in this
+        # file shares completely alone — a reload() would swap it out and
+        # reset the module-level state CLAUDE.md requires stay clean.
+        isolated = self._import_isolated("waveshare_epd")
+        self.assertIs(sys.modules["fuzzyclock_daemon"], d)
+        self.assertIsNot(isolated, d)

@@ -30,16 +30,35 @@ from fuzzyclock_core import sun_times as _raw_sun_times
 
 # Hardware-only deps. Guarded so the module is importable on CI / dev boxes
 # without GPIO + an EPD driver installed; the daemon's main() will refuse to
-# run if they're missing, but tests can import this file freely. RuntimeError
-# is raised by gpiozero on non-Pi Linux when it can't find a GPIO backend.
+# run if they're missing, but tests can import this file freely.
+#
+# The except is broad rather than (ImportError, RuntimeError) — the two obvious
+# cases, a missing library and gpiozero finding no GPIO backend on non-Pi Linux.
+# Neither covers the third: importing waveshare_epd is not side-effect free,
+# because epdconfig instantiates its platform implementation at module scope and
+# that constructor claims the GPIO pins through gpiozero. With the pins already
+# held, the import raises lgpio.error("GPIO busy"), which is neither — and would
+# escape as a bare traceback before main() could report anything useful.
+#
+# Breadth costs diagnosis, so keep the cause: without it a genuine bug in the
+# vendored driver (a NameError, say) would be reported as "driver not installed".
+# main() surfaces _EPD_IMPORT_ERROR in its SystemExit and _BUTTON_IMPORT_ERROR in
+# the button-init log. The Button call site alone is not enough: with Button None
+# it only ever sees TypeError("'NoneType' object is not callable"), which says
+# nothing about why the import failed.
+_EPD_IMPORT_ERROR = None
+_BUTTON_IMPORT_ERROR = None
+
 try:
     from gpiozero import Button
-except (ImportError, RuntimeError):
+except Exception as exc:
+    _BUTTON_IMPORT_ERROR = exc
     Button = None
 
 try:
     from waveshare_epd import epd2in13_V4
-except (ImportError, RuntimeError):
+except Exception as exc:
+    _EPD_IMPORT_ERROR = exc
     epd2in13_V4 = None
 
 logging.basicConfig(
@@ -667,8 +686,10 @@ def _button_supervisor(button, epd):
 def main():
     if epd2in13_V4 is None:
         raise SystemExit(
-            "waveshare_epd is not installed; the fuzzy-clock daemon requires the "
-            "EPD driver. Use fuzzyclock_preview.py --dry-run for hardware-free testing."
+            "waveshare_epd is unavailable; the fuzzy-clock daemon requires the EPD "
+            f"driver. Cause: {_EPD_IMPORT_ERROR!r}. If the pins are busy, another "
+            "process already owns them. Use fuzzyclock_preview.py --dry-run for "
+            "hardware-free testing."
         )
 
     # Load configuration here rather than at import time so tests can import
@@ -719,6 +740,10 @@ def main():
             daemon=True,
         ).start()
     except Exception:
+        # If the gpiozero import itself failed, Button is None and the traceback
+        # below is only a TypeError — name the import failure that caused it.
+        if _BUTTON_IMPORT_ERROR is not None:
+            logging.error("gpiozero import failed: %r", _BUTTON_IMPORT_ERROR)
         logging.exception("Failed to initialise GPIO button; continuing without it.")
 
     # Seed the partial-refresh base image to match whichever mode we're starting in.

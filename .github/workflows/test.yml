@@ -52,3 +52,44 @@ jobs:
 
       - name: Run tests
         run: python -m unittest discover -v
+
+  # Separate job, deliberately NOT a matrix dimension on `test` above: adding
+  # one would rename those jobs to "test (3.11, <pillow>)", and
+  # .github/rulesets/main.json requires the contexts "test (3.11)" and
+  # "test (3.12)" by exact name. A required context that never reports blocks
+  # every merge (see .github/rulesets/README.md), and bypass_actors is empty.
+  test-pillow-floor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # 3.11 matches Raspberry Pi OS Bookworm, the deployment target.
+          python-version: "3.11"
+
+      - name: Install DejaVu fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - name: Install the oldest supported Pillow
+        # The `test` jobs install "Pillow>=10,<13", which always resolves to the
+        # newest release — so code using an API that only exists in the latest
+        # Pillow passes CI and breaks anyone on an older one still allowed by
+        # requirements.txt. This job pins that floor so the range is honest.
+        #
+        # An exact pin, not a range: pip resolves the NEWEST version satisfying
+        # a specifier, so "Pillow>=10,<11" installs 10.4.0 and an API added in
+        # 10.1-10.4 would still pass while breaking a user on 10.0.0 — which
+        # requirements.txt permits. Keep this in step with that floor.
+        run: pip install "Pillow==10.0.0" "PyYAML>=6,<7"
+
+      - name: Show the resolved Pillow version
+        # This job's whole value is testing a specific old Pillow, so state which
+        # one it actually got rather than leaving it buried in pip's output.
+        run: python -c "import PIL; print('Pillow', PIL.__version__)"
+
+      - name: Run tests
+        run: python -m unittest discover -v
