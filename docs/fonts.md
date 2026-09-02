@@ -30,8 +30,12 @@ Picks a fresh vendored variant each time the time phrase rolls over to the next 
 
 Each preview's `<sup>` line indicates how the font reaches the daemon:
 
-- **`apt: ...`** — installed automatically by `deploy.sh` on the Pi; no extra steps.
-- **`OFL · ...`** / **`Apache 2.0 · ...`** — vendored in this repo's `fonts/` directory; works on any machine.
+- Every non-commercial entry leads with its **license**. Where the vendored file's own
+  name table records one, that is the label — it governs the copy this repo actually
+  redistributes. Some files (mostly variable-font builds) carry no license string at
+  all; those are labelled from the upstream project.
+- **`apt: ...`** — also installed by `deploy.sh` on the Pi. These are vendored in
+  `fonts/` too, so the license shown still governs the copy shipped here.
 - **`Commercial · drop ... into fonts/`** — no apt package and not redistributable here. Provide the file yourself; the daemon falls back to a macOS system font for dev renders when no file is present.
 
 Variants are grouped by theme/vibe and sorted alphabetically within each group.
@@ -47,13 +51,13 @@ Neutral, readable workhorses — for when you want the time to feel ordinary.
 <td align="center">
 <img src="previews/cantarell.png" alt="cantarell"><br><br>
 <strong><code>cantarell</code></strong><br>
-<sup>apt: fonts-cantarell</sup><br>
+<sup>OFL · static · apt: fonts-cantarell</sup><br>
 GNOME's humanist sans — tall x-height, friendly curves.
 </td>
 <td align="center">
 <img src="previews/dejavu.png" alt="dejavu"><br><br>
 <strong><code>dejavu</code></strong> <em>(default)</em><br>
-<sup>apt: fonts-dejavu-core</sup><br>
+<sup>Bitstream Vera · static · apt: fonts-dejavu-core</sup><br>
 Clean humanist sans — high x-height, broad Unicode coverage.
 </td>
 </tr>
@@ -61,7 +65,7 @@ Clean humanist sans — high x-height, broad Unicode coverage.
 <td align="center">
 <img src="previews/ubuntu.png" alt="ubuntu"><br><br>
 <strong><code>ubuntu</code></strong><br>
-<sup>apt: fonts-ubuntu</sup><br>
+<sup>UFL 1.0 · static · apt: fonts-ubuntu</sup><br>
 Distinctive warm sans with subtle calligraphic terminals.
 </td>
 <td></td>
@@ -93,13 +97,13 @@ Warm humanist serif — generous x-height, broad glyph coverage.
 <td align="center">
 <img src="previews/dejavu-serif.png" alt="dejavu-serif"><br><br>
 <strong><code>dejavu-serif</code></strong><br>
-<sup>apt: fonts-dejavu</sup><br>
+<sup>Bitstream Vera · static · apt: fonts-dejavu</sup><br>
 Elegant transitional serif companion to DejaVu Sans.
 </td>
 <td align="center">
 <img src="previews/liberation-serif.png" alt="liberation-serif"><br><br>
 <strong><code>liberation-serif</code></strong><br>
-<sup>apt: fonts-liberation2</sup><br>
+<sup>OFL · static · apt: fonts-liberation2</sup><br>
 Times-metric serif — newspaper feel, very readable at small sizes.
 </td>
 </tr>
@@ -121,7 +125,7 @@ Optically sized book serif — refined and even-toned.
 <td align="center">
 <img src="previews/roboto-slab.png" alt="roboto-slab"><br><br>
 <strong><code>roboto-slab</code></strong><br>
-<sup>apt: fonts-roboto-slab</sup><br>
+<sup>Apache 2.0 · static · apt: fonts-roboto-slab</sup><br>
 Chunky slab serif — renders especially crisply on e-ink.
 </td>
 <td align="center">
@@ -373,7 +377,7 @@ Wobbly storybook display — organic stroke widths, pleasantly falling apart.
 <td align="center">
 <img src="previews/luckiest-guy.png" alt="luckiest-guy"><br><br>
 <strong><code>luckiest-guy</code></strong><br>
-<sup>OFL · static</sup><br>
+<sup>Apache 2.0 · static</sup><br>
 Cereal-box cartoon — irregular baseline, high-energy retro fun.
 </td>
 <td align="center">
@@ -669,7 +673,7 @@ Origami creased letterforms — every stroke looks like folded paper.
 <td align="center">
 <img src="previews/jetbrains-mono.png" alt="jetbrains-mono"><br><br>
 <strong><code>jetbrains-mono</code></strong><br>
-<sup>apt: fonts-jetbrains-mono</sup><br>
+<sup>OFL · static · apt: fonts-jetbrains-mono</sup><br>
 Modern monospaced — typewriter personality on e-ink.
 </td>
 </tr>
@@ -867,7 +871,7 @@ Distressed typewriter — uneven inking, ribbon strikes.
 <td align="center">
 <img src="previews/unkempt.png" alt="unkempt"><br><br>
 <strong><code>unkempt</code></strong><br>
-<sup>Apache 2.0 · static</sup><br>
+<sup>OFL · static</sup><br>
 Scrawly asymmetric handwriting — deliberately wild loops, uneven baseline, zero composure.
 </td>
 <td></td>
@@ -905,7 +909,7 @@ Connected ballpoint cursive — quick personal notes.
 <td align="center">
 <img src="previews/gloria-hallelujah.png" alt="gloria-hallelujah"><br><br>
 <strong><code>gloria-hallelujah</code></strong><br>
-<sup>Apache 2.0 · static</sup><br>
+<sup>OFL · static</sup><br>
 Loose kid-like print — wobbly baseline, joyful.
 </td>
 </tr>
@@ -919,7 +923,7 @@ Quick handwritten cursive — looped and personal.
 <td align="center">
 <img src="previews/indie-flower.png" alt="indie-flower"><br><br>
 <strong><code>indie-flower</code></strong><br>
-<sup>Apache 2.0 · static</sup><br>
+<sup>OFL · static</sup><br>
 Bouncy uneven print — friendly and informal.
 </td>
 </tr>
@@ -1073,12 +1077,6 @@ Paint dripping down each stroke — fresh-coat-of-paint vandalism.
 <strong><code>kablammo</code></strong><br>
 <sup>OFL · variable · MORF axis</sup><br>
 Inflated balloon variable font — the MORF axis bloats letterforms into pressurised rubber bubbles.
-</td>
-<td align="center">
-<img src="previews/tfoust.png" alt="tfoust"><br><br>
-<strong><code>tfoust</code></strong><br>
-<sup>vendored · static</sup><br>
-Hollow outlined letterforms with knobbly burst-shaped growths riding every stroke — prickly silhouette, fully open interiors.
 </td>
 </tr>
 </table>

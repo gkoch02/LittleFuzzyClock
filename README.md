@@ -108,7 +108,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## Fonts
 
-141 font variants are available — 134 open-source fonts vendored in `fonts/` (clean & literary serifs, slab serifs, soft & rounded, geometric & condensed, bold display, retro & computing, vintage/deco/futuristic, blackletter & fantasy, handwriting & script, hand-drawn, textured & experimental, horror & macabre, weird & unique), and 7 commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
+140 font variants are available — 133 open-source fonts vendored in `fonts/` (clean & literary serifs, slab serifs, soft & rounded, geometric & condensed, bold display, retro & computing, vintage/deco/futuristic, blackletter & fantasy, handwriting & script, hand-drawn, textured & experimental, horror & macabre, weird & unique), and 7 commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
 
 Pick one with `--font`:
 
@@ -209,4 +209,9 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 
 ## License
 
-Project code: MIT. Waveshare library files in `waveshare_epd/` are copyright Waveshare, also MIT licensed.
+This repository is MIT licensed; see [`LICENSE`](LICENSE). The grant covers
+everything here except the vendored third-party material, which keeps its own
+terms: the Waveshare driver in `waveshare_epd/` (MIT, © Waveshare) and every
+typeface in `fonts/` (mostly SIL Open Font License 1.1, some Apache 2.0, plus
+two exceptions). See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the
+details and for the known font-licensing gap.
