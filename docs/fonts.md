@@ -1074,12 +1074,6 @@ Paint dripping down each stroke — fresh-coat-of-paint vandalism.
 <sup>OFL · variable · MORF axis</sup><br>
 Inflated balloon variable font — the MORF axis bloats letterforms into pressurised rubber bubbles.
 </td>
-<td align="center">
-<img src="previews/tfoust.png" alt="tfoust"><br><br>
-<strong><code>tfoust</code></strong><br>
-<sup>vendored · static</sup><br>
-Hollow outlined letterforms with knobbly burst-shaped growths riding every stroke — prickly silhouette, fully open interiors.
-</td>
 </tr>
 </table>
 

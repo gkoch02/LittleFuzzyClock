@@ -121,7 +121,6 @@ FONT_FRAME_CATEGORY = {
     "rubik-spray-paint": "sketchy",
     "rubik-distressed": "sketchy",
     "rubik-iso": "sketchy",
-    "tfoust": "sketchy",
     # Pixel / arcade / techno / deco → retro
     "vt323": "retro",
     "press-start-2p": "retro",

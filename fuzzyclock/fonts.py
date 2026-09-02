@@ -563,14 +563,6 @@ FONT_VARIANTS = {
         "/System/Library/Fonts/Supplemental/Impact.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
     ],
-    # Outlined letterforms with knobbly burst-shaped growths riding every
-    # stroke — hollow centres, prickly silhouette. Internal name is
-    # "TFoustScript" despite not being a connected script.
-    "tfoust": [
-        os.path.join(_VENDORED_FONT_DIR, "TFoust.ttf"),
-        "/System/Library/Fonts/Supplemental/Marker Felt.ttc",
-        "/System/Library/Fonts/Supplemental/Chalkduster.ttf",
-    ],
     "splash": [
         os.path.join(_VENDORED_FONT_DIR, "Splash-Regular.ttf"),
         "/System/Library/Fonts/Supplemental/Bradley Hand.ttc",
