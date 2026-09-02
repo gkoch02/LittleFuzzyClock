@@ -209,11 +209,9 @@ The same suite runs in CI on every push and pull request — see `.github/workfl
 
 ## License
 
-Project code — `fuzzyclock/`, the three top-level scripts, `tests/`, `deploy.sh`,
-`systemd/`, and `docs/` — is MIT licensed; see [`LICENSE`](LICENSE).
-
-Vendored third-party material keeps its own terms and is **not** covered by that
-grant: the Waveshare driver in `waveshare_epd/` (MIT, © Waveshare) and every
+This repository is MIT licensed; see [`LICENSE`](LICENSE). The grant covers
+everything here except the vendored third-party material, which keeps its own
+terms: the Waveshare driver in `waveshare_epd/` (MIT, © Waveshare) and every
 typeface in `fonts/` (mostly SIL Open Font License 1.1, some Apache 2.0, plus
-three exceptions). See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the
-details and for the known font-licensing gaps.
+two exceptions). See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the
+details and for the known font-licensing gap.

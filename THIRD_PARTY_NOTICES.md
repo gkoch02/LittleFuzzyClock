@@ -1,11 +1,8 @@
 # Third-party notices
 
-The MIT license in [`LICENSE`](LICENSE) covers this project's own code —
-`fuzzyclock/`, `fuzzyclock_core.py`, `fuzzyclock_daemon.py`,
-`fuzzyclock_preview.py`, `tests/`, `deploy.sh`, `systemd/`, and `docs/`.
-
-It does **not** cover the third-party material vendored alongside it. Those
-components keep their own licenses, listed below.
+The MIT license in [`LICENSE`](LICENSE) covers everything in this repository
+except the third-party material vendored alongside it. Those components keep
+their own licenses, listed below.
 
 ## `waveshare_epd/`
 
