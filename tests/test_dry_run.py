@@ -164,7 +164,10 @@ class DryRunTimeArgTests(unittest.TestCase):
         with Image.open(out1) as i1, Image.open(out2) as i2:
             i1.load()
             i2.load()
-            self.assertEqual(list(i1.getdata()), list(i2.getdata()))
+            # tobytes() rather than getdata(): getdata() is deprecated (removed in
+            # Pillow 14) and its replacement get_flattened_data() does not exist
+            # before Pillow 12, which requirements.txt still allows.
+            self.assertEqual(i1.tobytes(), i2.tobytes())
 
     def test_different_times_produce_different_renders(self):
         # Verify --time is actually wired through: two distinct times (from
@@ -190,7 +193,7 @@ class DryRunTimeArgTests(unittest.TestCase):
         with Image.open(out1) as i1, Image.open(out2) as i2:
             i1.load()
             i2.load()
-            self.assertNotEqual(list(i1.getdata()), list(i2.getdata()))
+            self.assertNotEqual(i1.tobytes(), i2.tobytes())
 
 
 class DrawFuzzyClockInProcessTests(unittest.TestCase):

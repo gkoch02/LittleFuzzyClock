@@ -516,10 +516,8 @@ class FrameVariantsTests(unittest.TestCase):
             font_variant="dejavu",
             frame=frame_for_font("dejavu"),
         )
-        self.assertEqual(
-            list(auto_image.getdata()),
-            list(explicit_image.getdata()),
-        )
+        # tobytes() rather than getdata(): see the note in tests/test_dry_run.py.
+        self.assertEqual(auto_image.tobytes(), explicit_image.tobytes())
 
     def test_every_frame_renders_through_render_clock(self):
         # End-to-end smoke: every registered frame must survive the full
