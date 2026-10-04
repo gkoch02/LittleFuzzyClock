@@ -147,11 +147,6 @@ class AllDialectsRoundtripTests(unittest.TestCase):
 
 
 class DialectValidatorTests(unittest.TestCase):
-    """The module-load guard against an out-of-range `hour_advance_at`. The
-    bound exists because values outside 1..11 silently break the cap-at-11
-    "almost [next hour]" invariant via % 12 — exactly the failure mode that
-    the min(..., 11) in fuzzy_time was added to prevent."""
-
     def _spec(self, advance):
         return {
             "phrases": ["x"] * 12,

@@ -260,12 +260,10 @@ DEFAULT_DIALECT = "classic"
 
 
 def _validate_dialects(dialects):
-    """Reject dialects with an out-of-range `hour_advance_at`.
+    """Reject an `hour_advance_at` outside 1..11.
 
-    `hour_advance_at` controls when the displayed hour flips from current to
-    next. It must stay <= 11 so the index-11 ("almost") slot still advances —
-    otherwise minutes 57-59 wrap back to "almost [current hour]" via % 12,
-    which is the bug the min(..., 11) cap in fuzzy_time exists to prevent.
+    At 12 or more the "almost" slot (index 11) never advances, so 9:58 would
+    read "almost nine".
     """
     for name, spec in dialects.items():
         adv = spec.get("hour_advance_at", 7)
@@ -281,8 +279,7 @@ _validate_dialects(DIALECTS)
 
 def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     spec = DIALECTS[dialect]
-    # Cap at 11 so minutes 57-59 stay as "almost [next hour]" rather than
-    # wrapping back to index 0 ("just after [current hour]") via % 12.
+    # Minutes 58-59 round to 12; cap them onto index 11 ("almost [next hour]").
     rounded = min(int(round(minute / 5.0)), 11)
     word = spec["phrases"][rounded]
     # Most dialects flip to the next hour at 35-past ("twenty-five to ten");

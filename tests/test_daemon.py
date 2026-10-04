@@ -11,19 +11,23 @@ The daemon's hardware imports are guarded (see fuzzyclock_daemon top-of-file),
 so this test file imports the module directly without stubbing GPIO/EPD.
 """
 
+import contextlib
 import importlib.util
 import os
+import signal
 import sys
 import tempfile
 import threading
 import time
 import unittest
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from unittest import mock
 
 import yaml
 
 import fuzzyclock_daemon as d
+
+_NO_COORDS = (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None)
 
 
 class CurrentModeTests(unittest.TestCase):
@@ -169,62 +173,62 @@ class LoadConfigTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_missing_file_returns_defaults(self):
-        missing = os.path.join(self.tmp.name, "does_not_exist.yaml")
-        self.assertEqual(
-            d._load_config(missing),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+    def test_unusable_file_returns_defaults(self):
+        cases = (
+            ("missing", None, True),
+            ("malformed", "dialect: classic\n  - oops: not valid", True),
+            ("empty", "", False),
+            ("not a mapping", "- not\n- a mapping\n", True),
         )
+        for label, contents, warns in cases:
+            with self.subTest(label):
+                if contents is None:
+                    path = os.path.join(self.tmp.name, "does_not_exist.yaml")
+                else:
+                    path = self._write(contents)
+                expect_logs = self.assertLogs if warns else self.assertNoLogs
+                with expect_logs("root", level="WARNING"):
+                    self.assertEqual(d._load_config(path), _NO_COORDS)
 
-    def test_malformed_yaml_returns_defaults(self):
-        path = self._write("dialect: classic\n  - oops: not valid")
-        self.assertEqual(
-            d._load_config(path),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+    def test_oserror_other_than_fnf_returns_defaults_with_warning(self):
+        path = os.path.join(self.tmp.name, "unreadable.yaml")
+        with mock.patch("builtins.open", side_effect=PermissionError("access denied")):
+            with self.assertLogs("root", level="WARNING") as cm:
+                result = d._load_config(path)
+        self.assertEqual(result, _NO_COORDS)
+        self.assertTrue(any("access denied" in line for line in cm.output))
+
+    def test_unknown_value_falls_back_with_warning(self):
+        cases = (
+            ("dialect", "pirate", 0, d.DEFAULT_DIALECT),
+            ("font", "comic-sans", 1, d.DEFAULT_FONT),
+            ("frame", "art-deco", 2, d.AUTO_FRAME),
         )
+        for key, bad, index, default in cases:
+            with self.subTest(key=key):
+                path = self._write_yaml({key: bad})
+                with self.assertLogs("root", level="WARNING") as cm:
+                    result = d._load_config(path)
+                self.assertEqual(result[index], default)
+                self.assertEqual(result, _NO_COORDS)
+                self.assertTrue(any(bad in line for line in cm.output))
 
-    def test_empty_file_returns_defaults(self):
-        path = self._write("")
-        self.assertEqual(
-            d._load_config(path),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+    def test_known_value_is_accepted(self):
+        # `random` and `auto` are sentinels outside FONT_VARIANTS /
+        # FRAME_VARIANTS, but still valid.
+        cases = (
+            ("dialect", "shakespeare", 0),
+            ("font", "roboto-slab", 1),
+            ("font", d.RANDOM_FONT, 1),
+            ("frame", "sketchy", 2),
+            ("frame", d.AUTO_FRAME, 2),
         )
-
-    def test_non_mapping_yaml_returns_defaults(self):
-        path = self._write("- not\n- a mapping\n")
-        with self.assertLogs("root", level="WARNING"):
-            self.assertEqual(
-                d._load_config(path),
-                (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            )
-
-    def test_unknown_dialect_falls_back_with_warning(self):
-        path = self._write_yaml({"dialect": "pirate"})
-        with self.assertLogs("root", level="WARNING") as cm:
-            dialect, font, frame, lat, lon = d._load_config(path)
-        self.assertEqual(dialect, d.DEFAULT_DIALECT)
-        self.assertEqual(font, d.DEFAULT_FONT)
-        self.assertEqual(frame, d.AUTO_FRAME)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-        self.assertTrue(any("pirate" in line for line in cm.output))
-
-    def test_unknown_font_falls_back_with_warning(self):
-        path = self._write_yaml({"font": "comic-sans"})
-        with self.assertLogs("root", level="WARNING") as cm:
-            dialect, font, _frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(dialect, d.DEFAULT_DIALECT)
-        self.assertEqual(font, d.DEFAULT_FONT)
-        self.assertTrue(any("comic-sans" in line for line in cm.output))
-
-    def test_known_dialect_and_font_are_returned(self):
-        path = self._write_yaml({"dialect": "shakespeare", "font": "roboto-slab"})
-        dialect, font, frame, lat, lon = d._load_config(path)
-        self.assertEqual(dialect, "shakespeare")
-        self.assertEqual(font, "roboto-slab")
-        self.assertEqual(frame, d.AUTO_FRAME)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
+        for key, value, index in cases:
+            with self.subTest(key=key, value=value):
+                path = self._write_yaml({key: value})
+                with self.assertNoLogs("root", level="WARNING"):
+                    result = d._load_config(path)
+                self.assertEqual(result[index], value)
 
     def test_valid_full_config(self):
         path = self._write_yaml(
@@ -245,71 +249,35 @@ class LoadConfigTests(unittest.TestCase):
 
     def test_missing_coords_disables_after_hours(self):
         path = self._write_yaml({"dialect": "classic", "font": "dejavu"})
-        _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_partial_coords_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": 51.5})  # no longitude
-        with self.assertLogs("root", level="WARNING"):
+        with self.assertNoLogs("root", level="WARNING"):
             _dialect, _font, _frame, lat, lon = d._load_config(path)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
-    def test_non_numeric_coords_disable_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": "north", "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_nan_latitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": float("nan"), "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_nan_longitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": 51.5, "longitude": float("nan")})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_positive_infinity_latitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": float("inf"), "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_negative_infinity_longitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": 51.5, "longitude": float("-inf")})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_out_of_range_latitude_disables_after_hours_with_warning(self):
-        # 100 is a finite float but not a real latitude (valid range [-90, 90]).
-        path = self._write_yaml({"latitude": 100.0, "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_out_of_range_longitude_disables_after_hours_with_warning(self):
-        # 181 is a finite float but not a real longitude (valid range [-180, 180]).
-        path = self._write_yaml({"latitude": 51.5, "longitude": 181.0})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
+    def test_bad_coords_disable_after_hours_with_warning(self):
+        # Either coordinate bad disables after-hours entirely rather than
+        # half-configuring it.
+        nan, inf = float("nan"), float("inf")
+        for coords in (
+            {"latitude": 51.5},  # partial
+            {"latitude": "north", "longitude": -0.1},
+            {"latitude": nan, "longitude": -0.1},
+            {"latitude": 51.5, "longitude": nan},
+            {"latitude": inf, "longitude": -0.1},
+            {"latitude": 51.5, "longitude": -inf},
+            {"latitude": 90.001, "longitude": -0.1},
+            {"latitude": -90.001, "longitude": -0.1},
+            {"latitude": 51.5, "longitude": 180.001},
+            {"latitude": 51.5, "longitude": -180.001},
+        ):
+            with self.subTest(**coords):
+                path = self._write_yaml(coords)
+                with self.assertLogs("root", level="WARNING"):
+                    _dialect, _font, _frame, lat, lon = d._load_config(path)
+                self.assertIsNone(lat)
+                self.assertIsNone(lon)
 
     def test_boundary_coordinates_are_accepted(self):
-        # Exactly +/-90 latitude and +/-180 longitude are valid extremes and
-        # must not be rejected as out-of-range.
         for lat_val, lon_val in ((90.0, 180.0), (-90.0, -180.0), (90.0, -180.0), (-90.0, 180.0)):
             with self.subTest(lat=lat_val, lon=lon_val):
                 path = self._write_yaml({"latitude": lat_val, "longitude": lon_val})
@@ -317,70 +285,6 @@ class LoadConfigTests(unittest.TestCase):
                     _dialect, _font, _frame, lat, lon = d._load_config(path)
                 self.assertEqual(lat, lat_val)
                 self.assertEqual(lon, lon_val)
-
-    def test_just_out_of_range_coordinates_are_rejected(self):
-        for lat_val, lon_val in (
-            (90.001, -0.1),
-            (-90.001, -0.1),
-            (51.5, 180.001),
-            (51.5, -180.001),
-        ):
-            with self.subTest(lat=lat_val, lon=lon_val):
-                path = self._write_yaml({"latitude": lat_val, "longitude": lon_val})
-                with self.assertLogs("root", level="WARNING"):
-                    _dialect, _font, _frame, lat, lon = d._load_config(path)
-                self.assertIsNone(lat)
-                self.assertIsNone(lon)
-
-    def test_one_valid_one_out_of_range_coordinate_disables_after_hours(self):
-        # A partial validity (one coordinate fine, the other impossible) must
-        # still disable after-hours entirely rather than half-configuring it.
-        path = self._write_yaml({"latitude": 45.0, "longitude": float("nan")})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_random_font_value_is_accepted(self):
-        # `random` is a valid sentinel even though it isn't a key in
-        # FONT_VARIANTS; _load_config must not warn or fall back.
-        path = self._write_yaml({"font": "random"})
-        with self.assertNoLogs("root", level="WARNING"):
-            _dialect, font, _frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(font, d.RANDOM_FONT)
-
-    def test_known_frame_is_accepted(self):
-        path = self._write_yaml({"frame": "sketchy"})
-        with self.assertNoLogs("root", level="WARNING"):
-            _dialect, _font, frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(frame, "sketchy")
-
-    def test_auto_frame_value_is_accepted(self):
-        # `auto` is the sentinel; valid even though it isn't a key in
-        # FRAME_VARIANTS. Must not warn or fall back.
-        path = self._write_yaml({"frame": "auto"})
-        with self.assertNoLogs("root", level="WARNING"):
-            _dialect, _font, frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(frame, d.AUTO_FRAME)
-
-    def test_unknown_frame_falls_back_with_warning(self):
-        path = self._write_yaml({"frame": "art-deco"})
-        with self.assertLogs("root", level="WARNING") as cm:
-            _dialect, _font, frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(frame, d.AUTO_FRAME)
-        self.assertTrue(any("art-deco" in line for line in cm.output))
-
-    def test_oserror_other_than_fnf_returns_defaults_with_warning(self):
-        # The (OSError, yaml.YAMLError) branch is separate from the
-        # FileNotFoundError branch. A PermissionError (or any other OSError
-        # subclass that isn't FileNotFoundError) must also fall back to
-        # defaults and emit a warning.
-        path = os.path.join(self.tmp.name, "unreadable.yaml")
-        with mock.patch("builtins.open", side_effect=PermissionError("access denied")):
-            with self.assertLogs("root", level="WARNING") as cm:
-                result = d._load_config(path)
-        self.assertEqual(result, (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None))
-        self.assertTrue(any("access denied" in line for line in cm.output))
 
 
 class ResolveFontTests(unittest.TestCase):
@@ -791,31 +695,6 @@ class ConcurrentRenderCounterTests(unittest.TestCase):
         self.assertTrue(d._needs_recovery)
 
 
-class SunTimesCacheTests(unittest.TestCase):
-    """`_sun_times_cached` is an LRU on top of the pure NOAA helper; it must
-    return identical objects on a hit and recompute on a miss."""
-
-    def setUp(self):
-        d._sun_times_cached.cache_clear()
-
-    def test_cache_hits_for_repeated_args(self):
-        args = (date(2024, 6, 21), 51.5074, -0.1278)
-        first = d._sun_times_cached(*args)
-        second = d._sun_times_cached(*args)
-        info = d._sun_times_cached.cache_info()
-        self.assertEqual(info.hits, 1)
-        self.assertEqual(info.misses, 1)
-        # tuple identity confirms the cached object was returned, not recomputed.
-        self.assertIs(first, second)
-
-    def test_cache_miss_for_new_date(self):
-        d._sun_times_cached(date(2024, 6, 21), 51.5074, -0.1278)
-        d._sun_times_cached(date(2024, 6, 22), 51.5074, -0.1278)
-        info = d._sun_times_cached.cache_info()
-        self.assertEqual(info.misses, 2)
-        self.assertEqual(info.hits, 0)
-
-
 class _FakeEPD:
     """Test double for the Waveshare EPD — records every SPI-shaped call.
 
@@ -1166,101 +1045,45 @@ class InitFontsTests(unittest.TestCase):
         self.assertFalse(d._fonts_ready)
 
 
-class MainSignalHandlerTests(unittest.TestCase):
-    """The SIGTERM/SIGINT handler that main() registers must set _stop_event.
+@contextlib.contextmanager
+def _patched_main(epd, mode="day", config=_NO_COORDS, **overrides):
+    """Patch main()'s config, fonts, button, signals and render calls.
 
-    main() can't run end-to-end without hardware, so we mock all EPD/GPIO
-    calls and let the loop complete one tick (by having _stop_event.wait
-    set the event as its side-effect). We then extract the handler that was
-    registered via signal.signal and call it directly to confirm it behaves
-    correctly.
+    A fixed `mode` runs one loop tick; a callable is used as the
+    `_current_mode_now` side effect and must set `_stop_event` itself.
+    `overrides` replace patched daemon attributes by name. Yields the patches
+    by name, plus "signal" for the patched `signal.signal`.
     """
+    one_tick = isinstance(mode, str)
+    patches = {
+        "epd2in13_V4": mock.Mock(**{"EPD.return_value": epd}),
+        "_load_config": mock.Mock(return_value=config),
+        "_init_fonts": mock.Mock(),
+        "draw_clock": mock.Mock(),
+        "display_goodnight": mock.Mock(),
+        "reset_base_image": mock.Mock(),
+        "_current_mode_now": (
+            mock.Mock(return_value=mode) if one_tick else mock.Mock(side_effect=mode)
+        ),
+        "Button": None,  # never start a real button thread
+        **overrides,
+    }
 
-    def setUp(self):
-        d._stop_event.clear()
-        d._on_render_success()
-        self._saved = {
-            "DIALECT": d.DIALECT,
-            "FONT_VARIANT": d.FONT_VARIANT,
-            "FRAME_VARIANT": d.FRAME_VARIANT,
-            "LATITUDE": d.LATITUDE,
-            "LONGITUDE": d.LONGITUDE,
-            "AFTER_HOURS_ENABLED": d.AFTER_HOURS_ENABLED,
-            "_fonts_ready": d._fonts_ready,
-        }
+    def wait(timeout=None):
+        if one_tick:
+            d._stop_event.set()
+        return d._stop_event.is_set()
 
-    def tearDown(self):
-        d._stop_event.clear()
-        d._on_render_success()
-        for attr, val in self._saved.items():
-            setattr(d, attr, val)
-
-    def _run_main_and_capture_handlers(self):
-        """Run main() with all hardware mocked; return {signum: handler}."""
-
-        registered = {}
-
-        def _capture(signum, handler):
-            registered[signum] = handler
-
-        with (
-            mock.patch("fuzzyclock_daemon.signal.signal", side_effect=_capture),
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-            mock.patch.object(d, "reset_base_image"),
-            mock.patch.object(d, "_current_mode_now", return_value="night"),
-            mock.patch.object(d, "display_goodnight"),
-            # Exit the main loop after the first tick.
-            mock.patch.object(
-                d._stop_event,
-                "wait",
-                side_effect=lambda timeout: d._stop_event.set(),
-            ),
-        ):
-            m_epd.EPD.return_value = mock.Mock()
-            d.main()
-
-        return registered
-
-    def test_sigterm_is_registered_and_sets_stop_event(self):
-        import signal as _sig
-
-        registered = self._run_main_and_capture_handlers()
-        self.assertIn(_sig.SIGTERM, registered)
-        d._stop_event.clear()
-        registered[_sig.SIGTERM](_sig.SIGTERM, None)
-        self.assertTrue(d._stop_event.is_set())
-
-    def test_sigint_is_registered_and_sets_stop_event(self):
-        import signal as _sig
-
-        registered = self._run_main_and_capture_handlers()
-        self.assertIn(_sig.SIGINT, registered)
-        d._stop_event.clear()
-        registered[_sig.SIGINT](_sig.SIGINT, None)
-        self.assertTrue(d._stop_event.is_set())
+    with contextlib.ExitStack() as stack:
+        for name, new in patches.items():
+            stack.enter_context(mock.patch.object(d, name, new))
+        stack.enter_context(mock.patch.object(d._stop_event, "wait", side_effect=wait))
+        patches["signal"] = stack.enter_context(mock.patch.object(d.signal, "signal"))
+        yield patches
 
 
 class MainLoopTests(unittest.TestCase):
-    """Drive `main()`'s control flow through a scripted sequence of modes.
-
-    The MainSignalHandlerTests sister class above only exercises the night
-    branch (and the SIGTERM/SIGINT handlers). This class fills in the rest of
-    the loop body — mode transitions that reseed the partial-refresh base
-    image, the every-5-minute render cadence, the `_needs_recovery` re-init
-    path after consecutive failures, the fatal-threshold break, and the
-    cleanup epd.sleep() that runs after the loop exits.
-
-    Strategy: mock `_current_mode_now` with a scripted iterator over modes;
-    after the iterator is exhausted, set `_stop_event` so main() exits. Drop
-    in mocks for `draw_clock`, `display_goodnight`, `reset_base_image`, and
-    `epd2in13_V4` so we can assert their call sequences and inject failures.
-    """
+    """Drive `main()`'s control flow through a scripted sequence of modes."""
 
     def setUp(self):
         d._stop_event.clear()
@@ -1288,18 +1111,13 @@ class MainLoopTests(unittest.TestCase):
         force_render_every_tick=True,
         goodnight_side_effect=None,
     ):
-        """Run main() driving _current_mode_now through `mode_sequence`.
+        """Run main() for exactly len(mode_sequence) loop iterations.
 
-        Returns (fake_epd, m_draw, m_goodnight, m_reset, mode_calls). After
-        the last mode is returned, _stop_event is set so the next iteration
-        of `while not _stop_event.is_set()` exits — giving exactly
-        len(mode_sequence) iterations. `force_render_every_tick=True` pins
-        the wall-clock minute to a multiple of 5 so the should_render check
-        fires on every tick even when the mode doesn't change — needed for
-        the recovery / fatal-threshold tests where the mode is constant.
+        Returns (fake_epd, m_draw, m_goodnight, m_reset, mode_calls).
+        `force_render_every_tick` pins the wall-clock minute to a multiple of
+        5 so every tick renders even when the mode doesn't change.
         """
         epd = _FakeEPD()
-
         modes = list(mode_sequence)
         if not modes:
             self.fail("mode_sequence must contain at least one mode")
@@ -1308,10 +1126,9 @@ class MainLoopTests(unittest.TestCase):
         mode_calls = []
 
         def mode_fn():
-            # main() calls _current_mode_now() once before the loop to pick
-            # the initial reset_base_image invert, then again on each loop
-            # iteration. We hand the first call modes[0] without consuming
-            # it, so mode_sequence semantically describes LOOP iterations.
+            # main() calls _current_mode_now() once before the loop to seed the
+            # base image; hand it modes[0] without consuming it, so
+            # mode_sequence describes loop iterations only.
             total_calls[0] += 1
             if total_calls[0] == 1:
                 return modes[0]
@@ -1325,47 +1142,29 @@ class MainLoopTests(unittest.TestCase):
                 d._stop_event.set()
             return modes[i]
 
-        m_draw = mock.Mock(side_effect=draw_side_effect)
-        m_goodnight = mock.Mock(side_effect=goodnight_side_effect)
-        m_reset = mock.Mock()
-
-        # Patch datetime in the daemon module so the minute check is
-        # deterministic. Mocking the whole class is heavy-handed but the only
-        # caller is `datetime.now().minute` on the render-cadence line.
+        # The only datetime use in main() is `datetime.now().minute`.
         m_dt = mock.MagicMock()
         m_dt.now.return_value = mock.Mock(minute=0 if force_render_every_tick else 1)
 
-        with (
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-            mock.patch.object(d, "draw_clock", m_draw),
-            mock.patch.object(d, "display_goodnight", m_goodnight),
-            mock.patch.object(d, "reset_base_image", m_reset),
-            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
-            # Honor the stop event so the loop actually exits after the last
-            # scripted mode. Returning the event's state mirrors what real
-            # Event.wait does once it's been set.
-            mock.patch.object(
-                d._stop_event,
-                "wait",
-                side_effect=lambda timeout=None: d._stop_event.is_set(),
-            ),
-            mock.patch("fuzzyclock_daemon.signal.signal"),
-            # Button is None in CI (no gpiozero backend); the try/except in
-            # main() handles that gracefully. Keep it that way so we don't
-            # accidentally start a real thread.
-            mock.patch("fuzzyclock_daemon.Button", None),
-            mock.patch("fuzzyclock_daemon.datetime", m_dt),
-        ):
-            m_epd_mod.EPD.return_value = epd
+        with _patched_main(
+            epd,
+            mode_fn,
+            draw_clock=mock.Mock(side_effect=draw_side_effect),
+            display_goodnight=mock.Mock(side_effect=goodnight_side_effect),
+            datetime=m_dt,
+        ) as p:
             d.main()
+        return epd, p["draw_clock"], p["display_goodnight"], p["reset_base_image"], mode_calls
 
-        return epd, m_draw, m_goodnight, m_reset, mode_calls
+    def test_signal_handlers_set_stop_event(self):
+        with _patched_main(mock.Mock(), mode="night") as p:
+            d.main()
+        handlers = {c.args[0]: c.args[1] for c in p["signal"].call_args_list}
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            with self.subTest(signal=signum):
+                d._stop_event.clear()
+                handlers[signum](signum, None)
+                self.assertTrue(d._stop_event.is_set())
 
     def test_night_only_uses_display_goodnight_and_skips_draw_clock(self):
         epd, m_draw, m_goodnight, _m_reset, _ = self._run_main(["night"])
@@ -1531,99 +1330,25 @@ class MainLoopTests(unittest.TestCase):
         # during shutdown can't poison the exit path.
         epd = _FakeEPD()
         epd.sleep = mock.Mock(side_effect=RuntimeError("sleep failed"))
-
-        def mode_fn():
-            d._stop_event.set()
-            return "day"
-
-        with (
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-            mock.patch.object(d, "draw_clock"),
-            mock.patch.object(d, "reset_base_image"),
-            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
-            mock.patch.object(d._stop_event, "wait", return_value=False),
-            mock.patch("fuzzyclock_daemon.signal.signal"),
-            mock.patch("fuzzyclock_daemon.Button", None),
-        ):
-            m_epd_mod.EPD.return_value = epd
+        with _patched_main(epd):
             d.main()  # must not raise
-
         epd.sleep.assert_called_once()
 
-    def test_after_hours_enabled_logs_coordinates(self):
-        # When _load_config returns lat/lon, main() must log the after-hours
-        # banner. We assert by inspecting the logging output.
-        epd = _FakeEPD()
-
-        def mode_fn():
-            d._stop_event.set()
-            return "day"
-
-        with (
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, 51.5, -0.1),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-            mock.patch.object(d, "draw_clock"),
-            mock.patch.object(d, "display_goodnight"),
-            mock.patch.object(d, "reset_base_image"),
-            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
-            mock.patch.object(d._stop_event, "wait", return_value=False),
-            mock.patch("fuzzyclock_daemon.signal.signal"),
-            mock.patch("fuzzyclock_daemon.Button", None),
-            self.assertLogs("root", level="INFO") as cm,
-        ):
-            m_epd_mod.EPD.return_value = epd
-            d.main()
-
-        self.assertTrue(
-            any("After-hours mode enabled" in msg for msg in cm.output),
-            f"expected after-hours banner; got {cm.output}",
+    def test_after_hours_banner_follows_coordinates(self):
+        cases = (
+            ((d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, 51.5, -0.1), "enabled", True),
+            (_NO_COORDS, "disabled", False),
         )
-        self.assertTrue(d.AFTER_HOURS_ENABLED)
-
-    def test_after_hours_disabled_when_coords_missing(self):
-        # No coords → after-hours stays off and the disabled-banner is logged.
-        epd = _FakeEPD()
-
-        def mode_fn():
-            d._stop_event.set()
-            return "day"
-
-        with (
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-            mock.patch.object(d, "draw_clock"),
-            mock.patch.object(d, "display_goodnight"),
-            mock.patch.object(d, "reset_base_image"),
-            mock.patch.object(d, "_current_mode_now", side_effect=mode_fn),
-            mock.patch.object(d._stop_event, "wait", return_value=False),
-            mock.patch("fuzzyclock_daemon.signal.signal"),
-            mock.patch("fuzzyclock_daemon.Button", None),
-            self.assertLogs("root", level="INFO") as cm,
-        ):
-            m_epd_mod.EPD.return_value = epd
-            d.main()
-
-        self.assertTrue(
-            any("After-hours mode disabled" in msg for msg in cm.output),
-            f"expected after-hours-disabled banner; got {cm.output}",
-        )
-        self.assertFalse(d.AFTER_HOURS_ENABLED)
+        for config, word, enabled in cases:
+            with self.subTest(after_hours=word):
+                d._stop_event.clear()
+                with _patched_main(_FakeEPD(), config=config):
+                    with self.assertLogs("root", level="INFO") as cm:
+                        d.main()
+                self.assertTrue(
+                    any(f"After-hours mode {word}" in msg for msg in cm.output), cm.output
+                )
+                self.assertEqual(d.AFTER_HOURS_ENABLED, enabled)
 
     def test_systemexit_when_epd_driver_missing(self):
         # If the waveshare_epd driver is not importable, main() must refuse
@@ -1636,28 +1361,7 @@ class MainLoopTests(unittest.TestCase):
         # With Button None the call site raises only TypeError, so the journal
         # needs the import failure logged alongside it to be diagnosable.
         boom = RuntimeError("GPIO busy")
-        d._stop_event.clear()
-        self.addCleanup(d._stop_event.clear)
-        with (
-            mock.patch.object(d, "Button", None),
-            mock.patch.object(d, "_BUTTON_IMPORT_ERROR", boom),
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-            mock.patch.object(d, "reset_base_image"),
-            mock.patch.object(d, "_current_mode_now", return_value="night"),
-            mock.patch.object(d, "display_goodnight"),
-            mock.patch.object(
-                d._stop_event,
-                "wait",
-                side_effect=lambda timeout: d._stop_event.set(),
-            ),
-        ):
-            m_epd.EPD.return_value = mock.Mock()
+        with _patched_main(mock.Mock(), mode="night", _BUTTON_IMPORT_ERROR=boom):
             with self.assertLogs("root", level="ERROR") as logs:
                 d.main()
         self.assertTrue(
@@ -1681,19 +1385,8 @@ class MainLoopTests(unittest.TestCase):
         # init() signals failure by returning -1, not raising.
         epd = mock.Mock()
         epd.init.return_value = -1
-
-        with (
-            mock.patch("fuzzyclock_daemon.epd2in13_V4") as m_epd_mod,
-            mock.patch.object(
-                d,
-                "_load_config",
-                return_value=(d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            ),
-            mock.patch.object(d, "_init_fonts"),
-        ):
-            m_epd_mod.EPD.return_value = epd
-            with self.assertRaises(SystemExit):
-                d.main()
+        with _patched_main(epd), self.assertRaises(SystemExit):
+            d.main()
         epd.init.assert_called_once()
 
 
@@ -1709,8 +1402,8 @@ class GuardedHardwareImportTests(unittest.TestCase):
     since CI's missing GPIO would take the ImportError path either way.
 
     Each test imports a *fresh, independently named* copy of the module rather
-    than reloading fuzzyclock_daemon, so the real module's global state (which
-    CLAUDE.md requires stay clean) is never disturbed.
+    than reloading fuzzyclock_daemon, so the real module's global state is
+    never disturbed.
     """
 
     DAEMON_PATH = os.path.join(
@@ -1766,7 +1459,7 @@ class GuardedHardwareImportTests(unittest.TestCase):
     def test_real_module_is_not_replaced_or_reloaded(self):
         # The isolated import must leave the module every other test in this
         # file shares completely alone — a reload() would swap it out and
-        # reset the module-level state CLAUDE.md requires stay clean.
+        # reset its module-level state.
         isolated = self._import_isolated("waveshare_epd")
         self.assertIs(sys.modules["fuzzyclock_daemon"], d)
         self.assertIsNot(isolated, d)

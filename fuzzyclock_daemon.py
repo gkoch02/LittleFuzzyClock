@@ -213,12 +213,10 @@ def _init_fonts():
     _fonts_ready = True
 
 
-# Tracks the frame name that was last painted onto the partial-refresh base
-# image. In random-font + auto-frame mode the variant (and therefore the
-# frame) can shift between renders; if draw_clock noticed a frame change
-# without re-seeding the base, displayPartial would diff against the old
-# frame and leave ghost border pixels. Updated by reset_base_image, consulted
-# by draw_clock.
+# The frame last painted onto the partial-refresh base image. In random-font +
+# auto-frame mode the frame can change between renders; draw_clock reseeds the
+# base when it does, or displayPartial would diff against the old frame and
+# leave ghost border pixels.
 _last_applied_frame = None
 
 
@@ -333,13 +331,9 @@ def _epd_init(epd):
     return _call_with_timeout(epd.init, lock=epd_lock)
 
 
-# Render lock — serializes the check-then-reseed sequence on _last_applied_frame
-# and the surrounding render/displayPartial so the main loop and the button
-# thread can't interleave a frame change with another thread's render. Without
-# it, two concurrent draw_clock calls could pick different frames, both reseed
-# the partial-refresh base, and leave one render diffing against a base painted
-# by the other call. Reentrant so reset_base_image can be invoked from inside
-# draw_clock without deadlocking.
+# Serializes draw_clock's check-reseed-render sequence across the main loop and
+# the button thread, so one render never diffs against a base painted by the
+# other. Reentrant because draw_clock calls reset_base_image while holding it.
 _render_lock = threading.RLock()
 
 # Set by the SIGTERM/SIGINT handler so the main loop and the button-thread
@@ -434,10 +428,6 @@ def reset_base_image(epd, invert=False, frame=None):
     is painted onto the base; defaults to the resolved frame for the current
     fixed font (random-font callers pass an explicit frame so the base matches
     the variant they're about to render with).
-
-    Held under _render_lock so the base-image swap and the corresponding
-    update to _last_applied_frame can't interleave with a concurrent
-    draw_clock call from the button thread.
     """
     global _last_applied_frame
     with _render_lock:
@@ -497,12 +487,6 @@ def display_goodnight(epd):
 
 def draw_clock(epd, invert=False):
     _require_fonts()
-
-    # Held for the entire body so the main loop and the button thread can't
-    # interleave the _last_applied_frame check with another thread's reseed —
-    # an interleave would let one render diff against a base painted by the
-    # other call and ghost the previous border. Reentrant so the nested
-    # reset_base_image call below doesn't deadlock.
     with _render_lock:
         width, height = epd.height, epd.width
         bg = 0 if invert else 255
@@ -515,10 +499,6 @@ def draw_clock(epd, invert=False):
         phrase, _ = fuzzy_time(now.hour, now.minute, DIALECT)
         variant = _resolve_font(phrase)
         frame = _resolve_frame(variant)
-
-        # Random-font + auto-frame mode can pick a font in a new category
-        # between ticks; without re-seeding the partial-refresh base,
-        # displayPartial would diff against the old frame and ghost it.
         if frame != _last_applied_frame:
             reset_base_image(epd, invert=invert, frame=frame)
 
@@ -633,11 +613,6 @@ def main():
             "hardware-free testing."
         )
 
-    # Load configuration here rather than at import time so tests can import
-    # the module without triggering warnings or filesystem reads. After-hours
-    # mode is location-driven via fuzzyclock_config.yaml next to this file;
-    # if it's missing or malformed, the feature stays off and we fall back
-    # to plain day/night.
     global DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
     DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE = _load_config()
     AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None

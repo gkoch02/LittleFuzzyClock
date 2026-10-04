@@ -68,6 +68,10 @@ FONT_FRAME_CATEGORY = {
     "titan-one": "bauhaus",
     "boogaloo": "bauhaus",
     "shrikhand": "bauhaus",
+    "chango": "bauhaus",
+    "gravitas-one": "bauhaus",
+    "jaro": "bauhaus",
+    "balthazar": "bauhaus",
     # Blackletter / medieval / horror / wild west → rustic
     "unifraktur-maguntia": "rustic",
     "medieval-sharp": "rustic",
@@ -85,6 +89,10 @@ FONT_FRAME_CATEGORY = {
     "rye": "rustic",
     "cinzel-decorative": "rustic",
     "almendra-display": "rustic",
+    "oi": "rustic",
+    "flamenco": "rustic",
+    "emblema-one": "rustic",
+    "manufacturing-consent": "rustic",
     # Hand-drawn / notebook / script → sketchy
     "caveat": "sketchy",
     "kalam": "sketchy",
@@ -121,6 +129,10 @@ FONT_FRAME_CATEGORY = {
     "rubik-spray-paint": "sketchy",
     "rubik-distressed": "sketchy",
     "rubik-iso": "sketchy",
+    "kablammo": "sketchy",
+    "unkempt": "sketchy",
+    "shojumaru": "sketchy",
+    "patrick-hand-sc": "sketchy",
     # Pixel / arcade / techno / deco → retro
     "vt323": "retro",
     "press-start-2p": "retro",
@@ -149,22 +161,9 @@ FONT_FRAME_CATEGORY = {
     "bungee-shade": "retro",
     "foldit": "retro",
     "nabla": "retro",
-    # New additions
-    "chango": "bauhaus",
-    "gravitas-one": "bauhaus",
-    "oi": "rustic",
-    "flamenco": "rustic",
-    "emblema-one": "rustic",
     "mystery-quest": "retro",
     "baumans": "retro",
     "tourney": "retro",
-    "kablammo": "sketchy",
-    "unkempt": "sketchy",
-    "jaro": "bauhaus",
-    "shojumaru": "sketchy",
-    "manufacturing-consent": "rustic",
-    "balthazar": "bauhaus",
-    "patrick-hand-sc": "sketchy",
 }
 
 
