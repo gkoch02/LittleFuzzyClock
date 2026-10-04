@@ -360,6 +360,20 @@ def pick_random_font(rng=None):
         return pick
 
 
+def _has_weight_axis(font):
+    """True for a variable font with a weight axis; False for static fonts.
+
+    Checked before set_variation_by_name: on Pillow 10.0.0 that call segfaults
+    on a variable font with no named instances (Jaro's only axis is optical size).
+    """
+    try:
+        axes = font.get_variation_axes()
+    except OSError:  # static font
+        return False
+    names = {a["name"].decode() if isinstance(a["name"], bytes) else a["name"] for a in axes}
+    return "Weight" in names
+
+
 def load_font(size, variant=None):
     """Load a TrueType/OpenType font at `size` from a registered variant.
 
@@ -369,12 +383,9 @@ def load_font(size, variant=None):
 
     For variable fonts (e.g. Fredoka.ttf, which carries a wght axis), we
     activate the "Bold" named instance so weight matches the static-Bold
-    static fonts the other variants ship as — otherwise PIL renders at the
-    default axis values (Light/Regular), which looks wispy on e-ink and
-    hides the variant's character. Static fonts raise OSError on the call
-    and we silently skip it; variable fonts without a "Bold" named instance
-    (e.g. Sixtyfour, whose axes are BLED/SCAN) raise ValueError, also
-    silently skipped — they render at their default axis values.
+    fonts the other variants ship as — otherwise PIL renders at the default
+    axis values (Light/Regular), which looks wispy on e-ink. Variable fonts
+    without a weight axis (Sixtyfour, Jaro, …) render at their defaults.
 
     Raises SystemExit listing the variant's tried paths when none load. We
     fail loud rather than letting PIL silently fall back to its default
@@ -391,13 +402,11 @@ def load_font(size, variant=None):
             font = ImageFont.truetype(path, size)
         except OSError:
             continue
-        try:
-            font.set_variation_by_name("Bold")
-        except (OSError, AttributeError, ValueError):
-            # ValueError: variable font without a "Bold" named instance
-            # (e.g. Sixtyfour ships BLED/SCAN axes only). Static fonts raise
-            # OSError; non-FreeType backends raise AttributeError.
-            pass
+        if _has_weight_axis(font):
+            try:
+                font.set_variation_by_name("Bold")
+            except (OSError, AttributeError, ValueError):
+                pass  # variable font with a weight axis but no "Bold" instance
         return font
     raise SystemExit(
         f"No usable font found for variant {label!r}. Tried:\n"

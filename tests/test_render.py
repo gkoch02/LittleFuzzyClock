@@ -8,11 +8,12 @@ canvas.
 Run with: python3 -m unittest test_render
 """
 
+import os
 import unittest
 from datetime import datetime
 from unittest import mock
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from fuzzyclock.fonts import _reset_random_font_bag
 from fuzzyclock.frames import _CONTENT_PAD, _sketch_jitter
@@ -101,17 +102,23 @@ class LoadFontTests(unittest.TestCase):
     def test_default_font_constant_is_a_registered_variant(self):
         self.assertIn(DEFAULT_FONT, FONT_VARIANTS)
 
-    def test_variable_font_without_bold_named_instance_still_loads(self):
-        # Variable fonts whose wght axis carries no "Bold" named instance
-        # (e.g. Sixtyfour, Workbench) raise ValueError from
-        # set_variation_by_name("Bold"). load_font must catch it and return
-        # the font at its default axis values rather than advancing to the
-        # next candidate or raising.
+    def test_variable_font_without_weight_axis_loads(self):
+        # Jaro's only axis is optical size; asking it for "Bold" segfaults
+        # Pillow 10.0.0, so load_font must not try.
+        self.assertIsNotNone(load_font(20, variant="jaro"))
+
+    def test_variable_font_with_weight_axis_is_set_to_bold(self):
+        path = next(p for p in FONT_VARIANTS["fredoka"] if os.path.exists(p))
+        default_ink = sum(ImageFont.truetype(path, 40).getmask("Hello"))
+        bold_ink = sum(load_font(40, variant="fredoka").getmask("Hello"))
+        self.assertGreater(bold_ink, default_ink)
+
+    def test_weight_axis_without_bold_instance_still_loads(self):
         mock_font = mock.Mock()
+        mock_font.get_variation_axes.return_value = [{"name": b"Weight"}]
         mock_font.set_variation_by_name.side_effect = ValueError("no Bold instance")
         with mock.patch("fuzzyclock.fonts.ImageFont.truetype", return_value=mock_font):
-            result = load_font(20)
-        self.assertIs(result, mock_font)
+            self.assertIs(load_font(20), mock_font)
 
 
 class DrawBorderTests(unittest.TestCase):
