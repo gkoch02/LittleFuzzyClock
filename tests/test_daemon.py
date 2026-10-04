@@ -1709,8 +1709,8 @@ class GuardedHardwareImportTests(unittest.TestCase):
     since CI's missing GPIO would take the ImportError path either way.
 
     Each test imports a *fresh, independently named* copy of the module rather
-    than reloading fuzzyclock_daemon, so the real module's global state (which
-    CLAUDE.md requires stay clean) is never disturbed.
+    than reloading fuzzyclock_daemon, so the real module's global state is
+    never disturbed.
     """
 
     DAEMON_PATH = os.path.join(
@@ -1766,7 +1766,7 @@ class GuardedHardwareImportTests(unittest.TestCase):
     def test_real_module_is_not_replaced_or_reloaded(self):
         # The isolated import must leave the module every other test in this
         # file shares completely alone — a reload() would swap it out and
-        # reset the module-level state CLAUDE.md requires stay clean.
+        # reset its module-level state.
         isolated = self._import_isolated("waveshare_epd")
         self.assertIs(sys.modules["fuzzyclock_daemon"], d)
         self.assertIsNot(isolated, d)

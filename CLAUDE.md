@@ -18,7 +18,7 @@ Rules for Claude Code sessions on this repo. User-facing usage is in the README.
 - Tests: `python3 -m unittest discover` from the repo root. One module: `python3 -m unittest tests.test_render`.
 - Lint/format: `ruff check . && ruff format .` (CI runs `ruff format --check`).
 - Render check: `python3 fuzzyclock_preview.py --dry-run --output /tmp/out.png [--time HH:MM --font NAME --dialect NAME]`.
-- Needs Pillow, PyYAML and `fonts-dejavu-core`. Off-Pi only: `pip install -r requirements.txt`.
+- Needs Pillow and PyYAML; fonts are vendored in `fonts/`. Off-Pi only: `pip install -r requirements.txt`.
 
 ## Rules
 

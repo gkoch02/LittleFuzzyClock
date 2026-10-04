@@ -133,9 +133,9 @@ Four border styles are available, each paired by default with a matching font ca
 | Style      | Character                                                          |
 | ---------- | ------------------------------------------------------------------ |
 | `bauhaus`  | Clean geometric corners — the default for most sans/serif fonts    |
-| `rustic`   | Rough hand-drawn look — pairs with handwriting and sketch fonts    |
-| `sketchy`  | Loose, uneven lines — pairs with hand-drawn and novelty fonts      |
-| `retro`    | Vintage/deco ornaments — pairs with display, retro, and sci-fi fonts |
+| `rustic`   | Double rule with diamond corners — pairs with blackletter and horror fonts |
+| `sketchy`  | Loose, uneven lines — pairs with hand-drawn and script fonts       |
+| `retro`    | Stair-stepped pixel border — pairs with pixel, deco, and techno fonts |
 
 The default `auto` setting picks the frame that best complements the active font. You can override it for any font with `--frame`:
 

@@ -209,9 +209,9 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
 
     def test_hardware_path_rotates_and_sleeps(self):
         # When EPD is available, the script must init the panel, push a
-        # rotated buffer (the panel is mounted upside down — CLAUDE.md
-        # gotcha #2), and put it back to sleep. Inject a fake epd2in13_V4
-        # because the real module isn't importable in CI.
+        # rotated buffer (the panel is mounted upside down), and put it
+        # back to sleep. Inject a fake epd2in13_V4 because the real module
+        # isn't importable in CI.
         fake_epd = mock.Mock()
         fake_epd.width = 122  # portrait dims; landscape swaps them
         fake_epd.height = 250

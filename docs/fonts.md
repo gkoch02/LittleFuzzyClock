@@ -34,8 +34,8 @@ Each preview's `<sup>` line indicates how the font reaches the daemon:
   name table records one, that is the label — it governs the copy this repo actually
   redistributes. Some files (mostly variable-font builds) carry no license string at
   all; those are labelled from the upstream project.
-- **`apt: ...`** — also installed by `deploy.sh` on the Pi. These are vendored in
-  `fonts/` too, so the license shown still governs the copy shipped here.
+- **`apt: ...`** — the Debian package that also ships this font. `deploy.sh` doesn't
+  install it: the copy vendored in `fonts/` is what loads, and the license shown governs it.
 - **`Commercial · drop ... into fonts/`** — no apt package and not redistributable here. Provide the file yourself; the daemon falls back to a macOS system font for dev renders when no file is present.
 
 Variants are grouped by theme/vibe and sorted alphabetically within each group.
