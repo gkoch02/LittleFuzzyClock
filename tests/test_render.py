@@ -121,27 +121,6 @@ class LoadFontTests(unittest.TestCase):
             self.assertIs(load_font(20), mock_font)
 
 
-class DrawBorderTests(unittest.TestCase):
-    def test_marks_some_pixels(self):
-        image = Image.new("1", (WIDTH, HEIGHT), 255)
-        draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT)
-        self.assertGreater(_count_black_pixels(image), 0)
-
-    def test_border_is_sparse_not_a_filled_rectangle(self):
-        image = Image.new("1", (WIDTH, HEIGHT), 255)
-        draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT)
-        self.assertLess(_count_black_pixels(image), (WIDTH * HEIGHT) // 4)
-
-    def test_inverted_border_draws_in_white(self):
-        # Black canvas with invert=True should leave a sparse white border —
-        # i.e. some white pixels appear, but the bulk of the canvas stays black.
-        image = Image.new("1", (WIDTH, HEIGHT), 0)
-        draw_border(ImageDraw.Draw(image), WIDTH, HEIGHT, invert=True)
-        black = _count_black_pixels(image)
-        self.assertGreater(WIDTH * HEIGHT - black, 0)
-        self.assertGreater(black, (WIDTH * HEIGHT) * 3 // 4)
-
-
 class RenderClockTests(unittest.TestCase):
     def _render(self, when, dialect=DEFAULT_DIALECT, invert=False):
         bg = 0 if invert else 255

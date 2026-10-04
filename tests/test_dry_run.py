@@ -49,9 +49,9 @@ class DryRunTimeArgTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _run(self, *extra_args):
+    def _run(self, *extra_args, output="preview.png"):
         """Return (CompletedProcess, out_path). out_path is valid while self.tmp is alive."""
-        out_path = os.path.join(self.tmp.name, "preview.png")
+        out_path = os.path.join(self.tmp.name, output)
         result = subprocess.run(
             [
                 sys.executable,
@@ -88,60 +88,21 @@ class DryRunTimeArgTests(unittest.TestCase):
         result, _ = self._run("--time", "abc")
         self.assertNotEqual(result.returncode, 0)
 
-    def test_same_time_produces_identical_renders(self):
-        # --time pins the clock to a deterministic moment; two runs at the
-        # same time and default dialect must produce byte-identical PNG output.
-        out1 = os.path.join(self.tmp.name, "r1.png")
-        out2 = os.path.join(self.tmp.name, "r2.png")
-        for out in (out1, out2):
-            r = subprocess.run(
-                [
-                    sys.executable,
-                    "fuzzyclock_preview.py",
-                    "--dry-run",
-                    "--output",
-                    out,
-                    "--time",
-                    "14:30",
-                ],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(r.returncode, 0, f"stderr: {r.stderr}")
-        with Image.open(out1) as i1, Image.open(out2) as i2:
-            i1.load()
-            i2.load()
+    def _render(self, time_str, output):
+        result, out_path = self._run("--time", time_str, output=output)
+        self.assertEqual(result.returncode, 0, f"stderr: {result.stderr}")
+        with Image.open(out_path) as img:
             # tobytes() rather than getdata(): getdata() is deprecated (removed in
             # Pillow 14) and its replacement get_flattened_data() does not exist
             # before Pillow 12, which requirements.txt still allows.
-            self.assertEqual(i1.tobytes(), i2.tobytes())
+            return img.tobytes()
+
+    def test_same_time_produces_identical_renders(self):
+        self.assertEqual(self._render("14:30", "r1.png"), self._render("14:30", "r2.png"))
 
     def test_different_times_produce_different_renders(self):
-        # Verify --time is actually wired through: two distinct times (from
-        # different 5-minute phrase buckets) must not produce the same image.
-        out1 = os.path.join(self.tmp.name, "t1.png")
-        out2 = os.path.join(self.tmp.name, "t2.png")
-        for time_str, out in (("09:00", out1), ("09:30", out2)):
-            r = subprocess.run(
-                [
-                    sys.executable,
-                    "fuzzyclock_preview.py",
-                    "--dry-run",
-                    "--output",
-                    out,
-                    "--time",
-                    time_str,
-                ],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(r.returncode, 0, f"stderr: {r.stderr}")
-        with Image.open(out1) as i1, Image.open(out2) as i2:
-            i1.load()
-            i2.load()
-            self.assertNotEqual(i1.tobytes(), i2.tobytes())
+        # 09:00 and 09:30 are in different phrase buckets, so --time is wired through.
+        self.assertNotEqual(self._render("09:00", "t1.png"), self._render("09:30", "t2.png"))
 
 
 class DrawFuzzyClockInProcessTests(unittest.TestCase):

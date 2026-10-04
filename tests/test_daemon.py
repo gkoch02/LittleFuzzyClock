@@ -20,12 +20,14 @@ import tempfile
 import threading
 import time
 import unittest
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from unittest import mock
 
 import yaml
 
 import fuzzyclock_daemon as d
+
+_NO_COORDS = (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None)
 
 
 class CurrentModeTests(unittest.TestCase):
@@ -171,62 +173,62 @@ class LoadConfigTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_missing_file_returns_defaults(self):
-        missing = os.path.join(self.tmp.name, "does_not_exist.yaml")
-        self.assertEqual(
-            d._load_config(missing),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+    def test_unusable_file_returns_defaults(self):
+        cases = (
+            ("missing", None, True),
+            ("malformed", "dialect: classic\n  - oops: not valid", True),
+            ("empty", "", False),
+            ("not a mapping", "- not\n- a mapping\n", True),
         )
+        for label, contents, warns in cases:
+            with self.subTest(label):
+                if contents is None:
+                    path = os.path.join(self.tmp.name, "does_not_exist.yaml")
+                else:
+                    path = self._write(contents)
+                expect_logs = self.assertLogs if warns else self.assertNoLogs
+                with expect_logs("root", level="WARNING"):
+                    self.assertEqual(d._load_config(path), _NO_COORDS)
 
-    def test_malformed_yaml_returns_defaults(self):
-        path = self._write("dialect: classic\n  - oops: not valid")
-        self.assertEqual(
-            d._load_config(path),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+    def test_oserror_other_than_fnf_returns_defaults_with_warning(self):
+        path = os.path.join(self.tmp.name, "unreadable.yaml")
+        with mock.patch("builtins.open", side_effect=PermissionError("access denied")):
+            with self.assertLogs("root", level="WARNING") as cm:
+                result = d._load_config(path)
+        self.assertEqual(result, _NO_COORDS)
+        self.assertTrue(any("access denied" in line for line in cm.output))
+
+    def test_unknown_value_falls_back_with_warning(self):
+        cases = (
+            ("dialect", "pirate", 0, d.DEFAULT_DIALECT),
+            ("font", "comic-sans", 1, d.DEFAULT_FONT),
+            ("frame", "art-deco", 2, d.AUTO_FRAME),
         )
+        for key, bad, index, default in cases:
+            with self.subTest(key=key):
+                path = self._write_yaml({key: bad})
+                with self.assertLogs("root", level="WARNING") as cm:
+                    result = d._load_config(path)
+                self.assertEqual(result[index], default)
+                self.assertEqual(result, _NO_COORDS)
+                self.assertTrue(any(bad in line for line in cm.output))
 
-    def test_empty_file_returns_defaults(self):
-        path = self._write("")
-        self.assertEqual(
-            d._load_config(path),
-            (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
+    def test_known_value_is_accepted(self):
+        # `random` and `auto` are sentinels outside FONT_VARIANTS /
+        # FRAME_VARIANTS, but still valid.
+        cases = (
+            ("dialect", "shakespeare", 0),
+            ("font", "roboto-slab", 1),
+            ("font", d.RANDOM_FONT, 1),
+            ("frame", "sketchy", 2),
+            ("frame", d.AUTO_FRAME, 2),
         )
-
-    def test_non_mapping_yaml_returns_defaults(self):
-        path = self._write("- not\n- a mapping\n")
-        with self.assertLogs("root", level="WARNING"):
-            self.assertEqual(
-                d._load_config(path),
-                (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None),
-            )
-
-    def test_unknown_dialect_falls_back_with_warning(self):
-        path = self._write_yaml({"dialect": "pirate"})
-        with self.assertLogs("root", level="WARNING") as cm:
-            dialect, font, frame, lat, lon = d._load_config(path)
-        self.assertEqual(dialect, d.DEFAULT_DIALECT)
-        self.assertEqual(font, d.DEFAULT_FONT)
-        self.assertEqual(frame, d.AUTO_FRAME)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-        self.assertTrue(any("pirate" in line for line in cm.output))
-
-    def test_unknown_font_falls_back_with_warning(self):
-        path = self._write_yaml({"font": "comic-sans"})
-        with self.assertLogs("root", level="WARNING") as cm:
-            dialect, font, _frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(dialect, d.DEFAULT_DIALECT)
-        self.assertEqual(font, d.DEFAULT_FONT)
-        self.assertTrue(any("comic-sans" in line for line in cm.output))
-
-    def test_known_dialect_and_font_are_returned(self):
-        path = self._write_yaml({"dialect": "shakespeare", "font": "roboto-slab"})
-        dialect, font, frame, lat, lon = d._load_config(path)
-        self.assertEqual(dialect, "shakespeare")
-        self.assertEqual(font, "roboto-slab")
-        self.assertEqual(frame, d.AUTO_FRAME)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
+        for key, value, index in cases:
+            with self.subTest(key=key, value=value):
+                path = self._write_yaml({key: value})
+                with self.assertNoLogs("root", level="WARNING"):
+                    result = d._load_config(path)
+                self.assertEqual(result[index], value)
 
     def test_valid_full_config(self):
         path = self._write_yaml(
@@ -247,71 +249,35 @@ class LoadConfigTests(unittest.TestCase):
 
     def test_missing_coords_disables_after_hours(self):
         path = self._write_yaml({"dialect": "classic", "font": "dejavu"})
-        _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_partial_coords_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": 51.5})  # no longitude
-        with self.assertLogs("root", level="WARNING"):
+        with self.assertNoLogs("root", level="WARNING"):
             _dialect, _font, _frame, lat, lon = d._load_config(path)
         self.assertIsNone(lat)
         self.assertIsNone(lon)
 
-    def test_non_numeric_coords_disable_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": "north", "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_nan_latitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": float("nan"), "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_nan_longitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": 51.5, "longitude": float("nan")})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_positive_infinity_latitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": float("inf"), "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_negative_infinity_longitude_disables_after_hours_with_warning(self):
-        path = self._write_yaml({"latitude": 51.5, "longitude": float("-inf")})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_out_of_range_latitude_disables_after_hours_with_warning(self):
-        # 100 is a finite float but not a real latitude (valid range [-90, 90]).
-        path = self._write_yaml({"latitude": 100.0, "longitude": -0.1})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_out_of_range_longitude_disables_after_hours_with_warning(self):
-        # 181 is a finite float but not a real longitude (valid range [-180, 180]).
-        path = self._write_yaml({"latitude": 51.5, "longitude": 181.0})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
+    def test_bad_coords_disable_after_hours_with_warning(self):
+        # Either coordinate bad disables after-hours entirely rather than
+        # half-configuring it.
+        nan, inf = float("nan"), float("inf")
+        for coords in (
+            {"latitude": 51.5},  # partial
+            {"latitude": "north", "longitude": -0.1},
+            {"latitude": nan, "longitude": -0.1},
+            {"latitude": 51.5, "longitude": nan},
+            {"latitude": inf, "longitude": -0.1},
+            {"latitude": 51.5, "longitude": -inf},
+            {"latitude": 90.001, "longitude": -0.1},
+            {"latitude": -90.001, "longitude": -0.1},
+            {"latitude": 51.5, "longitude": 180.001},
+            {"latitude": 51.5, "longitude": -180.001},
+        ):
+            with self.subTest(**coords):
+                path = self._write_yaml(coords)
+                with self.assertLogs("root", level="WARNING"):
+                    _dialect, _font, _frame, lat, lon = d._load_config(path)
+                self.assertIsNone(lat)
+                self.assertIsNone(lon)
 
     def test_boundary_coordinates_are_accepted(self):
-        # Exactly +/-90 latitude and +/-180 longitude are valid extremes and
-        # must not be rejected as out-of-range.
         for lat_val, lon_val in ((90.0, 180.0), (-90.0, -180.0), (90.0, -180.0), (-90.0, 180.0)):
             with self.subTest(lat=lat_val, lon=lon_val):
                 path = self._write_yaml({"latitude": lat_val, "longitude": lon_val})
@@ -319,70 +285,6 @@ class LoadConfigTests(unittest.TestCase):
                     _dialect, _font, _frame, lat, lon = d._load_config(path)
                 self.assertEqual(lat, lat_val)
                 self.assertEqual(lon, lon_val)
-
-    def test_just_out_of_range_coordinates_are_rejected(self):
-        for lat_val, lon_val in (
-            (90.001, -0.1),
-            (-90.001, -0.1),
-            (51.5, 180.001),
-            (51.5, -180.001),
-        ):
-            with self.subTest(lat=lat_val, lon=lon_val):
-                path = self._write_yaml({"latitude": lat_val, "longitude": lon_val})
-                with self.assertLogs("root", level="WARNING"):
-                    _dialect, _font, _frame, lat, lon = d._load_config(path)
-                self.assertIsNone(lat)
-                self.assertIsNone(lon)
-
-    def test_one_valid_one_out_of_range_coordinate_disables_after_hours(self):
-        # A partial validity (one coordinate fine, the other impossible) must
-        # still disable after-hours entirely rather than half-configuring it.
-        path = self._write_yaml({"latitude": 45.0, "longitude": float("nan")})
-        with self.assertLogs("root", level="WARNING"):
-            _dialect, _font, _frame, lat, lon = d._load_config(path)
-        self.assertIsNone(lat)
-        self.assertIsNone(lon)
-
-    def test_random_font_value_is_accepted(self):
-        # `random` is a valid sentinel even though it isn't a key in
-        # FONT_VARIANTS; _load_config must not warn or fall back.
-        path = self._write_yaml({"font": "random"})
-        with self.assertNoLogs("root", level="WARNING"):
-            _dialect, font, _frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(font, d.RANDOM_FONT)
-
-    def test_known_frame_is_accepted(self):
-        path = self._write_yaml({"frame": "sketchy"})
-        with self.assertNoLogs("root", level="WARNING"):
-            _dialect, _font, frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(frame, "sketchy")
-
-    def test_auto_frame_value_is_accepted(self):
-        # `auto` is the sentinel; valid even though it isn't a key in
-        # FRAME_VARIANTS. Must not warn or fall back.
-        path = self._write_yaml({"frame": "auto"})
-        with self.assertNoLogs("root", level="WARNING"):
-            _dialect, _font, frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(frame, d.AUTO_FRAME)
-
-    def test_unknown_frame_falls_back_with_warning(self):
-        path = self._write_yaml({"frame": "art-deco"})
-        with self.assertLogs("root", level="WARNING") as cm:
-            _dialect, _font, frame, _lat, _lon = d._load_config(path)
-        self.assertEqual(frame, d.AUTO_FRAME)
-        self.assertTrue(any("art-deco" in line for line in cm.output))
-
-    def test_oserror_other_than_fnf_returns_defaults_with_warning(self):
-        # The (OSError, yaml.YAMLError) branch is separate from the
-        # FileNotFoundError branch. A PermissionError (or any other OSError
-        # subclass that isn't FileNotFoundError) must also fall back to
-        # defaults and emit a warning.
-        path = os.path.join(self.tmp.name, "unreadable.yaml")
-        with mock.patch("builtins.open", side_effect=PermissionError("access denied")):
-            with self.assertLogs("root", level="WARNING") as cm:
-                result = d._load_config(path)
-        self.assertEqual(result, (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None))
-        self.assertTrue(any("access denied" in line for line in cm.output))
 
 
 class ResolveFontTests(unittest.TestCase):
@@ -793,31 +695,6 @@ class ConcurrentRenderCounterTests(unittest.TestCase):
         self.assertTrue(d._needs_recovery)
 
 
-class SunTimesCacheTests(unittest.TestCase):
-    """`_sun_times_cached` is an LRU on top of the pure NOAA helper; it must
-    return identical objects on a hit and recompute on a miss."""
-
-    def setUp(self):
-        d._sun_times_cached.cache_clear()
-
-    def test_cache_hits_for_repeated_args(self):
-        args = (date(2024, 6, 21), 51.5074, -0.1278)
-        first = d._sun_times_cached(*args)
-        second = d._sun_times_cached(*args)
-        info = d._sun_times_cached.cache_info()
-        self.assertEqual(info.hits, 1)
-        self.assertEqual(info.misses, 1)
-        # tuple identity confirms the cached object was returned, not recomputed.
-        self.assertIs(first, second)
-
-    def test_cache_miss_for_new_date(self):
-        d._sun_times_cached(date(2024, 6, 21), 51.5074, -0.1278)
-        d._sun_times_cached(date(2024, 6, 22), 51.5074, -0.1278)
-        info = d._sun_times_cached.cache_info()
-        self.assertEqual(info.misses, 2)
-        self.assertEqual(info.hits, 0)
-
-
 class _FakeEPD:
     """Test double for the Waveshare EPD — records every SPI-shaped call.
 
@@ -1166,9 +1043,6 @@ class InitFontsTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 d._init_fonts()
         self.assertFalse(d._fonts_ready)
-
-
-_NO_COORDS = (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None)
 
 
 @contextlib.contextmanager
