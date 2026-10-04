@@ -37,13 +37,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install DejaVu fonts
-        # fuzzyclock_core.load_font() looks for DejaVuSans-Bold.ttf first; the
-        # rendering tests fail without it.
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
-
       - name: Install Pillow and PyYAML
         # gpiozero / RPi.GPIO / spidev aren't installed: the daemon's hardware
         # imports are guarded so test_daemon* can import fuzzyclock_daemon
@@ -76,11 +69,6 @@ jobs:
         with:
           # 3.11 matches Raspberry Pi OS Bookworm, the deployment target.
           python-version: "3.11"
-
-      - name: Install DejaVu fonts
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
 
       - name: Install the oldest supported Pillow
         # The `test` jobs install "Pillow>=10,<13", which always resolves to the
