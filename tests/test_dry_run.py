@@ -18,7 +18,7 @@ from unittest import mock
 from PIL import Image
 
 import fuzzyclock_preview
-from fuzzyclock_core import DIALECTS, FONT_VARIANTS, RANDOM_FONT
+from fuzzyclock_core import FONT_VARIANTS, RANDOM_FONT
 
 # This file lives in tests/, so the repo root — where fuzzyclock_preview.py sits and
 # where the subprocesses below are run — is one level up.
@@ -26,49 +26,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class DryRunCLITests(unittest.TestCase):
-    """Existing end-to-end dry-run tests (basic image shape, dialects, bad dialect)."""
-
-    def _run_dry(self, *extra_args):
-        with tempfile.TemporaryDirectory() as tmp:
-            out_path = os.path.join(tmp, "preview.png")
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    "fuzzyclock_preview.py",
-                    "--dry-run",
-                    "--output",
-                    out_path,
-                    *extra_args,
-                ],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(
-                result.returncode,
-                0,
-                f"--dry-run exited {result.returncode}\n"
-                f"stdout: {result.stdout}\nstderr: {result.stderr}",
-            )
-            self.assertTrue(os.path.exists(out_path), "PNG was not written")
-            with Image.open(out_path) as img:
-                # Detach from the temp dir before it's cleaned up.
-                img.load()
-                return img
-
-    def test_dry_run_writes_a_landscape_png(self):
-        img = self._run_dry()
-        self.assertEqual(img.size, (250, 122))
-        self.assertEqual(img.mode, "1")
-
-    def test_dry_run_supports_every_dialect(self):
-        # Each dialect is rendered through the CLI surface end-to-end. Catches
-        # any dialect that imports cleanly but blows up the dry-run path
-        # specifically (font issues, layout overflow, etc.).
-        for dialect in sorted(DIALECTS):
-            with self.subTest(dialect=dialect):
-                img = self._run_dry("--dialect", dialect)
-                self.assertEqual(img.size, (250, 122))
+    """CLI argument handling. Rendering itself is covered in-process."""
 
     def test_unknown_dialect_is_rejected_by_argparse(self):
         # argparse `choices=` should refuse the value with a non-zero exit.
@@ -120,16 +78,6 @@ class DryRunTimeArgTests(unittest.TestCase):
             img.load()
             self.assertEqual(img.size, (250, 122))
             self.assertEqual(img.mode, "1")
-
-    def test_boundary_midnight_renders(self):
-        result, out_path = self._run("--time", "00:00")
-        self.assertEqual(result.returncode, 0, f"stderr: {result.stderr}")
-        self.assertTrue(os.path.exists(out_path))
-
-    def test_boundary_end_of_day_renders(self):
-        result, out_path = self._run("--time", "23:59")
-        self.assertEqual(result.returncode, 0, f"stderr: {result.stderr}")
-        self.assertTrue(os.path.exists(out_path))
 
     def test_invalid_hour_exits_nonzero(self):
         # datetime.strptime rejects "25:00"; the process should exit non-zero.
@@ -293,18 +241,12 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
 
 
 class GpioBusyDryRunTests(unittest.TestCase):
-    """Regression tests for issue #50 — --dry-run must not touch the EPD stack.
+    """--dry-run must not touch the EPD stack.
 
-    Importing waveshare_epd is not side-effect free: epdconfig instantiates its
-    platform implementation at module scope, and on a Pi that constructor claims
-    the GPIO pins. With fuzzyclock.service running, the import failed with
-    lgpio.error("GPIO busy") — which is neither ImportError nor RuntimeError, so
-    the old module-scope guard did not catch it and the CLI died before argparse
-    ever saw --dry-run.
-
-    CI has no GPIO at all, which takes the ImportError path and would pass
-    whether or not the bug exists. So these tests simulate the real condition —
-    an import that raises something exotic — via a meta_path finder.
+    On a Pi with the service running, importing waveshare_epd raises
+    lgpio.error("GPIO busy"), neither ImportError nor RuntimeError. CI has no
+    GPIO and would take the ImportError path whether or not the code is right,
+    so a meta_path finder simulates the exotic exception instead.
     """
 
     class _Boom(Exception):
@@ -337,8 +279,6 @@ class GpioBusyDryRunTests(unittest.TestCase):
         self.addCleanup(sys.modules.update, cached)
 
     def test_load_epd_returns_none_when_import_raises_non_import_error(self):
-        # The specific gap that caused #50: a broad except is required here,
-        # because the failure is neither ImportError nor RuntimeError.
         self._block_waveshare()
         self.assertIsNone(fuzzyclock_preview._load_epd())
 

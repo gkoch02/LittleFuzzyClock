@@ -1,5 +1,4 @@
 import logging
-import math
 import os
 import signal
 import threading
@@ -11,6 +10,7 @@ from subprocess import run
 import yaml
 from PIL import Image, ImageDraw
 
+from fuzzyclock.frames import _CONTENT_PAD
 from fuzzyclock_core import (
     AUTO_FRAME,
     DEFAULT_DIALECT,
@@ -28,24 +28,11 @@ from fuzzyclock_core import (
 )
 from fuzzyclock_core import sun_times as _raw_sun_times
 
-# Hardware-only deps. Guarded so the module is importable on CI / dev boxes
-# without GPIO + an EPD driver installed; the daemon's main() will refuse to
-# run if they're missing, but tests can import this file freely.
-#
-# The except is broad rather than (ImportError, RuntimeError) — the two obvious
-# cases, a missing library and gpiozero finding no GPIO backend on non-Pi Linux.
-# Neither covers the third: importing waveshare_epd is not side-effect free,
-# because epdconfig instantiates its platform implementation at module scope and
-# that constructor claims the GPIO pins through gpiozero. With the pins already
-# held, the import raises lgpio.error("GPIO busy"), which is neither — and would
-# escape as a bare traceback before main() could report anything useful.
-#
-# Breadth costs diagnosis, so keep the cause: without it a genuine bug in the
-# vendored driver (a NameError, say) would be reported as "driver not installed".
-# main() surfaces _EPD_IMPORT_ERROR in its SystemExit and _BUTTON_IMPORT_ERROR in
-# the button-init log. The Button call site alone is not enough: with Button None
-# it only ever sees TypeError("'NoneType' object is not callable"), which says
-# nothing about why the import failed.
+# Hardware-only deps, guarded so CI and dev boxes can import this module.
+# The except is deliberately broad: importing waveshare_epd claims the GPIO
+# pins, and with them already held it raises lgpio.error("GPIO busy"), which is
+# neither ImportError nor RuntimeError. Breadth hides the cause, so it is kept
+# and reported by main() (in the SystemExit and the button-init log).
 _EPD_IMPORT_ERROR = None
 _BUTTON_IMPORT_ERROR = None
 
@@ -68,7 +55,7 @@ logging.basicConfig(
 
 # === CONFIGURATION ===
 GPIO_PIN = 3
-UPDATE_INTERVAL = 300  # render the clock face every 5 minutes
+UPDATE_MINUTES = 5  # re-render on wall-clock multiples of this many minutes
 TICK_INTERVAL = 60  # main loop wakes every minute to check mode transitions
 
 # Render-failure thresholds. After RENDER_RETRY_REINIT consecutive failures
@@ -77,14 +64,7 @@ TICK_INTERVAL = 60  # main loop wakes every minute to check mode transitions
 RENDER_RETRY_REINIT = 3
 RENDER_RETRY_FATAL = 10
 
-# Bounded wait for any single blocking call into the vendored EPD driver
-# (init/display/displayPartial/displayPartBaseImage/sleep). The driver's
-# ReadBusy() (waveshare_epd/epd2in13_V4.py) polls the BUSY pin in a plain
-# `while` loop with no timeout of its own, and every *rendering* call above
-# goes through ReadBusy() at least once. sleep() is the exception — it sends
-# DEEP_SLEEP, waits a fixed 2s and calls module_exit() without reading BUSY —
-# so its timeout guards a wedged SPI write instead. Wrapped anyway, for that
-# reason and to keep one call convention. See _call_with_timeout below.
+# Bound on any single EPD driver call; see _call_with_timeout.
 EPD_CALL_TIMEOUT_SEC = 10
 
 # Day mode runs from DAY_START_HOUR up to (but not including) DAY_END_HOUR.
@@ -96,6 +76,9 @@ LONG_PRESS_SECONDS = 5.0  # hold this long → shutdown
 SHORT_PRESS_MIN_SECONDS = 0.05  # anything shorter is debounce noise
 SHORT_PRESS_MAX_SECONDS = 2.0  # anything between MAX and LONG_PRESS is ignored
 
+# The goodnight slide always uses this blackletter face, whatever FONT_VARIANT is.
+GOODNIGHT_FONT = "unifraktur-maguntia"
+
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.yaml")
 
@@ -103,10 +86,9 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclo
 def _load_config(path=CONFIG_PATH):
     """Read the YAML config and return (dialect, font, frame, latitude, longitude).
 
-    Validation matches the previous JSON+env-var behaviour: unknown dialect,
-    font, or frame logs a warning and falls back to the default; missing or
-    invalid coordinates log a warning and return (None, None) so the daemon
-    stays on plain day/night instead of crashing.
+    Unknown dialect, font, or frame logs a warning and falls back to the
+    default; missing or invalid coordinates log a warning and return
+    (None, None) so the daemon stays on plain day/night instead of crashing.
     """
     try:
         with open(path) as f:
@@ -179,16 +161,10 @@ def _load_config(path=CONFIG_PATH):
         )
         return dialect, font, frame, None, None
 
-    # Reject NaN/inf (math.isfinite) and finite-but-impossible coordinates —
-    # sun_times() does trigonometry/timedelta math on these and raises
-    # ValueError/OverflowError on bad input, which would otherwise crash the
-    # daemon at every startup once after-hours mode is (wrongly) enabled.
-    if (
-        not math.isfinite(latitude)
-        or not math.isfinite(longitude)
-        or not (-90.0 <= latitude <= 90.0)
-        or not (-180.0 <= longitude <= 180.0)
-    ):
+    # NaN/inf would crash sun_times() on every startup; out-of-range values
+    # don't crash but silently give wrong sunrise/sunset. Both fail these
+    # comparisons (NaN compares false), so one check covers both.
+    if not (-90.0 <= latitude <= 90.0) or not (-180.0 <= longitude <= 180.0):
         logging.warning(
             "Config file %s has out-of-range latitude/longitude (%r, %r); "
             "after-hours mode disabled.",
@@ -201,10 +177,8 @@ def _load_config(path=CONFIG_PATH):
     return dialect, font, frame, latitude, longitude
 
 
-# Daemon config. These are populated in main() rather than at import time so
-# that test code can `import fuzzyclock_daemon` without triggering a config
-# read or warning logs. _current_mode_now() and draw_clock() read them, but
-# they're only ever called from inside main()'s control flow.
+# Daemon config, populated in main() (not at import time) so tests can import
+# this module without filesystem reads or warnings.
 DIALECT = DEFAULT_DIALECT
 FONT_VARIANT = DEFAULT_FONT
 FRAME_VARIANT = AUTO_FRAME
@@ -213,11 +187,9 @@ LONGITUDE = None
 AFTER_HOURS_ENABLED = False
 
 # === FONTS ===
-# Populated by _init_fonts() from main(), not at import time, so test code can
-# `import fuzzyclock_daemon` on a host without DejaVu installed (load_font()
-# raises SystemExit when no candidate is found). Same rationale as the config
-# globals above.
-font_goodnight = None
+# Set by _init_fonts() once the fonts the render paths need have loaded.
+# Not done at import time: load_font() raises SystemExit when a font is missing.
+_fonts_ready = False
 
 # Random-font mode state. `_current_random_font` is the variant in use right
 # now; `_last_phrase` is the phrase from the most recent successful render so
@@ -229,19 +201,16 @@ _random_font_lock = threading.Lock()
 
 
 def _init_fonts():
-    """Populate the font globals. Must run before any render path is invoked.
+    """Fail fast at startup if a font the render paths need is missing.
 
-    render_clock auto-sizes its body fonts at render time, so only the
-    goodnight font needs to be pre-loaded here. In random-font mode we seed
-    the current pick here so the goodnight screen has a concrete variant
-    available even before the first clock-face render.
+    Loads the goodnight font and, unless in random mode (whose candidates are
+    pre-filtered to files on disk), the configured clock font.
     """
-    global font_goodnight, _current_random_font
-    if FONT_VARIANT == RANDOM_FONT:
-        _current_random_font = pick_random_font()
-        font_goodnight = load_font(24, variant=_current_random_font)
-    else:
-        font_goodnight = load_font(24, variant=FONT_VARIANT)
+    global _fonts_ready
+    load_font(24, variant=GOODNIGHT_FONT)
+    if FONT_VARIANT != RANDOM_FONT:
+        load_font(24, variant=FONT_VARIANT)
+    _fonts_ready = True
 
 
 # Tracks the frame name that was last painted onto the partial-refresh base
@@ -275,12 +244,10 @@ def _resolve_font(phrase=None):
     sees the "same" clock when they tap for a refresh. Returns FONT_VARIANT
     verbatim when random mode is off.
 
-    The first call after `_init_fonts()` reuses the init-time seed instead
-    of popping a fresh variant from the shuffle bag — otherwise the
-    goodnight preload would silently consume a bag slot the user never sees
-    on the clock face, breaking the "every variant before repeats"
-    guarantee at startup. `_last_phrase is None` is the sentinel for "init
-    pick has not yet been displayed".
+    main() calls this without a phrase to pick the startup base-image frame;
+    the first phrased call must reuse that pick rather than re-roll, or the
+    frame would mismatch and a shuffle-bag slot would go unseen.
+    `_last_phrase is None` marks "no phrase displayed yet".
     """
     global _current_random_font, _last_phrase
     if FONT_VARIANT != RANDOM_FONT:
@@ -296,15 +263,8 @@ def _resolve_font(phrase=None):
 
 
 def _require_fonts():
-    """Fail loudly if a render path runs before _init_fonts().
-
-    PIL's draw.text() silently falls back to a default bitmap font when handed
-    None, which would render a subtly-wrong clock face instead of crashing —
-    much harder to debug than a clear AssertionError. This guard keeps the
-    failure mode loud, matching the pre-refactor behaviour where load_font()
-    raised SystemExit at import.
-    """
-    assert font_goodnight is not None, "_init_fonts() must run before any render path"
+    """Fail loudly if a render path runs before _init_fonts()."""
+    assert _fonts_ready, "_init_fonts() must run before any render path"
 
 
 # === EPD LOCK — protects all SPI writes to the display ===
@@ -314,39 +274,26 @@ epd_lock = threading.Lock()
 class EPDTimeoutError(RuntimeError):
     """A blocking EPD driver call exceeded EPD_CALL_TIMEOUT_SEC.
 
-    Raised by `_call_with_timeout` when the vendored driver's ReadBusy()
-    (waveshare_epd/epd2in13_V4.py) is stuck polling a BUSY pin that never
-    goes low. It's a RuntimeError subclass so existing `except Exception`
-    render-failure handling in draw_clock/reset_base_image/main() catches it
-    without any changes there.
+    Raised by `_call_with_timeout` when the call itself overruns (typically a
+    stuck BUSY pin) or when acquiring the lock does (a previous call is still
+    wedged). A RuntimeError so the existing render-failure handlers catch it.
     """
 
 
 def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, lock=None, **kwargs):
     """Run `func(*args, **kwargs)` on a worker thread, bounded by `timeout`.
 
-    The rendering calls into the vendored EPD driver (init, display*) each
-    loop on ReadBusy() with no timeout of its own (sleep() doesn't read BUSY;
-    it's bounded against a wedged SPI write), and both the main loop and the
-    button thread can call into the driver — so a naive
-    SIGALRM-based timeout won't work (signals only interrupt the main
-    thread). Running the call on a daemon thread and bounding how long we
-    *wait* for it works from either caller.
+    The vendored driver's ReadBusy() polls the BUSY pin with no timeout, so a
+    stuck pin would hang the caller forever. A worker thread rather than
+    SIGALRM because the button thread also calls into the driver, and signals
+    only interrupt the main thread.
 
-    Python has no supported way to kill a running thread, so a timed-out
-    call leaves its worker thread running in the background against a
-    (presumably wedged) SPI bus. If `lock` is given, it's acquired here —
-    also bounded by `timeout` — *before* starting the worker, and released
-    by the worker itself once the call actually returns, not by this
-    (already-timed-out) caller. That way a still-running abandoned call
-    keeps holding the lock for as long as it's actually touching the
-    driver, so a subsequent call (e.g. a post-timeout recovery re-init)
-    can't start talking to SPI/GPIO concurrently with it and corrupt panel
-    state — instead it blocks on lock acquisition, gets its own bounded
-    EPDTimeoutError, and feeds the same render-failure counter as any other
-    failure. Enough consecutive timeouts eventually reach
-    RENDER_RETRY_FATAL and exit the process, which is the only way to
-    actually get rid of a permanently wedged worker thread.
+    A timed-out worker can't be killed and keeps running against the bus. So
+    `lock` is acquired here (bounded by `timeout`) and released by the
+    *worker* when the call really returns: a later call, e.g. the recovery
+    re-init, then times out on the lock instead of driving SPI concurrently.
+    Repeated timeouts reach RENDER_RETRY_FATAL, and the process exit is what
+    finally sheds the wedged worker.
     """
     if lock is not None and not lock.acquire(timeout=timeout):
         raise EPDTimeoutError(
@@ -380,10 +327,8 @@ def _call_with_timeout(func, *args, timeout=EPD_CALL_TIMEOUT_SEC, lock=None, **k
 def _epd_init(epd):
     """Timeout- and lock-guarded `epd.init()`.
 
-    Callers MUST check the return value: the vendored driver's init()
-    returns -1 when epdconfig.module_init() fails and otherwise proceeds as
-    if nothing were wrong — a bare `epd.init()` call site silently continues
-    with an unconfigured panel. -1 must be treated as a failure, not success.
+    Callers must treat a -1 return as failure: the driver returns it when
+    module_init() fails and otherwise carries on against an unconfigured panel.
     """
     return _call_with_timeout(epd.init, lock=epd_lock)
 
@@ -442,9 +387,7 @@ def _sleep_to_next_tick(interval, now=None):
     return delay if delay > 0 else interval
 
 
-# The ephemeris is stable for a calendar day, but current_mode() is now
-# evaluated every TICK_INTERVAL (60s). maxsize=4 covers today, yesterday at
-# midnight rollover, and a small buffer; older entries self-evict.
+# current_mode() runs every TICK_INTERVAL but the ephemeris only changes daily.
 @lru_cache(maxsize=4)
 def _sun_times_cached(date, latitude, longitude):
     return _raw_sun_times(date, latitude, longitude)
@@ -520,9 +463,7 @@ def display_goodnight(epd):
     image = Image.new("1", (width, height), 0)
     draw = ImageDraw.Draw(image)
 
-    # Inset mirrors fuzzyclock_core._CONTENT_PAD (= _BORDER_MARGIN + 2 +
-    # _CORNER_R + 2 = 14) so the text clears the rustic frame's corner ink.
-    pad = 14
+    pad = _CONTENT_PAD  # clears the rustic frame's corner ink
     available_w = width - 2 * pad
     available_h = height - 2 * pad
 
@@ -533,13 +474,13 @@ def display_goodnight(epd):
     font = None
     bbox = None
     for size in range(60, 13, -1):
-        candidate = load_font(size, variant="unifraktur-maguntia")
+        candidate = load_font(size, variant=GOODNIGHT_FONT)
         cb = draw.textbbox((0, 0), text, font=candidate)
         if (cb[2] - cb[0]) <= available_w and (cb[3] - cb[1]) <= available_h:
             font, bbox = candidate, cb
             break
     if font is None:
-        font = load_font(14, variant="unifraktur-maguntia")
+        font = load_font(14, variant=GOODNIGHT_FONT)
         bbox = draw.textbbox((0, 0), text, font=font)
 
     draw_border(draw, width, height, invert=True, frame="rustic")
@@ -817,7 +758,7 @@ def main():
             # Render on mode change or on every 5-minute wall-clock boundary.
             # The 60s tick gives us ~1-minute mode-transition latency without
             # actually pushing pixels every minute.
-            should_render = last_state != mode or datetime.now().minute % 5 == 0
+            should_render = last_state != mode or datetime.now().minute % UPDATE_MINUTES == 0
             if should_render:
                 try:
                     if _needs_recovery:

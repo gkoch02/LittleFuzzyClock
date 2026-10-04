@@ -147,12 +147,6 @@ class RenderClockTests(unittest.TestCase):
         # Border + phrase + hour + day line should leave plenty of black ink.
         self.assertGreater(_count_black_pixels(image), 200)
 
-    def test_long_phrase_renders(self):
-        # Long phrases like "twenty-five past" auto-size to a smaller font;
-        # confirm they render without error and produce ink.
-        for minute in (25, 27, 32, 35):
-            self._render(datetime(2026, 4, 25, 9, minute))
-
     def test_short_phrase_renders_larger(self):
         # Short phrases like "almost" should use a larger auto-sized font than
         # long ones; both must produce ink on canvas.
@@ -181,16 +175,18 @@ class RenderClockTests(unittest.TestCase):
         inverted_white = WIDTH * HEIGHT - _count_black_pixels(inverted)
         self.assertEqual(normal_black, inverted_white)
 
-    def test_shakespeare_dialect_renders(self):
-        image = self._render(datetime(2026, 4, 25, 9, 15), dialect="shakespeare")
-        self.assertGreater(_count_black_pixels(image), 200)
-
-    def test_german_dialect_renders(self):
-        # German is the only dialect with non-ASCII glyphs (ä, ö, ü). If the
-        # font fallback ever lands on a face missing them we'd render tofu
-        # boxes; this asserts real ink lands on canvas.
-        image = self._render(datetime(2026, 4, 25, 9, 30), dialect="german")
-        self.assertGreater(_count_black_pixels(image), 200)
+    def test_every_font_has_every_dialect_glyph(self):
+        # A missing glyph renders as a .notdef box, which is still ink, so
+        # compare each glyph's mask against a codepoint no font defines.
+        chars = sorted({c for table in DIALECTS.values() for c in repr(table) if ord(c) > 127})
+        self.assertTrue(chars)  # German's ö/ü at least
+        variants = ["dejavu", *vendored_font_variants()]
+        for variant in variants:
+            font = load_font(30, variant=variant)
+            notdef = bytes(font.getmask("\U0010fffd"))
+            for c in chars:
+                with self.subTest(variant=variant, char=c):
+                    self.assertNotEqual(bytes(font.getmask(c)), notdef)
 
 
 class AllDialectsRenderTests(unittest.TestCase):

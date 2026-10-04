@@ -53,6 +53,14 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -v
 
+      - name: Run each test module alone
+        # Catches tests that only pass because an earlier module set up state.
+        run: |
+          for f in tests/test_*.py; do
+            m="${f%.py}"
+            python -m unittest "${m//\//.}" || exit 1
+          done
+
   # Separate job, deliberately NOT a matrix dimension on `test` above: adding
   # one would rename those jobs to "test (3.11, <pillow>)", and
   # .github/rulesets/main.json requires the contexts "test (3.11)" and
