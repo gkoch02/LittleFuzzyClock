@@ -162,7 +162,7 @@ longitude: 0.0005
 
 Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is missing or malformed, after-hours mode stays off too — as it does for a value that isn't a number, or one outside the real ranges (latitude −90…90, longitude −180…180). A bad coordinate logs a warning and disables after-hours rather than taking the daemon down, so a typo here can't leave the clock stuck in a restart loop.
 
-The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked once per refresh tick (every 5 minutes), so the swap happens at the next tick after the sun crosses the horizon.
+The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked every minute, so the swap happens within a minute of the sun crossing the horizon.
 
 Sunrise/sunset are computed via NOAA's simplified solar-position equation, accurate to roughly a minute outside polar regions. At extreme latitudes where the sun never rises or never sets on a given day, the daemon stays in normal day mode.
 
@@ -183,10 +183,10 @@ python3 -m unittest tests.test_fuzzy_time
 |------|--------|
 | `tests/test_fuzzy_time.py` | `fuzzy_time()` edge cases across every dialect |
 | `tests/test_render.py` | `draw_border`, `render_clock`, body-font auto-sizing, frame styles |
-| `tests/test_dry_run.py` | End-to-end run of `fuzzyclock_preview.py --dry-run` |
+| `tests/test_dry_run.py` | `fuzzyclock_preview.py --dry-run`: CLI arguments and the in-process render path |
 | `tests/test_sun.py` | The sunrise/sunset approximation used by after-hours mode |
 | `tests/test_daemon.py` | `current_mode`, tick sleep, config loading, render-retry logic |
-| `tests/test_daemon_import.py` | Bare `import fuzzyclock_daemon`, to catch eager hardware calls |
+| `tests/test_daemon_import.py` | Importing `fuzzyclock_daemon` loads no fonts and reads no config |
 
 The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`.
 

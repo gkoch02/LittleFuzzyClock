@@ -18,13 +18,16 @@ boundary is only ever verified by hand. Say which it was. -->
 
 ## Checklist
 
-- [ ] Docs updated if user-facing behaviour changed (`README.md`), or if the
-      layout/invariants changed (`CLAUDE.md`)
+- [ ] `README.md` updated if user-facing behaviour changed
+- [ ] `CLAUDE.md` touched only to add or fix a one-line rule for a non-obvious
+      invariant or footgun. The explanation lives in the code, once — not in
+      CLAUDE.md, the test docstring, and the code comment all at the same time
+- [ ] Removed what this change made obsolete: dead code, stale comments, tests
+      that no longer test anything
 - [ ] New font variant? All four touches done: `FONT_VARIANTS`,
       `FONT_FRAME_CATEGORY`, the comment block in `fuzzyclock_config.yaml`, and
-      `docs/fonts.md` + `docs/previews/<name>.png`
-- [ ] New behaviour has a test (`tests/`), and existing tests were updated rather
-      than deleted
+      a `docs/fonts.md` row (+ `docs/previews/<name>.png` if the font is vendored)
+- [ ] New behaviour has a test that fails without the change
 - [ ] No changes to CI job *names* — `lint`, `test (3.11)`, and `test (3.12)` are
       required contexts in `.github/rulesets/main.json` and renaming one blocks
       every merge

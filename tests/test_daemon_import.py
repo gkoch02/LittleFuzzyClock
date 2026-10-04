@@ -1,34 +1,49 @@
-"""Smoke-test: the daemon module imports cleanly without GPIO/EPD installed.
+"""Importing the daemon must have no side effects: no font loads, no config read.
 
-CI runs without gpiozero or waveshare_epd, so this catches accidental
-top-level breakage in fuzzyclock_daemon.py (syntax errors, eager hardware
-calls at module scope, missing imports) that the unit tests below wouldn't
-otherwise notice. The import itself is the assertion.
+Runs in a fresh interpreter so the result can't depend on what other tests
+already did to the shared module. A plain import failure is caught anyway by
+test_daemon.py failing to load.
 """
 
+import os
+import subprocess
+import sys
 import unittest
+
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+_PROBE = """
+import fuzzyclock.fonts as fonts
+
+def _forbidden(*a, **k):
+    raise AssertionError("font work at import time")
+
+fonts.load_font = _forbidden
+fonts.pick_random_font = _forbidden
+import builtins
+_open = builtins.open
+
+def _no_config(path, *a, **k):
+    if str(path).endswith("fuzzyclock_config.yaml"):
+        raise AssertionError("config read at import time")
+    return _open(path, *a, **k)
+
+builtins.open = _no_config
+import fuzzyclock_daemon as d
+assert d._fonts_ready is False
+"""
 
 
 class DaemonImportTests(unittest.TestCase):
-    def test_imports_without_hardware(self):
-        import fuzzyclock_daemon  # must not raise
-
-        # A few public symbols we expect to still be available.
-        self.assertTrue(callable(fuzzyclock_daemon.current_mode))
-        self.assertTrue(callable(fuzzyclock_daemon._sleep_to_next_tick))
-        self.assertIsNotNone(fuzzyclock_daemon.epd_lock)
-        self.assertIsNotNone(fuzzyclock_daemon._stop_event)
-
-    def test_fonts_are_not_loaded_at_import(self):
-        # load_font() raises SystemExit on hosts without DejaVu; importing the
-        # daemon must not trigger that. Fonts are populated by _init_fonts()
-        # from main().
-        import fuzzyclock_daemon as d
-
-        self.assertIsNone(d.font_large)
-        self.assertIsNone(d.font_small)
-        self.assertIsNone(d.font_tiny)
-        self.assertIsNone(d.font_goodnight)
+    def test_import_has_no_font_or_config_side_effects(self):
+        result = subprocess.run(
+            [sys.executable, "-c", _PROBE],
+            cwd=_REPO,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

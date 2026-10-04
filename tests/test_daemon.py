@@ -27,7 +27,7 @@ import fuzzyclock_daemon as d
 
 
 class CurrentModeTests(unittest.TestCase):
-    """Pure-function tests after the B1 signature refactor."""
+    """`current_mode` is pure: time, coordinates and flags in, mode out."""
 
     def setUp(self):
         # The daemon caches sun_times by (date, lat, lon). Clear it between
@@ -446,12 +446,9 @@ class ResolveFontTests(unittest.TestCase):
             self.assertEqual(d._resolve_font(None), "ubuntu")
         pick.assert_not_called()
 
-    def test_random_first_render_reuses_init_seed(self):
-        # `_init_fonts()` seeds `_current_random_font` to preload the
-        # goodnight font; the first clock render then arrives with
-        # `_last_phrase=None`. Re-rolling here would burn a slot from the
-        # shuffle bag without the user ever seeing the init pick on the
-        # clock face, breaking the "all variants before repeats" guarantee.
+    def test_random_first_render_reuses_startup_pick(self):
+        # main() resolves a font with no phrase to seed the base-image frame;
+        # the first clock render must reuse it, not burn a shuffle-bag slot.
         d.FONT_VARIANT = d.RANDOM_FONT
         d._current_random_font = "ubuntu"
         d._last_phrase = None
@@ -637,7 +634,7 @@ class ButtonListenerTests(unittest.TestCase):
         class StopOnWait:
             is_pressed = False
 
-            def wait_for_press(self_inner):
+            def wait_for_press(_self):
                 d._stop_event.set()
 
         with (
@@ -818,14 +815,6 @@ class SunTimesCacheTests(unittest.TestCase):
         self.assertEqual(info.misses, 2)
         self.assertEqual(info.hits, 0)
 
-    def test_cache_clear_resets_stats(self):
-        d._sun_times_cached(date(2024, 6, 21), 51.5074, -0.1278)
-        d._sun_times_cached.cache_clear()
-        info = d._sun_times_cached.cache_info()
-        self.assertEqual(info.hits, 0)
-        self.assertEqual(info.misses, 0)
-        self.assertEqual(info.currsize, 0)
-
 
 class _FakeEPD:
     """Test double for the Waveshare EPD — records every SPI-shaped call.
@@ -841,10 +830,10 @@ class _FakeEPD:
         self.height = 250
         self.calls = []
         self.last_part_base = None
-        self.last_partial = None
-        self.last_display = None
+        self.last_image = None
 
     def getbuffer(self, image):
+        self.last_image = image.copy()
         return ("buf", image.size, image.mode)
 
     def displayPartBaseImage(self, buf):
@@ -853,17 +842,20 @@ class _FakeEPD:
 
     def displayPartial(self, buf):
         self.calls.append(("partial", buf))
-        self.last_partial = buf
 
     def display(self, buf):
         self.calls.append(("display", buf))
-        self.last_display = buf
 
     def init(self):
         self.calls.append(("init",))
 
     def sleep(self):
         self.calls.append(("sleep",))
+
+
+def _black_fraction(image):
+    """Share of pixels that are black (0) in a mode-"1" image."""
+    return image.histogram()[0] / (image.width * image.height)
 
 
 class ResetBaseImageTests(unittest.TestCase):
@@ -878,11 +870,11 @@ class ResetBaseImageTests(unittest.TestCase):
 
     def test_inverted_base_image_uses_black_background(self):
         epd = _FakeEPD()
+        d.reset_base_image(epd, invert=False)
+        self.assertGreater(_black_fraction(epd.last_image), 0.0)
+        self.assertLess(_black_fraction(epd.last_image), 0.5)
         d.reset_base_image(epd, invert=True)
-        # Same SPI shape; the difference (background colour) is internal to
-        # the rendered buffer. Asserting the call shape is what we can test
-        # at this seam without a pixel comparator.
-        self.assertEqual([c[0] for c in epd.calls], ["part_base"])
+        self.assertGreater(_black_fraction(epd.last_image), 0.5)
 
 
 class _FontFixtureMixin:
@@ -895,10 +887,7 @@ class _FontFixtureMixin:
 
     @classmethod
     def tearDownClass(cls):
-        d.font_large = None
-        d.font_small = None
-        d.font_tiny = None
-        d.font_goodnight = None
+        d._fonts_ready = False
 
 
 class DisplayGoodnightTests(_FontFixtureMixin, unittest.TestCase):
@@ -930,8 +919,12 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
 
     def test_inverted_render_still_uses_partial(self):
         epd = _FakeEPD()
+        d.draw_clock(epd, invert=False)
+        self.assertLess(_black_fraction(epd.last_image), 0.5)
+        epd = _FakeEPD()
         d.draw_clock(epd, invert=True)
         self.assertEqual([c[0] for c in epd.calls], ["partial"])
+        self.assertGreater(_black_fraction(epd.last_image), 0.5)
 
     def test_frame_change_reseeds_base_before_partial(self):
         # Random-font + auto-frame can shift the frame between renders. If
@@ -992,10 +985,9 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
 
 
 class CallWithTimeoutTests(unittest.TestCase):
-    """`_call_with_timeout` is what bounds every blocking EPD driver call
-    (issue #43: the vendored ReadBusy() loops on the BUSY pin with no
-    timeout of its own). It must return the wrapped call's result on the
-    fast path, re-raise the wrapped call's own exceptions unchanged, and
+    """`_call_with_timeout` bounds every blocking EPD driver call. It must
+    return the wrapped call's result on the fast path, re-raise the wrapped
+    call's own exceptions unchanged, and
     raise EPDTimeoutError -- promptly, not after the real call eventually
     returns -- when the call doesn't finish in time.
     """
@@ -1025,11 +1017,26 @@ class CallWithTimeoutTests(unittest.TestCase):
     def test_passes_through_arguments(self):
         self.assertEqual(d._call_with_timeout(lambda a, b: a + b, 2, 3), 5)
 
+    def test_abandoned_call_keeps_lock_until_it_returns(self):
+        # A timed-out worker is still driving the bus, so the lock must stay
+        # held until it really finishes; a second call must not get in first.
+        lock = threading.Lock()
+        release = threading.Event()
+        with self.assertRaises(d.EPDTimeoutError):
+            d._call_with_timeout(release.wait, timeout=0.05, lock=lock)
+        self.assertTrue(lock.locked())
+        second = mock.Mock(return_value="ran")
+        with self.assertRaises(d.EPDTimeoutError):
+            d._call_with_timeout(second, timeout=0.05, lock=lock)
+        second.assert_not_called()
+        release.set()
+        self.assertEqual(d._call_with_timeout(second, timeout=2.0, lock=lock), "ran")
+
 
 class EPDInitTests(unittest.TestCase):
     """`_epd_init` wraps epd.init() with the same timeout guard and hands
     the raw return value back untouched -- callers are responsible for
-    rejecting a -1 (module_init failure) return, per issue #43."""
+    rejecting a -1 (module_init failure) return."""
 
     def test_returns_driver_success_value(self):
         epd = _FakeEPD()
@@ -1118,28 +1125,45 @@ class BusyPinTimeoutTests(_FontFixtureMixin, unittest.TestCase):
             self.assertLess(time.monotonic() - start, 2.0)
 
 
-class RequireFontsTests(unittest.TestCase):
-    """`_require_fonts` exists so a missed `_init_fonts()` fails loudly
-    instead of letting PIL silently fall back to its default bitmap font."""
+class InitFontsTests(unittest.TestCase):
+    def setUp(self):
+        self._saved = (d._fonts_ready, d.FONT_VARIANT)
 
-    def test_raises_when_fonts_uninitialized(self):
-        saved = d.font_large
-        d.font_large = None
-        try:
-            with self.assertRaises(AssertionError):
-                d._require_fonts()
-        finally:
-            d.font_large = saved
+    def tearDown(self):
+        d._fonts_ready, d.FONT_VARIANT = self._saved
 
-    def test_passes_when_fonts_initialized(self):
+    def test_require_fonts_raises_before_init(self):
+        d._fonts_ready = False
+        with self.assertRaises(AssertionError):
+            d._require_fonts()
+
+    def test_require_fonts_passes_after_init(self):
+        d._fonts_ready = False
         d._init_fonts()
-        try:
-            d._require_fonts()  # must not raise
-        finally:
-            d.font_large = None
-            d.font_small = None
-            d.font_tiny = None
-            d.font_goodnight = None
+        d._require_fonts()  # must not raise
+
+    def test_init_loads_goodnight_and_configured_font(self):
+        d.FONT_VARIANT = "ubuntu"
+        with mock.patch.object(d, "load_font") as load:
+            d._init_fonts()
+        variants = {c.kwargs["variant"] for c in load.call_args_list}
+        self.assertEqual(variants, {d.GOODNIGHT_FONT, "ubuntu"})
+
+    def test_init_does_not_consume_a_random_pick(self):
+        d.FONT_VARIANT = d.RANDOM_FONT
+        with (
+            mock.patch.object(d, "load_font"),
+            mock.patch.object(d, "pick_random_font") as pick,
+        ):
+            d._init_fonts()
+        pick.assert_not_called()
+
+    def test_missing_configured_font_exits_at_init(self):
+        d.FONT_VARIANT = "bookerly"
+        with mock.patch.object(d, "load_font", side_effect=[None, SystemExit("missing")]):
+            with self.assertRaises(SystemExit):
+                d._init_fonts()
+        self.assertFalse(d._fonts_ready)
 
 
 class MainSignalHandlerTests(unittest.TestCase):
@@ -1162,7 +1186,7 @@ class MainSignalHandlerTests(unittest.TestCase):
             "LATITUDE": d.LATITUDE,
             "LONGITUDE": d.LONGITUDE,
             "AFTER_HOURS_ENABLED": d.AFTER_HOURS_ENABLED,
-            "font_goodnight": d.font_goodnight,
+            "_fonts_ready": d._fonts_ready,
         }
 
     def tearDown(self):
@@ -1248,7 +1272,7 @@ class MainLoopTests(unittest.TestCase):
             "LATITUDE": d.LATITUDE,
             "LONGITUDE": d.LONGITUDE,
             "AFTER_HOURS_ENABLED": d.AFTER_HOURS_ENABLED,
-            "font_goodnight": d.font_goodnight,
+            "_fonts_ready": d._fonts_ready,
         }
 
     def tearDown(self):
@@ -1481,13 +1505,9 @@ class MainLoopTests(unittest.TestCase):
         self.assertIn(("sleep",), epd.calls)
 
     def test_stuck_busy_pin_timeouts_count_toward_fatal_threshold(self):
-        # Issue #43: a BUSY pin that never releases must not hang the daemon
-        # forever. draw_clock (mocked here to isolate main()'s loop logic --
-        # BusyPinTimeoutTests in the class above exercises the real
-        # draw_clock/_call_with_timeout path) raises EPDTimeoutError, a
-        # RuntimeError subclass, on every tick; it has to feed the same
-        # consecutive-failure counter as any other render failure and
-        # eventually hit RENDER_RETRY_FATAL so systemd can restart us.
+        # A timeout on every tick must feed the failure counter like any other
+        # render failure and reach RENDER_RETRY_FATAL. (BusyPinTimeoutTests
+        # covers the real draw_clock path; it's mocked here.)
         def always_times_out(*_args, **_kwargs):
             raise d.EPDTimeoutError("epd.displayPartial() did not return within 10s")
 
@@ -1658,10 +1678,7 @@ class MainLoopTests(unittest.TestCase):
         self.assertIn("GPIO busy", str(ctx.exception))
 
     def test_systemexit_when_startup_init_returns_negative_one(self):
-        # Issue #43: the vendored driver's init() returns -1 (not an
-        # exception) when epdconfig.module_init() fails. main() must reject
-        # that explicitly at startup instead of continuing as if init
-        # succeeded and blasting SPI writes at an unconfigured panel.
+        # init() signals failure by returning -1, not raising.
         epd = mock.Mock()
         epd.init.return_value = -1
 
@@ -1687,14 +1704,9 @@ if __name__ == "__main__":
 class GuardedHardwareImportTests(unittest.TestCase):
     """The module-scope hardware guards must not let an exotic exception escape.
 
-    Importing waveshare_epd is not side-effect free: epdconfig instantiates its
-    platform implementation at module scope and that constructor claims the GPIO
-    pins, so with the pins already held the import raises lgpio.error("GPIO
-    busy") — neither ImportError nor RuntimeError. Under the old narrow guard it
-    escaped as a bare traceback at import, before main() could report anything.
-
-    CI has no GPIO at all, so it takes the ImportError path and would pass either
-    way; these tests simulate the real condition with a meta_path finder instead.
+    With the pins held, importing waveshare_epd raises lgpio.error("GPIO busy"),
+    neither ImportError nor RuntimeError; a meta_path finder simulates that,
+    since CI's missing GPIO would take the ImportError path either way.
 
     Each test imports a *fresh, independently named* copy of the module rather
     than reloading fuzzyclock_daemon, so the real module's global state (which
