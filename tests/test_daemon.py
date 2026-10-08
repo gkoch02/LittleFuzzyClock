@@ -13,6 +13,7 @@ so this test file imports the module directly without stubbing GPIO/EPD.
 
 import contextlib
 import importlib.util
+import itertools
 import os
 import signal
 import sys
@@ -26,6 +27,7 @@ from unittest import mock
 import yaml
 
 import fuzzyclock_daemon as d
+from fuzzyclock_core import DEFAULT_FRAME
 
 _NO_COORDS = (d.DEFAULT_DIALECT, d.DEFAULT_FONT, d.AUTO_FRAME, None, None)
 
@@ -100,9 +102,7 @@ class CurrentModeTests(unittest.TestCase):
 
 
 class RenderStateTests(unittest.TestCase):
-    """The cross-thread retry counter and recovery flag added during the
-    code-review fixes; lets the button thread's failures trigger main-loop
-    recovery, and lets goodnight clear stale failure state."""
+    """The cross-thread render-failure counter and recovery flag."""
 
     def setUp(self):
         # Reset module state between tests so they don't bleed.
@@ -375,8 +375,6 @@ class ResolveFrameTests(unittest.TestCase):
         d.FRAME_VARIANT = self._saved_frame
 
     def test_explicit_frame_wins_over_font_category(self):
-        # Even with a rustic-bucket font, an explicit frame in config must be
-        # honoured verbatim — that's the whole point of the override.
         d.FRAME_VARIANT = "retro"
         self.assertEqual(d._resolve_frame("unifraktur-maguntia"), "retro")
 
@@ -388,8 +386,6 @@ class ResolveFrameTests(unittest.TestCase):
 
     def test_auto_frame_with_unknown_font_falls_back_to_default(self):
         d.FRAME_VARIANT = d.AUTO_FRAME
-        from fuzzyclock_core import DEFAULT_FRAME
-
         self.assertEqual(d._resolve_frame("not-a-real-font"), DEFAULT_FRAME)
 
 
@@ -479,10 +475,6 @@ class ButtonListenerTests(unittest.TestCase):
         self.assertTrue(kwargs.get("invert"))
 
     def test_short_press_during_night_mode_is_ignored(self):
-        # The panel is deep-asleep behind the goodnight slide at night; a
-        # render would write to a sleeping controller and leave a frozen
-        # clock face up until morning (the main loop never repaints goodnight
-        # while the mode stays "night").
         shutdown, draw = self._run_listener([0.5], mode="night")
         draw.assert_not_called()
         shutdown.assert_not_called()
@@ -591,10 +583,7 @@ class ButtonSupervisorTests(unittest.TestCase):
 
 
 class ShutdownProcedureTests(unittest.TestCase):
-    """The three steps must be independently guarded — a goodnight or sleep
-    failure must not prevent the shutdown command from running. The command
-    goes through `sudo -n` because the unit runs the daemon as a non-root
-    user, whom polkit denies a bare `shutdown`."""
+    """A goodnight or sleep failure must not stop the shutdown command."""
 
     _SHUTDOWN_ARGV = ["sudo", "-n", "shutdown", "-h", "now"]
 
@@ -825,16 +814,13 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
         # can interleave: e.g. [part_base_A, part_base_B, partial_A, partial_B]
         # which leaves partial_A diffing against B's base. Under _render_lock
         # the pairs stay atomic regardless of scheduler ordering.
-        import itertools
-        import threading as _t
-
         epd = _FakeEPD()
         # Cycle through non-bauhaus frames so every draw_clock call sees a
         # frame mismatch and triggers a reset_base_image.
         d._last_applied_frame = "bauhaus"
 
         cycle = itertools.cycle(["rustic", "sketchy"])
-        cycle_lock = _t.Lock()
+        cycle_lock = threading.Lock()
 
         def _frame(_variant):
             with cycle_lock:
@@ -844,7 +830,9 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
         # mock's enter/exit can't race across threads and leave d._resolve_frame
         # pointing at a stale mock after the test finishes.
         with mock.patch.object(d, "_resolve_frame", side_effect=_frame):
-            threads = [_t.Thread(target=lambda: d.draw_clock(epd, invert=False)) for _ in range(8)]
+            threads = [
+                threading.Thread(target=lambda: d.draw_clock(epd, invert=False)) for _ in range(8)
+            ]
             for t in threads:
                 t.start()
             for t in threads:
@@ -930,15 +918,6 @@ class EPDInitTests(unittest.TestCase):
         epd.init = mock.Mock(return_value=-1)
         self.assertEqual(d._epd_init(epd), -1)
 
-    def test_stuck_init_raises_epd_timeout_error_promptly(self):
-        epd = _FakeEPD()
-        stuck = threading.Event()
-        epd.init = lambda: stuck.wait()
-        start = time.monotonic()
-        with self.assertRaises(d.EPDTimeoutError):
-            d._call_with_timeout(epd.init, timeout=0.05)
-        self.assertLess(time.monotonic() - start, 2.0)
-
 
 class BusyPinTimeoutTests(_FontFixtureMixin, unittest.TestCase):
     """Simulates a stuck BUSY pin at each production EPD call site by
@@ -954,13 +933,7 @@ class BusyPinTimeoutTests(_FontFixtureMixin, unittest.TestCase):
     def setUp(self):
         self._saved_frame = d._last_applied_frame
         d._last_applied_frame = "bauhaus"
-        # Each test below hands the driver a call that blocks forever, so
-        # the worker thread _call_with_timeout spawns for it never returns
-        # and never releases the lock it's holding (Python can't kill a
-        # thread — see _call_with_timeout's docstring). Swap in a throwaway
-        # lock per test so that permanently-held lock doesn't leak into
-        # (and poison) every other test's use of the real module-level
-        # epd_lock for the rest of the process.
+        # The abandoned worker never releases its lock; keep it off epd_lock.
         self._saved_epd_lock = d.epd_lock
         d.epd_lock = threading.Lock()
 
@@ -993,6 +966,16 @@ class BusyPinTimeoutTests(_FontFixtureMixin, unittest.TestCase):
             with self.assertRaises(d.EPDTimeoutError):
                 d.reset_base_image(epd, invert=False)
             self.assertLess(time.monotonic() - start, 2.0)
+
+    def test_epd_init_bounds_a_stuck_init_and_holds_the_lock(self):
+        # wait(1), not wait(): if _epd_init ever bypasses _call_with_timeout,
+        # this fails after a second instead of hanging the suite.
+        epd = _FakeEPD()
+        epd.init = lambda: threading.Event().wait(1)
+        with self._patch_fast_timeout():
+            with self.assertRaises(d.EPDTimeoutError):
+                d._epd_init(epd)
+        self.assertTrue(d.epd_lock.locked())
 
     def test_display_goodnight_bounds_a_stuck_display(self):
         epd = _FakeEPD()
@@ -1166,19 +1149,11 @@ class MainLoopTests(unittest.TestCase):
                 handlers[signum](signum, None)
                 self.assertTrue(d._stop_event.is_set())
 
-    def test_night_only_uses_display_goodnight_and_skips_draw_clock(self):
+    def test_night_shows_goodnight_and_deep_sleeps_the_panel_once(self):
+        # Once, not twice: the post-loop cleanup must skip an already-slept panel.
         epd, m_draw, m_goodnight, _m_reset, _ = self._run_main(["night"])
         m_goodnight.assert_called_once_with(epd)
         m_draw.assert_not_called()
-        # The overnight deep sleep right after the goodnight slide.
-        self.assertIn(("sleep",), epd.calls)
-
-    def test_entering_night_deep_sleeps_the_panel_exactly_once(self):
-        # The controller goes into deep sleep right after the goodnight
-        # slide; the post-loop cleanup must NOT sleep it a second time —
-        # epd.sleep() tears down the SPI handle, so a second call would raise.
-        epd, _m_draw, m_goodnight, _m_reset, _ = self._run_main(["night"])
-        m_goodnight.assert_called_once()
         self.assertEqual(epd.calls.count(("sleep",)), 1)
 
     def test_waking_from_night_reinits_panel_before_first_render(self):
@@ -1190,9 +1165,7 @@ class MainLoopTests(unittest.TestCase):
             [("init",), ("sleep",), ("init",), ("sleep",)],
         )
         m_draw.assert_called_once_with(mock.ANY, invert=False)
-        # The wake-up init must come before the base reseed (reset_base_image
-        # writes to SPI); both happen, reseed count unchanged from the plain
-        # night→day transition.
+        # Initial seed + the night→day transition reseed.
         self.assertEqual(m_reset.call_count, 2)
 
     def test_goodnight_failure_skips_the_overnight_sleep(self):
@@ -1234,20 +1207,10 @@ class MainLoopTests(unittest.TestCase):
             [False, True],
         )
 
-    def test_night_to_day_transition_reseeds_base(self):
-        # Coming out of night must re-seed the base before the first
-        # partial-refresh render of the day, otherwise displayPartial would
-        # diff against a base painted around the full-screen goodnight slide.
-        _epd, m_draw, m_goodnight, m_reset, _ = self._run_main(["night", "day"])
-        m_goodnight.assert_called_once()
-        m_draw.assert_called_once_with(mock.ANY, invert=False)
-        # Initial seed (white) + the night→day transition seed.
-        self.assertEqual(m_reset.call_count, 2)
-
     def test_day_to_night_transition_runs_goodnight_without_extra_reset(self):
         # Night mode doesn't paint a clock face, so it does NOT reseed the
-        # base. The base will be reseeded again on the next morning's first
-        # non-night mode (see test_night_to_day_transition_reseeds_base).
+        # base; the next morning's first clock mode does (see
+        # test_waking_from_night_reinits_panel_before_first_render).
         _epd, m_draw, m_goodnight, m_reset, _ = self._run_main(["day", "night"])
         self.assertEqual(m_draw.call_count, 1)
         m_goodnight.assert_called_once()
@@ -1303,25 +1266,9 @@ class MainLoopTests(unittest.TestCase):
         # Cleanup must still run on the fatal-break path.
         self.assertIn(("sleep",), epd.calls)
 
-    def test_stuck_busy_pin_timeouts_count_toward_fatal_threshold(self):
-        # A timeout on every tick must feed the failure counter like any other
-        # render failure and reach RENDER_RETRY_FATAL. (BusyPinTimeoutTests
-        # covers the real draw_clock path; it's mocked here.)
-        def always_times_out(*_args, **_kwargs):
-            raise d.EPDTimeoutError("epd.displayPartial() did not return within 10s")
-
-        epd, m_draw, _m_goodnight, _m_reset, mode_calls = self._run_main(
-            ["day"] * (d.RENDER_RETRY_FATAL + 5),
-            draw_side_effect=always_times_out,
-        )
-        self.assertEqual(m_draw.call_count, d.RENDER_RETRY_FATAL)
-        self.assertLess(len(mode_calls), d.RENDER_RETRY_FATAL + 5)
-        self.assertIn(("sleep",), epd.calls)
-
     def test_cleanup_sleeps_epd_after_normal_loop_exit(self):
         # Stop-event-driven shutdown (SIGTERM/SIGINT path) must call
-        # epd.sleep() so the panel doesn't burn in. We verify by running
-        # one night tick and confirming sleep() lands in the fake's log.
+        # epd.sleep() so the panel doesn't burn in.
         epd, _m_draw, _m_goodnight, _m_reset, _ = self._run_main(["day"])
         self.assertEqual(epd.calls[-1], ("sleep",))
 
@@ -1390,20 +1337,13 @@ class MainLoopTests(unittest.TestCase):
         epd.init.assert_called_once()
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class GuardedHardwareImportTests(unittest.TestCase):
     """The module-scope hardware guards must not let an exotic exception escape.
 
-    With the pins held, importing waveshare_epd raises lgpio.error("GPIO busy"),
-    neither ImportError nor RuntimeError; a meta_path finder simulates that,
-    since CI's missing GPIO would take the ImportError path either way.
-
-    Each test imports a *fresh, independently named* copy of the module rather
-    than reloading fuzzyclock_daemon, so the real module's global state is
-    never disturbed.
+    A meta_path finder raises a non-ImportError on import (see the comment
+    above the daemon's hardware imports). Each test imports a fresh,
+    independently named copy of the module rather than reloading
+    fuzzyclock_daemon, so the real module's global state is never disturbed.
     """
 
     DAEMON_PATH = os.path.join(
@@ -1463,3 +1403,7 @@ class GuardedHardwareImportTests(unittest.TestCase):
         isolated = self._import_isolated("waveshare_epd")
         self.assertIs(sys.modules["fuzzyclock_daemon"], d)
         self.assertIsNot(isolated, d)
+
+
+if __name__ == "__main__":
+    unittest.main()

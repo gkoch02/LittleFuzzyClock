@@ -1,12 +1,4 @@
-"""Smoke tests for the rendering helpers in fuzzyclock_core.
-
-These don't try to assert pixel-exact output (which would be brittle
-against font hinting). They just confirm the helpers run end-to-end and
-produce something that looks like a real render rather than a blank
-canvas.
-
-Run with: python3 -m unittest test_render
-"""
+"""Tests for font loading, frames, and render_clock layout."""
 
 import os
 import unittest
@@ -15,7 +7,7 @@ from unittest import mock
 
 from PIL import Image, ImageDraw, ImageFont
 
-from fuzzyclock.fonts import _reset_random_font_bag
+from fuzzyclock.fonts import _VENDORED_FONT_DIR, _reset_random_font_bag
 from fuzzyclock.frames import _CONTENT_PAD, _sketch_jitter
 from fuzzyclock.render import (
     _BODY_MAX_SIZE,
@@ -29,13 +21,13 @@ from fuzzyclock_core import (
     DEFAULT_FONT,
     DEFAULT_FRAME,
     DIALECTS,
-    FONT_CANDIDATES,
     FONT_FRAME_CATEGORY,
     FONT_VARIANTS,
     FRAME_VARIANTS,
     RANDOM_FONT,
     draw_border,
     frame_for_font,
+    fuzzy_time,
     load_font,
     pick_random_font,
     render_clock,
@@ -57,31 +49,7 @@ class LoadFontTests(unittest.TestCase):
         # Body font ranges from _BODY_MIN_SIZE to _BODY_MAX_SIZE; tiny and
         # goodnight are fixed at _TINY_SIZE and 24 respectively.
         for size in (_BODY_MIN_SIZE, _BODY_MAX_SIZE, _TINY_SIZE, 24):
-            self.assertIsNotNone(load_font(size))
-
-    def test_default_variant_walks_legacy_font_candidates(self):
-        # variant=None and variant="dejavu" must attempt the same paths in
-        # the same order so the legacy fallback chain isn't accidentally
-        # broken when callers start passing a variant explicitly.
-        attempted_default = []
-        attempted_dejavu = []
-
-        def fake_truetype_default(path, size):
-            attempted_default.append(path)
-            raise OSError("nope")
-
-        def fake_truetype_dejavu(path, size):
-            attempted_dejavu.append(path)
-            raise OSError("nope")
-
-        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=fake_truetype_default):
-            with self.assertRaises(SystemExit):
-                load_font(20)
-        with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=fake_truetype_dejavu):
-            with self.assertRaises(SystemExit):
-                load_font(20, variant="dejavu")
-        self.assertEqual(attempted_default, FONT_CANDIDATES)
-        self.assertEqual(attempted_dejavu, FONT_CANDIDATES)
+            self.assertIsNotNone(load_font(size, variant=DEFAULT_FONT))
 
     def test_each_variant_attempts_its_registered_paths(self):
         # Mock truetype so we can assert the right candidate list is walked
@@ -103,8 +71,7 @@ class LoadFontTests(unittest.TestCase):
         self.assertIn(DEFAULT_FONT, FONT_VARIANTS)
 
     def test_variable_font_without_weight_axis_loads(self):
-        # Jaro's only axis is optical size; asking it for "Bold" segfaults
-        # Pillow 10.0.0, so load_font must not try.
+        # Jaro: see _has_weight_axis.
         self.assertIsNotNone(load_font(20, variant="jaro"))
 
     def test_variable_font_with_weight_axis_is_set_to_bold(self):
@@ -118,7 +85,7 @@ class LoadFontTests(unittest.TestCase):
         mock_font.get_variation_axes.return_value = [{"name": b"Weight"}]
         mock_font.set_variation_by_name.side_effect = ValueError("no Bold instance")
         with mock.patch("fuzzyclock.fonts.ImageFont.truetype", return_value=mock_font):
-            self.assertIs(load_font(20), mock_font)
+            self.assertIs(load_font(20, variant=DEFAULT_FONT), mock_font)
 
 
 class RenderClockTests(unittest.TestCase):
@@ -134,12 +101,14 @@ class RenderClockTests(unittest.TestCase):
         self.assertGreater(_count_black_pixels(image), 200)
 
     def test_short_phrase_renders_larger(self):
-        # Short phrases like "almost" should use a larger auto-sized font than
-        # long ones; both must produce ink on canvas.
-        short = self._render(datetime(2026, 4, 25, 8, 58))  # "almost"
-        long_ = self._render(datetime(2026, 4, 25, 9, 27))  # "twenty-five past"
-        self.assertGreater(_count_black_pixels(short), 100)
-        self.assertGreater(_count_black_pixels(long_), 100)
+        def body_size(when):
+            draw = _RecordingDraw(Image.new("1", (WIDTH, HEIGHT), 255))
+            render_clock(draw, WIDTH, HEIGHT, when)
+            return draw.text_calls[0][2].size  # the phrase line
+
+        almost = body_size(datetime(2026, 4, 25, 8, 58))
+        twenty_five_past = body_size(datetime(2026, 4, 25, 9, 27))
+        self.assertGreater(almost, twenty_five_past)
 
     def test_renders_every_hour_at_known_minute_marks(self):
         for hour in range(24):
@@ -213,7 +182,7 @@ class LoadFontFailureTests(unittest.TestCase):
         # rather than rendering with PIL's default bitmap fallback.
         with mock.patch("fuzzyclock.fonts.ImageFont.truetype", side_effect=OSError("nope")):
             with self.assertRaises(SystemExit) as cm:
-                load_font(20)
+                load_font(20, variant=DEFAULT_FONT)
         self.assertIn("No usable font", str(cm.exception))
 
     def test_unknown_variant_raises_keyerror(self):
@@ -249,12 +218,10 @@ class RandomFontTests(unittest.TestCase):
         # Every entry in the result must have a matching .ttf/.otf actually
         # present in fonts/, so a random pick on a clean Pi can't land on
         # a commercial variant the user hasn't dropped a file in for.
-        import os as _os
-
         for variant in vendored_font_variants():
             paths = FONT_VARIANTS[variant]
             self.assertTrue(
-                any(_os.path.exists(p) for p in paths),
+                any(os.path.exists(p) for p in paths),
                 f"{variant} reported as vendored but has no existing path",
             )
 
@@ -264,15 +231,10 @@ class RandomFontTests(unittest.TestCase):
         # filter must too — a user who dropped only Pigeonette.otf in fonts/
         # should still see pigeonette in the random pool. Use a synthetic
         # variant so the test isn't tied to which files happen to be present.
-        import os as _os
-        from unittest import mock as _mock
-
-        from fuzzyclock.fonts import _VENDORED_FONT_DIR
-
-        primary = _os.path.join(_VENDORED_FONT_DIR, "DoesNotExist-Bold.ttf")
-        secondary = _os.path.join(_VENDORED_FONT_DIR, "DejaVuSans-Bold.ttf")  # actually present
+        primary = os.path.join(_VENDORED_FONT_DIR, "DoesNotExist-Bold.ttf")
+        secondary = os.path.join(_VENDORED_FONT_DIR, "DejaVuSans-Bold.ttf")  # actually present
         fake_variants = {"synthetic": [primary, secondary, "/System/Library/Fonts/Helvetica.ttc"]}
-        with _mock.patch("fuzzyclock.fonts.FONT_VARIANTS", fake_variants):
+        with mock.patch("fuzzyclock.fonts.FONT_VARIANTS", fake_variants):
             self.assertIn("synthetic", vendored_font_variants())
 
     def test_pick_random_returns_a_registered_variant(self):
@@ -283,41 +245,15 @@ class RandomFontTests(unittest.TestCase):
             self.assertIn(picked, FONT_VARIANTS)
             self.assertNotEqual(picked, RANDOM_FONT)
 
-    def test_pick_random_uses_supplied_rng(self):
-        # A seeded RNG makes the choice deterministic — useful for tests
-        # downstream that want a stable variant without monkey-patching.
-        import random
-
-        first = pick_random_font(rng=random.Random(42))
-        second = pick_random_font(rng=random.Random(42))
-        self.assertEqual(first, second)
-
     def test_pick_random_falls_back_when_nothing_vendored(self):
         # Degraded environment (no vendored fonts on disk): rather than
         # raising, fall back to DEFAULT_FONT so callers always get a key.
         with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=[]):
             self.assertEqual(pick_random_font(), DEFAULT_FONT)
 
-    def test_random_font_renders(self):
-        # End-to-end: a random pick must render through the normal pipeline
-        # without raising. Use a seeded RNG so the test fails consistently
-        # if a particular variant ever regresses.
-        import random as _r
-
-        variant = pick_random_font(rng=_r.Random(7))
-        image = Image.new("1", (WIDTH, HEIGHT), 255)
-        render_clock(
-            ImageDraw.Draw(image),
-            WIDTH,
-            HEIGHT,
-            datetime(2026, 4, 25, 9, 15),
-            font_variant=variant,
-        )
-        self.assertGreater(_count_black_pixels(image), 200)
-
 
 class RandomFontShuffleBagTests(unittest.TestCase):
-    """`pick_random_font()` (no rng) deals from a shuffle bag so the user
+    """`pick_random_font()` deals from a shuffle bag so the user
     sees every vendored variant before any repeats — the "music shuffle"
     semantics that distinguish this from uniform i.i.d. sampling."""
 
@@ -330,7 +266,7 @@ class RandomFontShuffleBagTests(unittest.TestCase):
     def test_every_variant_appears_before_any_repeats(self):
         # With a small synthetic eligible set, the first N calls must be a
         # permutation of the set (no repeats), then the next N another
-        # permutation. This is the whole point of the change.
+        # permutation.
         pool = ["alpha", "beta", "gamma", "delta", "epsilon"]
         with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=pool):
             first_cycle = [pick_random_font() for _ in pool]
@@ -370,19 +306,6 @@ class RandomFontShuffleBagTests(unittest.TestCase):
         ):
             picks = {pick_random_font() for _ in range(3)}
         self.assertEqual(picks, {"alpha", "beta", "gamma"})
-
-    def test_supplied_rng_does_not_disturb_bag(self):
-        # The rng= path is the deterministic-test path. It must not pop
-        # from or refill the shared bag, so production callers using
-        # rng=None still see a clean shuffle.
-        import random as _r
-
-        pool = ["alpha", "beta", "gamma"]
-        with mock.patch("fuzzyclock.fonts.vendored_font_variants", return_value=pool):
-            pick_random_font(rng=_r.Random(1))
-            pick_random_font(rng=_r.Random(2))
-            cycle = [pick_random_font() for _ in pool]
-        self.assertEqual(sorted(cycle), sorted(pool))
 
 
 class FrameVariantsTests(unittest.TestCase):
@@ -703,18 +626,24 @@ class RenderClockOverflowTests(unittest.TestCase):
                             bbox, WIDTH, HEIGHT, f"{dialect} {hour:02d}:27 {text!r}@{xy}"
                         )
 
-    def test_every_frame_keeps_text_inside_content_area(self):
-        # The frame doesn't influence text placement, but rendering through
-        # each frame exercises the full pipeline; a frame whose corner ink
-        # extended further than _CORNER_R would still need text to avoid it.
-        when = datetime(2026, 4, 25, 9, 27)
-        for frame in sorted(FRAME_VARIANTS):
-            with self.subTest(frame=frame):
-                image = Image.new("1", (WIDTH, HEIGHT), 255)
-                draw = _RecordingDraw(image)
-                render_clock(draw, WIDTH, HEIGHT, when, frame=frame)
-                for xy, text, _font, bbox in draw.text_calls:
-                    self._assert_no_overflow(bbox, WIDTH, HEIGHT, f"frame={frame} {text!r}@{xy}")
+    def test_every_font_keeps_text_inside_content_area(self):
+        # Side bearings and widths differ per font, so the default-font sweeps
+        # above can't stand in for this. Each font gets the longest phrase line
+        # and the longest hour line any dialect produces, plus the widest
+        # weekday footer (Wednesday).
+        when = datetime(2026, 9, 30, 9, 27)
+        lines = {dialect: fuzzy_time(9, 27, dialect) for dialect in DIALECTS}
+        worst = {
+            max(lines, key=lambda dl: len(lines[dl][0])),
+            max(lines, key=lambda dl: len(lines[dl][1])),
+        }
+        for variant in vendored_font_variants():
+            for dialect in sorted(worst):
+                with self.subTest(variant=variant, dialect=dialect):
+                    draw = _RecordingDraw(Image.new("1", (WIDTH, HEIGHT), 255))
+                    render_clock(draw, WIDTH, HEIGHT, when, font_variant=variant, dialect=dialect)
+                    for xy, text, _font, bbox in draw.text_calls:
+                        self._assert_no_overflow(bbox, WIDTH, HEIGHT, f"{variant} {text!r}@{xy}")
 
 
 if __name__ == "__main__":

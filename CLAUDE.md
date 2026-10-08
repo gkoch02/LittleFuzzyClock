@@ -49,6 +49,7 @@ Rules for Claude Code sessions on this repo. User-facing usage is in the README.
 **Tests**
 - Every test module must pass on its own; CI runs each one alone as well as the full suite.
 - A test simulating a hung driver call must use a throwaway lock, not `epd_lock` (see `BusyPinTimeoutTests`). The abandoned worker never releases it.
+- A test comment says what is checked, not why the code does it; point at the code comment instead of restating it.
 - Prefer table-driven tests with `subTest` (see `tests/test_fuzzy_time.py`) over a new class per feature.
 
 ## CI and deploy

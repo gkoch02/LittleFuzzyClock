@@ -14,8 +14,11 @@ from fuzzyclock.frames import (
 )
 
 _TINY_SIZE = 14
+# Floors sized for the widest vendored faces (sixtyfour, press-start-2p,
+# diplomata), which need 11-13 pt to fit the longest lines.
+_TINY_MIN_SIZE = 10
 _BODY_MAX_SIZE = 40
-_BODY_MIN_SIZE = 14
+_BODY_MIN_SIZE = 10
 # Vertical gap between the phrase line and the hour line. Shared by
 # _fit_body_font's height check and render_clock's actual layout so the
 # size that "fits" matches what gets drawn — keep them reading the same value.
@@ -25,21 +28,26 @@ _LINE_GAP = 4
 def _fit_body_font(draw, phrase, hour_str, variant, available_w, available_h):
     """Return the largest font where both text lines fit within the constraints.
 
-    Tries sizes from _BODY_MAX_SIZE down to _BODY_MIN_SIZE. Both the width of
-    each line and the total two-line ink height are checked, so the chosen size
-    fits on the e-ink canvas regardless of phrase length or font metrics.
+    Tries sizes from _BODY_MAX_SIZE down to _BODY_MIN_SIZE. Measures ink
+    bboxes, not advance widths: render_clock centres by ink, and side bearings
+    make the two differ by several pixels in some fonts.
     """
     for size in range(_BODY_MAX_SIZE, _BODY_MIN_SIZE - 1, -1):
         font = load_font(size, variant=variant)
+        pb = draw.textbbox((0, 0), phrase, font=font)
+        hb = draw.textbbox((0, 0), hour_str, font=font)
         if (
-            draw.textlength(phrase, font=font) <= available_w
-            and draw.textlength(hour_str, font=font) <= available_w
+            pb[2] - pb[0] <= available_w
+            and hb[2] - hb[0] <= available_w
+            and (pb[3] - pb[1]) + _LINE_GAP + (hb[3] - hb[1]) <= available_h
         ):
-            pb = draw.textbbox((0, 0), phrase, font=font)
-            hb = draw.textbbox((0, 0), hour_str, font=font)
-            if (pb[3] - pb[1]) + _LINE_GAP + (hb[3] - hb[1]) <= available_h:
-                return font
+            return font
     return load_font(_BODY_MIN_SIZE, variant=variant)
+
+
+def _centered_x(width, bbox):
+    """Draw x that centres `bbox`'s ink (not its origin) on the canvas."""
+    return (width - (bbox[2] - bbox[0])) // 2 - bbox[0]
 
 
 def render_clock(
@@ -72,8 +80,12 @@ def render_clock(
     phrase, hour_str = fuzzy_time(now.hour, now.minute, dialect)
     day_line = now.strftime("%A, %b %d")
 
-    font_tiny = load_font(_TINY_SIZE, variant=font_variant)
-    day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
+    available_w = width - 2 * _CONTENT_PAD
+    for size in range(_TINY_SIZE, _TINY_MIN_SIZE - 1, -1):
+        font_tiny = load_font(size, variant=font_variant)
+        day_bbox = draw.textbbox((0, 0), day_line, font=font_tiny)
+        if day_bbox[2] - day_bbox[0] <= available_w:
+            break
 
     # Footer: pin ink bottom at _CONTENT_PAD above canvas bottom so it clears
     # the corner decorations (which extend _CONTENT_PAD - 2 px from each edge).
@@ -87,7 +99,7 @@ def render_clock(
         phrase,
         hour_str,
         font_variant,
-        available_w=width - 2 * _CONTENT_PAD,
+        available_w=available_w,
         available_h=footer_ink_top - _CONTENT_PAD,
     )
 
@@ -106,30 +118,29 @@ def render_clock(
     # Working in ink coordinates avoids bbox[1] artefacts shifting the visual
     # centre — fonts like Pacifico or Charis SIL carry large top offsets that
     # would otherwise push the block up or compress the inter-line gap.
-    LINE_GAP = _LINE_GAP
-    block_ink_h = phrase_ink_h + LINE_GAP + hour_ink_h
+    block_ink_h = phrase_ink_h + _LINE_GAP + hour_ink_h
     phrase_ink_y = _CONTENT_PAD + (footer_ink_top - _CONTENT_PAD - block_ink_h) // 2
 
     # Back-calculate draw positions from desired ink positions.
     phrase_draw_y = phrase_ink_y - phrase_bbox[1]
-    hour_draw_y = phrase_ink_y + phrase_ink_h + LINE_GAP - hour_bbox[1]
+    hour_draw_y = phrase_ink_y + phrase_ink_h + _LINE_GAP - hour_bbox[1]
 
     effective_frame = frame_for_font(font_variant) if frame == AUTO_FRAME else frame
     draw_border(draw, width, height, invert=invert, frame=effective_frame)
     draw.text(
-        ((width - (phrase_bbox[2] - phrase_bbox[0])) // 2, phrase_draw_y),
+        (_centered_x(width, phrase_bbox), phrase_draw_y),
         phrase,
         font=body_font,
         fill=ink,
     )
     draw.text(
-        ((width - (hour_bbox[2] - hour_bbox[0])) // 2, hour_draw_y),
+        (_centered_x(width, hour_bbox), hour_draw_y),
         hour_str,
         font=body_font,
         fill=ink,
     )
     draw.text(
-        ((width - (day_bbox[2] - day_bbox[0])) // 2, day_draw_y),
+        (_centered_x(width, day_bbox), day_draw_y),
         day_line,
         font=font_tiny,
         fill=ink,

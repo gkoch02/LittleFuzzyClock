@@ -45,19 +45,17 @@ _MAC_ROUNDED = [_ARIAL_ROUNDED, _HELVETICA]
 _MAC_MARKER = [_MARKER_FELT, _HELVETICA]
 _MAC_CHALK = [_CHALKDUSTER, _IMPACT]
 
-FONT_CANDIDATES = [
-    *_v("DejaVuSans-Bold.ttf"),
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/Library/Fonts/Arial Bold.ttf",
-    _SUPP + "Arial Bold.ttf",
-    _HELVETICA,
-]
-
 # Variant name -> ordered candidate paths; load_font() uses the first that opens.
 # Several variable fonts (sixtyfour, nabla, workbench, kablammo, jaro) have no
 # "Bold" named instance and render at their default axis values.
 FONT_VARIANTS = {
-    "dejavu": FONT_CANDIDATES,
+    "dejavu": [
+        *_v("DejaVuSans-Bold.ttf"),
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/Library/Fonts/Arial Bold.ttf",
+        _SUPP + "Arial Bold.ttf",
+        _HELVETICA,
+    ],
     "dejavu-serif": [
         *_v("DejaVuSerif-Bold.ttf"),
         "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
@@ -292,7 +290,7 @@ def vendored_font_variants():
     return available
 
 
-# Shuffle-bag state for pick_random_font(). Calls with rng=None deal one
+# Shuffle-bag state for pick_random_font(). Calls deal one
 # variant at a time from _random_font_bag; when it empties we reshuffle the
 # eligible set, so the user sees every vendored font before any repeats
 # (music-shuffle semantics rather than uniform i.i.d.). _last_random_font_pick
@@ -317,18 +315,13 @@ def _reset_random_font_bag():
         _last_random_font_pick = None
 
 
-def pick_random_font(rng=None):
-    """Pick a vendored font variant.
+def pick_random_font():
+    """Pick a vendored font variant from a shuffle bag.
 
-    With `rng=None` (the production path) uses a shuffle bag: deals each
-    vendored variant once before reshuffling, so the user sees every font
-    before any repeats. Across bag boundaries the next pick is swapped
-    deeper if it matches the previous return, avoiding visible back-to-back
-    duplicates whenever the eligible set has at least two entries.
-
-    With `rng` supplied (deterministic test path) bypasses the bag and does
-    an isolated `rng.choice` — same seed yields the same pick and leaves
-    module bag state undisturbed.
+    Deals each vendored variant once before reshuffling, so the user sees
+    every font before any repeats. Across bag boundaries the next pick is
+    swapped deeper if it matches the previous return, avoiding visible
+    back-to-back duplicates whenever the eligible set has at least two entries.
 
     Falls back to DEFAULT_FONT if no vendored variant is present on disk
     (degraded environment) so callers always get a usable variant key.
@@ -336,8 +329,6 @@ def pick_random_font(rng=None):
     available = vendored_font_variants()
     if not available:
         return DEFAULT_FONT
-    if rng is not None:
-        return rng.choice(available)
     global _random_font_bag_source, _last_random_font_pick
     available_set = frozenset(available)
     with _random_font_bag_lock:
@@ -374,11 +365,10 @@ def _has_weight_axis(font):
     return "Weight" in names
 
 
-def load_font(size, variant=None):
+def load_font(size, variant):
     """Load a TrueType/OpenType font at `size` from a registered variant.
 
-    `variant=None` walks FONT_CANDIDATES (DejaVu Sans Bold + macOS fallbacks).
-    A named variant must exist in FONT_VARIANTS; unknown keys raise KeyError
+    `variant` must be a key in FONT_VARIANTS; unknown keys raise KeyError
     (user input is validated in fuzzyclock_daemon._load_config).
 
     For variable fonts (e.g. Fredoka.ttf, which carries a wght axis), we
@@ -391,12 +381,7 @@ def load_font(size, variant=None):
     fail loud rather than letting PIL silently fall back to its default
     bitmap font, which would render a subtly-wrong clock face.
     """
-    if variant is None:
-        candidates = FONT_CANDIDATES
-        label = "default"
-    else:
-        candidates = FONT_VARIANTS[variant]
-        label = variant
+    candidates = FONT_VARIANTS[variant]
     for path in candidates:
         try:
             font = ImageFont.truetype(path, size)
@@ -409,6 +394,6 @@ def load_font(size, variant=None):
                 pass  # variable font with a weight axis but no "Bold" instance
         return font
     raise SystemExit(
-        f"No usable font found for variant {label!r}. Tried:\n"
+        f"No usable font found for variant {variant!r}. Tried:\n"
         + "\n".join(f"  {p}" for p in candidates)
     )
