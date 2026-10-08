@@ -5,7 +5,7 @@ few minutes of published sunrise/sunset values away from the poles. We pin
 a handful of known dates and assert the prediction is close, plus check the
 polar-night / midnight-sun branches.
 
-Run with: python3 -m unittest test_sun
+Run with: python3 -m unittest tests.test_sun
 """
 
 import unittest

@@ -2,8 +2,6 @@
 
 Exercises the CLI surface and the EPD-not-available fallback that the
 dev script uses on non-Pi machines.
-
-Run with: python3 -m unittest test_dry_run
 """
 
 import os
@@ -169,10 +167,13 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
                 fuzzyclock_preview.draw_fuzzy_clock(dry_run=False)
 
     def test_hardware_path_rotates_and_sleeps(self):
-        # When EPD is available, the script must init the panel, push a
-        # rotated buffer (the panel is mounted upside down), and put it
-        # back to sleep. Inject a fake epd2in13_V4 because the real module
-        # isn't importable in CI.
+        # The panel is mounted upside down, so it must receive the dry-run
+        # image rotated 180°.
+        now = datetime(2026, 4, 25, 9, 15)
+        fuzzyclock_preview.draw_fuzzy_clock(dry_run=True, output=self.out, now=now)
+        with Image.open(self.out) as img:
+            expected = img.convert("1").rotate(180).tobytes()
+
         fake_epd = mock.Mock()
         fake_epd.width = 122  # portrait dims; landscape swaps them
         fake_epd.height = 250
@@ -183,31 +184,20 @@ class DrawFuzzyClockInProcessTests(unittest.TestCase):
         fake_epd.getbuffer.side_effect = lambda img: captured_buf_images.append(img) or b"buf"
 
         with mock.patch.object(fuzzyclock_preview, "_load_epd", return_value=fake_module):
-            fuzzyclock_preview.draw_fuzzy_clock(
-                dry_run=False,
-                now=datetime(2026, 4, 25, 9, 15),
-            )
+            fuzzyclock_preview.draw_fuzzy_clock(dry_run=False, now=now)
 
         fake_epd.init.assert_called_once()
         fake_epd.display.assert_called_once()
         fake_epd.sleep.assert_called_once()
         self.assertEqual(len(captured_buf_images), 1)
-        # The buffer the panel receives must be the rotated image. We can't
-        # easily compare images, but the panel's portrait dimensions (height,
-        # width) match the rotated image's (width, height) — rotate(180) on a
-        # landscape image keeps its size, so this is really an "image was
-        # passed through" assertion: size matches what the script promised.
-        rotated = captured_buf_images[0]
-        self.assertEqual(rotated.size, (250, 122))
+        self.assertEqual(captured_buf_images[0].tobytes(), expected)
 
 
 class GpioBusyDryRunTests(unittest.TestCase):
     """--dry-run must not touch the EPD stack.
 
-    On a Pi with the service running, importing waveshare_epd raises
-    lgpio.error("GPIO busy"), neither ImportError nor RuntimeError. CI has no
-    GPIO and would take the ImportError path whether or not the code is right,
-    so a meta_path finder simulates the exotic exception instead.
+    A meta_path finder raises a non-ImportError on import (see _load_epd);
+    CI's missing GPIO would only ever exercise the ImportError path.
     """
 
     class _Boom(Exception):
@@ -253,9 +243,8 @@ class GpioBusyDryRunTests(unittest.TestCase):
         self.assertTrue(os.path.exists(out))
 
     def test_cli_dry_run_succeeds_while_epd_import_explodes(self):
-        # End-to-end proof, and the test that actually fails against the old
-        # module-scope import: run the real CLI in a subprocess where every
-        # waveshare_epd import raises a non-ImportError exception.
+        # Run the real CLI in a subprocess where every waveshare_epd import
+        # raises a non-ImportError exception.
         out = os.path.join(self.tmp.name, "cli.png")
         script = textwrap.dedent(f"""
             import os, sys, runpy
