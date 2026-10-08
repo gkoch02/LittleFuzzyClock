@@ -17,12 +17,10 @@ module that owns them, so their dependency stays visible.
 from fuzzyclock.dialects import (  # noqa: F401
     DEFAULT_DIALECT,
     DIALECTS,
-    HOUR_WORDS,
     fuzzy_time,
 )
 from fuzzyclock.fonts import (  # noqa: F401
     DEFAULT_FONT,
-    FONT_CANDIDATES,
     FONT_VARIANTS,
     RANDOM_FONT,
     load_font,
