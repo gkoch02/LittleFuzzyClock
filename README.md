@@ -6,47 +6,25 @@
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-C51A4A?logo=raspberrypi&logoColor=white)](https://www.raspberrypi.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-A fuzzy clock for a Raspberry Pi Zero driving a [Waveshare 2.13" e-ink display (V4)](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT_%28E%29).
+A fuzzy clock for a Raspberry Pi Zero driving a [Waveshare 2.13" e-ink display (V4)](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT_Manual).
 
-Instead of showing an exact time, it displays natural-language phrases like "quarter past nine am" or "twenty to three pm", with the date as a footer and a decorative border in one of four styles (Bauhaus, rustic, sketchy, or retro).
+Instead of showing an exact time, it displays natural-language phrases like "quarter past nine am" or "twenty to three pm", with the date as a footer and a decorative border in a style that suits the font (Bauhaus, rustic, sketchy, or retro).
 
 ![Preview of the fuzzy clock display](docs/preview.png)
 
-## Contents
-
-- [Hardware](#hardware)
-- [Tested environment](#tested-environment)
-- [Behaviour](#behaviour)
-- [Rebuilding from scratch](#rebuilding-from-scratch)
-- [Testing without hardware](#testing-without-hardware)
-- [Phrasing personalities](#phrasing-personalities)
-- [Fonts](#fonts)
-- [Border frame styles](#border-frame-styles)
-- [After-hours mode](#after-hours-mode)
-- [Tests](#tests)
-- [Files](#files)
-- [License](#license)
-
 ## Hardware
 
-- Raspberry Pi Zero (or any Pi with SPI)
-- Waveshare 2.13" e-Paper HAT V4 (122×250, black/white)
-- Push button between GPIO 3 (BCM, physical pin 5) and ground — used for manual refresh and shutdown. GPIO 3 doubles as the Pi's wake-from-halt pin, so the same button can also power the clock back on after a long-press shutdown.
+A Raspberry Pi Zero (or any Pi with SPI), a Waveshare 2.13" e-Paper HAT V4 (122×250, black/white), and a push button between GPIO 3 (BCM, physical pin 5) and ground for manual refresh and shutdown. GPIO 3 doubles as the Pi's wake-from-halt pin, so the same button can also power the clock back on after a long-press shutdown.
 
-## Tested environment
-
-- **OS:** Raspberry Pi OS Bookworm (Debian 12). The `deploy.sh` script targets Bookworm's PEP 668 model (system Python via `apt`, no `pip install`). Should work on both 32-bit and 64-bit Pi OS, but only 32-bit on a Pi Zero is regularly exercised.
-- **Python:** 3.11 (Bookworm system Python). CI also runs on 3.12.
-- **Waveshare driver:** `waveshare_epd/` is vendored from [waveshare/e-Paper](https://github.com/waveshare/e-Paper) (`RaspberryPi_JetsonNano/python/lib/waveshare_epd/`), `epd2in13_V4.py` V1.0 dated 2023-06-25 and `epdconfig.py` V1.2. To resync, copy those two files plus `__init__.py` from upstream — don't edit them in place; ruff is configured to skip the directory in `pyproject.toml`.
+It is run on Raspberry Pi OS Bookworm (Debian 12), whose system Python is 3.11; CI also runs on 3.12. `deploy.sh` targets Bookworm's PEP 668 model (system Python via `apt`, no `pip install`), and should work on both 32-bit and 64-bit Pi OS, though only 32-bit on a Pi Zero is regularly exercised. `waveshare_epd/` is vendored from [waveshare/e-Paper](https://github.com/waveshare/e-Paper) (`RaspberryPi_JetsonNano/python/lib/waveshare_epd/`), `epd2in13_V4.py` V1.0 dated 2023-06-25 and `epdconfig.py` V1.2. To resync, copy those two files plus `__init__.py` from upstream — don't edit them in place; ruff is configured to skip the directory in `pyproject.toml`.
 
 ## Behaviour
 
-- **Day mode (sunrise – sunset, within 7 AM – 10:59 PM):** display updates every 5 minutes via partial refresh, black ink on white
-- **After-hours mode (sunset – 10:59 PM):** same clock face but with the colours inverted (white ink on black). Opt-in — see [After-hours mode](#after-hours-mode) below
-- **Night mode (11 PM – 6:59 AM):** shows "Goodnight" and the display sleeps
-- **Short button press (0.05–2 s):** forces an immediate refresh (ignored during night mode, where the panel is asleep)
-- **Long button press (≥ 5 s):** graceful shutdown via `sudo -n shutdown -h now`. The daemon runs as a regular user, so this relies on the NOPASSWD rule `deploy.sh` installs at `/etc/sudoers.d/fuzzyclock`
-- **Unresponsive panel:** every call into the e-paper driver is bounded by a 10-second deadline, so a stuck BUSY pin (usually a loose ribbon cable) surfaces as a logged render failure instead of a silently frozen daemon. Repeated failures re-init the panel, and if that doesn't help the daemon exits so `systemd` restarts it cleanly.
+From sunrise to sunset, within 7 AM – 10:59 PM, the display updates every 5 minutes via partial refresh, black ink on white. From sunset to 10:59 PM the same clock face shows with the colours inverted, white on black, if after-hours mode is on (see [below](#after-hours-mode)). From 11 PM to 6:59 AM the panel shows "Goodnight" and sleeps.
+
+A short button press (0.05–2 s) forces an immediate refresh (ignored during night mode, where the panel is asleep). A long press (≥ 5 s) shuts the Pi down via `sudo -n shutdown -h now`; the daemon runs as a regular user, so this relies on the NOPASSWD rule `deploy.sh` installs at `/etc/sudoers.d/fuzzyclock`.
+
+Every call into the e-paper driver is bounded by a 10-second deadline, so a stuck BUSY pin (usually a loose ribbon cable) surfaces as a logged render failure instead of a silently frozen daemon. Repeated failures re-init the panel, and if that doesn't help the daemon exits so `systemd` restarts it.
 
 ## Rebuilding from scratch
 
@@ -58,7 +36,7 @@ cd LittleFuzzyClock
 bash deploy.sh
 ```
 
-That's it. The script installs dependencies via `apt` (Raspberry Pi OS Bookworm's PEP 668 blocks pip from touching the system Python), enables SPI, and installs and starts the `fuzzyclock.service` systemd unit.
+The script installs dependencies via `apt` (Raspberry Pi OS Bookworm's PEP 668 blocks pip from touching the system Python), enables SPI, and installs and starts the `fuzzyclock.service` systemd unit.
 
 > **Note:** If SPI wasn't already enabled, the script enables it for you, but you may need to reboot once before the display responds.
 
@@ -83,18 +61,18 @@ python3 fuzzyclock_preview.py --dry-run --dialect shakespeare --font literata --
 
 ## Phrasing personalities
 
-Eight phrasings ship in the box. Examples below all show 9:30 so you can compare across dialects:
+The dialects, each reading 9:30 so you can compare them:
 
-| Dialect                | 9:30 reading                       | Notes                                                              |
+| Dialect                | 9:30 reading                       | Character                                                          |
 | ---------------------- | ---------------------------------- | ------------------------------------------------------------------ |
 | `classic` (default)    | `half past / nine am`              | Plain English fuzzy time.                                          |
-| `shakespeare`          | `'tis half past / nine of the clock` | Archaic English; drops AM/PM (anachronistic).                    |
+| `shakespeare`          | `'tis half past / nine of the clock` | Archaic English; drops AM/PM.                                    |
 | `klingon`              | `half past / Hut rep`              | Real tlhIngan Hol numerals; "rep" is Klingon for *hour*.           |
 | `belter`               | `half past / nine bell, ya`        | Lang Belta creole from *The Expanse*; nautical "bell" for time.    |
 | `german`               | `halb / zehn`                      | Standard High German; "halb" anchors on the *next* hour.           |
 | `hal`                  | `MIDPOINT / 0900 HOURS`            | HAL 9000 mission-control patter; 24h numeric for AM/PM clarity.    |
 | `cthulhu`              | `the half-hour / the ninth hour`   | Lovecraftian dread; ordinal hours; climaxes with "the stars are right". |
-| `latin`                | `media post / hora IX a.m.`        | Roman-numeral hours; real Latin prepositions; *a.m.*/*p.m.* etymology Easter egg. |
+| `latin`                | `media post / hora IX a.m.`        | Roman-numeral hours; real Latin prepositions.                      |
 
 Pick one with `--dialect`:
 
@@ -112,7 +90,7 @@ Unknown values fall back to `classic` with a warning in the daemon log.
 
 ## Fonts
 
-140 font variants are available — 133 open-source fonts vendored in `fonts/` (clean & literary serifs, slab serifs, soft & rounded, geometric & condensed, bold display, retro & computing, vintage/deco/futuristic, blackletter & fantasy, handwriting & script, hand-drawn, textured & experimental, horror & macabre, weird & unique), and 7 commercial fonts you can unlock by dropping a licensed file into `fonts/`. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
+Open-source fonts across many styles (literary serifs, slab serifs, soft and rounded, geometric and condensed, bold display, retro and computing, vintage, deco and futuristic, blackletter and fantasy, handwriting and script, hand-drawn, textured and experimental, horror and macabre, and the plain odd) are vendored in `fonts/`, and a few commercial fonts unlock when a licensed file is dropped into the same folder. See **[docs/fonts.md](docs/fonts.md)** for previews and the full list.
 
 Pick one with `--font`:
 
@@ -132,11 +110,11 @@ Unknown values fall back to `dejavu` with a warning in the daemon log.
 
 ## Border frame styles
 
-Four border styles are available, each paired by default with a matching font category:
+Each border style is paired by default with a matching font category:
 
 | Style      | Character                                                          |
 | ---------- | ------------------------------------------------------------------ |
-| `bauhaus`  | Clean geometric corners — the default for most sans/serif fonts    |
+| `bauhaus`  | Plain geometric corners — the default for most sans/serif fonts    |
 | `rustic`   | Double rule with diamond corners — pairs with blackletter and horror fonts |
 | `sketchy`  | Loose, uneven lines — pairs with hand-drawn and script fonts       |
 | `retro`    | Stair-stepped pixel border — pairs with pixel, deco, and techno fonts |
@@ -172,9 +150,7 @@ Sunrise/sunset are computed via NOAA's simplified solar-position equation, accur
 
 ## Tests
 
-The suite lives in `tests/` and covers the time-phrasing logic, the sunrise/sunset
-approximation, the daemon's mode/config/retry logic, and a render smoke test for the
-clock face. Run it from the repo root:
+The suite in `tests/` covers the time-phrasing logic across every dialect, the sunrise/sunset approximation, the daemon's mode, config and retry logic, the `--dry-run` path, a render smoke test for the clock face and its frames, and a check that importing the daemon loads no fonts and reads no config. Run it from the repo root:
 
 ```bash
 python3 -m unittest discover
@@ -183,33 +159,7 @@ python3 -m unittest discover
 python3 -m unittest tests.test_fuzzy_time
 ```
 
-| File | Covers |
-|------|--------|
-| `tests/test_fuzzy_time.py` | `fuzzy_time()` edge cases across every dialect |
-| `tests/test_render.py` | `draw_border`, `render_clock`, body-font auto-sizing, frame styles |
-| `tests/test_dry_run.py` | `fuzzyclock_preview.py --dry-run`: CLI arguments and the in-process render path |
-| `tests/test_sun.py` | The sunrise/sunset approximation used by after-hours mode |
-| `tests/test_daemon.py` | `current_mode`, tick sleep, config loading, render-retry logic |
-| `tests/test_daemon_import.py` | Importing `fuzzyclock_daemon` loads no fonts and reads no config |
-
-The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`.
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `fuzzyclock_daemon.py` | Production daemon — runs continuously, handles day/night mode and button presses |
-| `fuzzyclock_preview.py` | Standalone dev script with `--dry-run` PNG output |
-| `fuzzyclock_core.py` | The shared public API both of the above import from — a thin facade over `fuzzyclock/` |
-| `fuzzyclock/` | The implementation, split by concern: `dialects`, `fonts`, `frames`, `render`, `sun` |
-| `tests/` | The test suite — see [Tests](#tests) below for what each file covers |
-| `docs/fonts.md` + `docs/previews/` | Font catalog with a rendered preview per variant |
-| `.github/workflows/test.yml` | CI workflow — runs the whole suite on push/PR |
-| `deploy.sh` | One-shot deploy script for fresh Pi setup |
-| `fuzzyclock_config.yaml` | Dialect, font, frame, and latitude/longitude for the after-hours sunset/sunrise calculation |
-| `requirements.txt` | Python deps for **dev environments** (macOS, etc.); the Pi deploy uses `apt` |
-| `systemd/fuzzyclock.service` | systemd service unit (templated — `deploy.sh` substitutes the user and repo path) |
-| `waveshare_epd/` | Waveshare e-Paper Python library (MIT, from [Waveshare's e-Paper repo](https://github.com/waveshare/e-Paper)) |
+The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`. The repo's layout is described in [`CLAUDE.md`](CLAUDE.md).
 
 ## License
 
