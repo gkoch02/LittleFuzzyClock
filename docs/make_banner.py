@@ -46,7 +46,8 @@ def main():
     bezel = 10
     draw.rounded_rectangle(
         (px - bezel, py - bezel, px + clock.width + bezel, py + clock.height + bezel),
-        radius=12, fill=INK,
+        radius=12,
+        fill=INK,
     )
     image.paste(clock, (px, py))
 
@@ -59,11 +60,13 @@ def main():
     draw.text((x, 84), "Little Fuzzy Clock", font=load_font(66, "playfair"), fill=INK)
     draw.text((x + 2, 180), "the time, roughly", font=load_font(40, "literata"), fill=INK)
     small = load_font(21, "dejavu")
-    for i, line in enumerate((
-        "dialects from Shakespeare to Klingon",
-        "a border to suit the font",
-        "a Raspberry Pi Zero on a 2.13-inch e-ink",
-    )):
+    for i, line in enumerate(
+        (
+            "dialects from Shakespeare to Klingon",
+            "a border to suit the font",
+            "a Raspberry Pi Zero on a 2.13-inch e-ink",
+        )
+    ):
         draw.text((x + 2, 240 + i * 30), line, font=small, fill=INK)
 
     image.convert("1", dither=Image.Dither.FLOYDSTEINBERG).save(OUT_PATH, optimize=True)
