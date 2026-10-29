@@ -1,12 +1,10 @@
-# Little Fuzzy Clock
+![Little Fuzzy Clock: the wordmark and tagline inside a Bauhaus border, beside the panel reading "half past nine am"](docs/banner.png)
 
 [![CI](https://github.com/gkoch02/LittleFuzzyClock/actions/workflows/test.yml/badge.svg)](https://github.com/gkoch02/LittleFuzzyClock/actions/workflows/test.yml)
 [![CodeQL](https://github.com/gkoch02/LittleFuzzyClock/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/gkoch02/LittleFuzzyClock/actions/workflows/github-code-scanning/codeql)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](.github/workflows/test.yml)
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-C51A4A?logo=raspberrypi&logoColor=white)](https://www.raspberrypi.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-
-![Little Fuzzy Clock: the wordmark and tagline inside a Bauhaus border, beside the panel reading "half past nine am"](docs/banner.png)
 
 A fuzzy clock for a Raspberry Pi Zero driving a [Waveshare 2.13" e-ink display (V4)](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT_Manual).
 
