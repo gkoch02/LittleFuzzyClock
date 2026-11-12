@@ -41,7 +41,7 @@ jobs:
         # gpiozero / RPi.GPIO / spidev aren't installed: the daemon's hardware
         # imports are guarded so test_daemon* can import fuzzyclock_daemon
         # without them, and fuzzyclock_preview.py handles the missing-EPD case.
-        run: pip install "Pillow>=10,<13" "PyYAML>=6,<7"
+        run: pip install "Pillow>=13,<14" "PyYAML>=6,<7"
 
       - name: Run tests
         run: python -m unittest discover -v
@@ -71,16 +71,16 @@ jobs:
           python-version: "3.11"
 
       - name: Install the oldest supported Pillow
-        # The `test` jobs install "Pillow>=10,<13", which always resolves to the
+        # The `test` jobs install "Pillow>=13,<14", which always resolves to the
         # newest release — so code using an API that only exists in the latest
         # Pillow passes CI and breaks anyone on an older one still allowed by
         # requirements.txt. This job pins that floor so the range is honest.
         #
         # An exact pin, not a range: pip resolves the NEWEST version satisfying
-        # a specifier, so "Pillow>=10,<11" installs 10.4.0 and an API added in
-        # 10.1-10.4 would still pass while breaking a user on 10.0.0 — which
+        # a specifier, so "Pillow>=13,<14" installs the newest 13.x and an API
+        # added after 13.0.0 would still pass while breaking a user on 13.0.0 — which
         # requirements.txt permits. Keep this in step with that floor.
-        run: pip install "Pillow==10.0.0" "PyYAML>=6,<7"
+        run: pip install "Pillow==13.0.0" "PyYAML>=6,<7"
 
       - name: Show the resolved Pillow version
         # This job's whole value is testing a specific old Pillow, so state which

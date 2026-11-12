@@ -2,7 +2,8 @@
 # On Raspberry Pi, deploy.sh installs these via apt instead to avoid PEP 668.
 # Upper bounds guard against future major-version breakage; widen as
 # newer majors are validated against the daemon and --dry-run.
-Pillow>=10,<13
+# Pillow 13 (the first release clear of the open advisories) needs Python 3.11+.
+Pillow>=13,<14
 PyYAML>=6,<7
 gpiozero>=1.6,<3
 spidev>=3.5,<4
