@@ -11,7 +11,8 @@ The clock is a Raspberry Pi running one background service called `fuzzyclock`. 
 | Thing | Where on the Pi | Touch it? |
 |---|---|---|
 | The code (a copy of this GitHub repo) | `~/LittleFuzzyClock` | Only through `git pull`, or small tweaks (see the last section) |
-| **Your settings** | `~/LittleFuzzyClock/fuzzyclock_config.yaml` | Yes, this is the file you edit. It's also part of the code, which matters when updating (see "Updating") |
+| **Your settings** | `~/LittleFuzzyClock/fuzzyclock_config.yaml` | Yes, this is the file you edit. It's yours alone: git ignores it, so updates leave it alone |
+| The default settings | `~/LittleFuzzyClock/fuzzyclock_config.example.yaml` | No. Part of the code; the clock uses it only when your file is missing |
 | The fonts | `~/LittleFuzzyClock/fonts/` | Only to add a licensed commercial font (`docs/fonts.md`) |
 | Python and its libraries | The Pi's own system Python, installed with `apt` by `deploy.sh` | Rarely |
 | The service definition | `/etc/systemd/system/fuzzyclock.service` | Rarely; `deploy.sh` writes it |
@@ -37,7 +38,7 @@ To watch live (Ctrl-C to stop watching; the clock keeps running): `journalctl -u
 
 ## Changing settings (no code)
 
-All the choices live in one file, read when the service starts. The recipe is always the same:
+All the choices live in one file, `fuzzyclock_config.yaml`, read when the service starts. If it doesn't exist yet, the clock runs on `fuzzyclock_config.example.yaml`, and the first change starts with a copy: `cp fuzzyclock_config.example.yaml fuzzyclock_config.yaml`. Never edit the example itself; it's part of the code, so an update would refuse over it. After that the recipe is always the same:
 
 ```bash
 cp fuzzyclock_config.yaml ~/fuzzyclock_config.yaml.bak-$(date +%Y%m%d)                       # 1. back it up
@@ -47,7 +48,7 @@ sudo systemctl restart fuzzyclock                                               
 journalctl -u fuzzyclock -n 10 --no-pager                                                       # 5. check what it read
 ```
 
-Step 3 checks the file is readable YAML: it prints `config OK`, or an error naming the line. Step 5 catches the rest. The clock never refuses to start over a setting: a name it doesn't know (`Unknown font='litterata'`) falls back to the default with a warning, a bad coordinate turns after-hours mode off with a warning, and an unreadable file makes it run on all defaults. So if a change seems to have no effect, the log says why.
+Step 3 checks the file is readable YAML: it prints `config OK`, or an error naming the line. Step 5 catches the rest, and its `Reading settings from …` line names the file the clock actually read. The clock never refuses to start over a setting: a name it doesn't know (`Unknown font='litterata'`) falls back to the default with a warning, a bad coordinate turns after-hours mode off with a warning, and an unreadable file makes it run on all defaults. So if a change seems to have no effect, the log says why.
 
 The settings, each listed with every option in the file's own comments:
 
@@ -80,21 +81,31 @@ Use the long press before unplugging the Pi. Pulling the power while it's writin
 
 ## Updating
 
-Your settings file is part of the repo, so git won't update while it holds your changes. Set it aside, update, and put it back:
-
 ```bash
 cd ~/LittleFuzzyClock
-cp fuzzyclock_config.yaml ~/fuzzyclock_config.yaml.mine
-git checkout -- fuzzyclock_config.yaml
 git pull --ff-only origin main
-cp ~/fuzzyclock_config.yaml.mine fuzzyclock_config.yaml
 sudo systemctl restart fuzzyclock
 systemctl status --no-pager fuzzyclock
 ```
 
-If the update added a new option, its comment won't be in your copy; `git diff` after the last `cp` shows what the new version of the file has that yours doesn't. If the update changed `deploy.sh` or `systemd/fuzzyclock.service`, run `bash deploy.sh` again too; it's safe to re-run and keeps your settings.
+Your settings file isn't part of the code, so the pull leaves it alone. If the update changed `deploy.sh` or `systemd/fuzzyclock.service`, run `bash deploy.sh` again too; it's safe to re-run and keeps your settings.
 
-**To go back to the version that worked**: this repo has no release tags, so use the commit list. `git log --oneline -10` shows the last ten changes, newest first. Pick the one before the update, then do the same set-aside dance with `git checkout <its short code>` in place of `git pull`. `git checkout main` and the update steps put you back on the latest.
+**Once only: the first update past the move to an example file.** Until #73 the settings file itself was part of the code, so a Pi set up before then still has it as an edited tracked file. The update that stops tracking it is refused like any other while the file holds your edits (`Your local changes to the following files would be overwritten by merge`), and nothing changes. On a Pi where the file was never edited, the pull simply deletes it and the clock runs on the example, which holds the same defaults. To keep your settings, set them aside for that one pull:
+
+```bash
+cd ~/LittleFuzzyClock
+cp fuzzyclock_config.yaml ~/fuzzyclock_config.yaml.mine   # 1. your settings, outside the repo
+git checkout -- fuzzyclock_config.yaml                    # 2. put the tracked copy back as it was
+git pull --ff-only origin main                            # 3. the update deletes the tracked copy
+cp ~/fuzzyclock_config.yaml.mine fuzzyclock_config.yaml   # 4. your settings, now a file git ignores
+git status --short --ignored                              # 5. shows "!! fuzzyclock_config.yaml"
+sudo systemctl restart fuzzyclock
+journalctl -u fuzzyclock -n 10 --no-pager                 # "Reading settings from …/fuzzyclock_config.yaml"
+```
+
+Two shortcuts that look as if they'd work and don't: `git rm --cached fuzzyclock_config.yaml` before the pull is refused too (`untracked working tree files would be removed by merge`), and `git stash` / `git pull` / `git stash pop` puts your settings into `fuzzyclock_config.example.yaml`, because git follows the file to its new name; the clock then still reads them, but the next update refuses again. For the same reason, don't `git stash pop` or `git stash apply` any of the older stashes on the Pi after this update: copy what you need out of one with `git stash show -p stash@{N}` instead. The step-1 copy can go once the clock reads your file.
+
+**To go back to the version that worked**: this repo has no release tags, so use the commit list. `git log --oneline -10` shows the last ten changes, newest first. Pick the one before the update and `git checkout <its short code>`, then restart. `git checkout main` and the update steps put you back on the latest. Copy your settings out first (`cp fuzzyclock_config.yaml ~/fuzzyclock_config.yaml.mine`) if you're going back past the move to an example file: git silently overwrites the ignored file with the old tracked one there, and deletes it again on the way back, so copy it back afterwards.
 
 ## When it stops working
 
@@ -105,7 +116,7 @@ If the update added a new option, its comment won't be in your copy; `git diff` 
 | `draw_clock() failed` over and over, `EPDTimeoutError` | The panel isn't answering: usually the ribbon cable. Reseat it with the Pi shut down |
 | `epd.init() failed` | The panel can't be reached: SPI off (`sudo raspi-config nonint get_spi` prints `0` when it's on) or the cable |
 | `GPIO busy` | Another program has the display pins. Only one program may drive the panel; `ps aux \| grep python` shows what's running |
-| A setting didn't take effect | `journalctl -u fuzzyclock -n 20` right after a restart shows the warning |
+| A setting didn't take effect | `journalctl -u fuzzyclock -n 20` right after a restart shows the warning, and `Reading settings from …` names the file it read: the example means your `fuzzyclock_config.yaml` is missing or misnamed |
 | Inverted face at the wrong time | Check `latitude`/`longitude`, and the Pi's time zone: `timedatectl` |
 | Button does nothing | `journalctl -u fuzzyclock \| grep -iE "press|button"` shows whether presses arrive. A long press that logs `shutdown command failed` means `/etc/sudoers.d/fuzzyclock` is missing; `bash deploy.sh` reinstalls it |
 | Fails after a Pi system update | See "Things that will break eventually" |
@@ -135,7 +146,7 @@ For a dead SD card or a new Pi. Allow half an hour.
    git clone https://github.com/gkoch02/LittleFuzzyClock.git ~/LittleFuzzyClock
    ```
 
-3. Put your settings back, from the Mac:
+3. Put your settings back, from the Mac (skip this to start on the example's defaults):
 
    ```bash
    scp ~/Backups/LittleFuzzyClock/fuzzyclock_config.yaml 'pi@<the Pi>:LittleFuzzyClock/'
@@ -166,7 +177,7 @@ Settings cover most wishes. When they don't, [`docs/CODE_TOUR.md`](docs/CODE_TOU
 
 **The safety net.** On the Pi, in `~/LittleFuzzyClock`:
 
-- `git status` lists files you've changed. `fuzzyclock_config.yaml` always shows; that's your settings.
+- `git status` lists files you've changed. Your settings file never shows; git ignores it.
 - `git diff` shows exactly what you changed.
 - `git checkout -- <file>` throws your change to that file away and puts the original back.
 

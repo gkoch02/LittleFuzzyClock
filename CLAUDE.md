@@ -9,7 +9,7 @@ Rules for Claude Code sessions on this repo. User-facing usage is in the README.
 - `fuzzyclock_core.py` — facade re-exporting the public API of `fuzzyclock/`. Entry points and tests import from it; don't duplicate implementations.
 - `fuzzyclock/` — `sun`, `dialects`, `fonts`, `frames` are leaf modules with no intra-package imports; `render` is the only one that imports the others.
 - `fuzzyclock_daemon.py` — the systemd daemon. `fuzzyclock_preview.py` — dev/dry-run CLI.
-- `fuzzyclock_config.yaml` — the daemon's only config, read once in `main()` by `_load_config()`.
+- `fuzzyclock_config.yaml` — the daemon's only config, gitignored and local to the device; `_config_path()` falls back to the tracked `fuzzyclock_config.example.yaml`. Read once in `main()` by `_load_config()`. Edit the example, never re-track the local file (`git pull` refuses on an edited tracked file).
 - `fonts/` — vendored font files. `docs/fonts.md` + `docs/previews/` — the font catalog.
 - `waveshare_epd/` — vendored driver. Don't edit except to sync upstream; ruff skips it.
 - `docs/CODE_TOUR.md` names functions and files; update it when you rename or move one. `MAINTAINING.md` is the Pi operator's guide.
@@ -44,7 +44,7 @@ Rules for Claude Code sessions on this repo. User-facing usage is in the README.
 - The goodnight slide always uses `GOODNIGHT_FONT` and the rustic frame, whatever the configured font is.
 
 **Fonts**
-- Adding a font variant takes four touches: `FONT_VARIANTS`, `FONT_FRAME_CATEGORY`, the comment block in `fuzzyclock_config.yaml`, and a `docs/fonts.md` row (plus a preview PNG if the font is vendored).
+- Adding a font variant takes four touches: `FONT_VARIANTS`, `FONT_FRAME_CATEGORY`, the comment block in `fuzzyclock_config.example.yaml`, and a `docs/fonts.md` row (plus a preview PNG if the font is vendored).
 - `_VENDORED_FONT_DIR` walks up two directories from `fuzzyclock/fonts.py`. Keep that if the file moves.
 
 **Tests**

@@ -1,3 +1,7 @@
+# Example settings, used as-is when there is no fuzzyclock_config.yaml.
+# To change a setting, copy this file to fuzzyclock_config.yaml (gitignored,
+# so `git pull` leaves it alone) and edit the copy, not this file.
+
 # Time phrasing.
 # Options: classic, shakespeare, klingon, belter, german, hal, cthulhu, latin
 dialect: classic
