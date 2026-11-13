@@ -12,6 +12,7 @@ Rules for Claude Code sessions on this repo. User-facing usage is in the README.
 - `fuzzyclock_config.yaml` — the daemon's only config, read once in `main()` by `_load_config()`.
 - `fonts/` — vendored font files. `docs/fonts.md` + `docs/previews/` — the font catalog.
 - `waveshare_epd/` — vendored driver. Don't edit except to sync upstream; ruff skips it.
+- `docs/CODE_TOUR.md` names functions and files; update it when you rename or move one. `MAINTAINING.md` is the Pi operator's guide.
 
 ## Commands
 
