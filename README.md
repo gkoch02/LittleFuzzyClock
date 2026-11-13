@@ -161,6 +161,10 @@ python3 -m unittest tests.test_fuzzy_time
 
 The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`. The repo's layout is described in [`CLAUDE.md`](CLAUDE.md).
 
+## Under the hood
+
+[`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) walks through the code, following one redraw from the minute loop to the panel. [`MAINTAINING.md`](MAINTAINING.md) covers looking after a running clock: health checks, settings, updates, backups and rebuilding the Pi.
+
 ## License
 
 This repository is MIT licensed; see [`LICENSE`](LICENSE). The grant covers
