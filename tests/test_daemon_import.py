@@ -21,10 +21,11 @@ def _forbidden(*a, **k):
 fonts.load_font = _forbidden
 fonts.pick_random_font = _forbidden
 import builtins
+import os
 _open = builtins.open
 
 def _no_config(path, *a, **k):
-    if str(path).endswith("fuzzyclock_config.yaml"):
+    if os.path.basename(str(path)).startswith("fuzzyclock_config"):
         raise AssertionError("config read at import time")
     return _open(path, *a, **k)
 

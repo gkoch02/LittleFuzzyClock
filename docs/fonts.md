@@ -2,7 +2,7 @@
 
 All previews show the same moment — `9:15 am` in the `classic` dialect — so the typefaces are directly comparable. The display is 250 × 122 px (Waveshare 2.13" e-ink, landscape).
 
-Set the active font in `fuzzyclock_config.yaml`:
+Set the active font in `fuzzyclock_config.yaml` (your copy of `fuzzyclock_config.example.yaml`, which also lists every variant):
 
 ```yaml
 font: libertinus

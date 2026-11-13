@@ -5,3 +5,6 @@ __pycache__/
 dry_run.png
 .DS_Store
 .ruff_cache/
+
+# Local settings; the repo ships fuzzyclock_config.example.yaml.
+/fuzzyclock_config.yaml

@@ -13,7 +13,7 @@ There are two programs here, sharing one set of drawing code:
 
 Both get their drawing from the `fuzzyclock/` package, through `fuzzyclock_core.py`, a short file that only re-exports the package's public names so there's one place to import them from.
 
-The rest: `fonts/` (the typefaces, copied in), `waveshare_epd/` (the panel maker's driver, copied in), `fuzzyclock_config.yaml` (the settings), `systemd/fuzzyclock.service` and `deploy.sh` (installing it on a Pi), `docs/` (the font catalogue and README pictures), `tests/`.
+The rest: `fonts/` (the typefaces, copied in), `waveshare_epd/` (the panel maker's driver, copied in), `fuzzyclock_config.example.yaml` (the default settings; a device's own are in an untracked `fuzzyclock_config.yaml`), `systemd/fuzzyclock.service` and `deploy.sh` (installing it on a Pi), `docs/` (the font catalogue and README pictures), `tests/`.
 
 ## Words this code uses
 
@@ -39,7 +39,7 @@ The rest: `fonts/` (the typefaces, copied in), `waveshare_epd/` (the panel maker
 
 Say it's 09:15 on a sunny morning. Here's the path, with the file and the function at each step. To find a function, search the file for `def` and its name, e.g. `def draw_clock(`.
 
-**1. The service is already running.** systemd started `fuzzyclock_daemon.py` at boot (`systemd/fuzzyclock.service`, `Restart=always`). On start, `main()` read the settings once with `_load_config()`, loaded the fonts, woke the panel and started a thread that listens to the button.
+**1. The service is already running.** systemd started `fuzzyclock_daemon.py` at boot (`systemd/fuzzyclock.service`, `Restart=always`). On start, `main()` read the settings once with `_load_config()`, from `fuzzyclock_config.yaml` or, if there isn't one, `fuzzyclock_config.example.yaml` (`_config_path()`), loaded the fonts, woke the panel and started a thread that listens to the button.
 
 **2. The loop wakes.** In `main()`, the `while not _stop_event.is_set():` loop runs once a minute. It asks `_current_mode_now()`, which calls `current_mode()`: between 07:00 and 23:00, and with the sun up (`sun_times()` in `fuzzyclock/sun.py` works out sunrise and sunset from the coordinates, with no internet), it's `day`.
 
@@ -76,7 +76,7 @@ should_render = last_state != mode or datetime.now().minute % UPDATE_MINUTES == 
 | `fuzzyclock/frames.py` | The four borders, and which font gets which |
 | `fuzzyclock/sun.py` | Sunrise and sunset for after-hours mode |
 | `fuzzyclock_preview.py` | Drawing a face to a PNG for testing |
-| `fuzzyclock_config.yaml` | The settings, with every option listed in its comments |
+| `fuzzyclock_config.example.yaml` | The default settings, with every option listed in its comments. Copied to `fuzzyclock_config.yaml` (gitignored) to change them |
 
 ## What you can skip
 
