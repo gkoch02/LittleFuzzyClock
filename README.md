@@ -80,7 +80,7 @@ Pick one with `--dialect`:
 python3 fuzzyclock_preview.py --dry-run --dialect shakespeare --output preview.png
 ```
 
-The daemon reads the same setting from the `dialect:` field in `fuzzyclock_config.yaml` (next to the daemon). To change it on the Pi, edit that file and restart the service:
+The daemon reads the same setting from the `dialect:` field in `fuzzyclock_config.yaml`, next to the daemon. That file is yours and git ignores it; the repo ships `fuzzyclock_config.example.yaml`, which the daemon uses as-is until you make your own. To change a setting on the Pi, copy the example once (`cp fuzzyclock_config.example.yaml fuzzyclock_config.yaml`), edit the copy and restart the service:
 
 ```yaml
 dialect: shakespeare
@@ -98,7 +98,7 @@ Pick one with `--font`:
 python3 fuzzyclock_preview.py --dry-run --font roboto-slab --output preview.png
 ```
 
-The daemon reads the same setting from the `font:` field in `fuzzyclock_config.yaml`:
+The daemon reads the same setting from the `font:` field in `fuzzyclock_config.yaml` (or the example, until you have one):
 
 ```yaml
 font: roboto-slab
@@ -125,7 +125,7 @@ The default `auto` setting picks the frame that best complements the active font
 python3 fuzzyclock_preview.py --dry-run --font dejavu --frame retro --output preview.png
 ```
 
-The daemon reads the same setting from the `frame:` field in `fuzzyclock_config.yaml`:
+The daemon reads the same setting from the `frame:` field in `fuzzyclock_config.yaml` (or the example):
 
 ```yaml
 frame: auto   # auto, bauhaus, rustic, sketchy, or retro
@@ -135,14 +135,14 @@ Unknown values fall back to `auto` with a warning in the daemon log.
 
 ## After-hours mode
 
-After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.yaml` (the same file that holds `dialect:` and `font:`):
+After dark, the clock flips to white-on-black so it doesn't glare at you across the room. The daemon computes local sunrise and sunset itself (no network calls) using the coordinates in `fuzzyclock_config.yaml` (the same file that holds `dialect:` and `font:`; the example's are Greenwich):
 
 ```yaml
 latitude: 51.4769
 longitude: 0.0005
 ```
 
-Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is missing or malformed, after-hours mode stays off too — as it does for a value that isn't a number, or one outside the real ranges (latitude −90…90, longitude −180…180). A bad coordinate logs a warning and disables after-hours rather than taking the daemon down, so a typo here can't leave the clock stuck in a restart loop.
+Edit those two numbers to match your location and restart the service. Leave them out (or set both to `null`) to disable after-hours mode and keep the plain day/night behaviour. If the file is malformed, or neither it nor the example exists, after-hours mode stays off too — as it does for a value that isn't a number, or one outside the real ranges (latitude −90…90, longitude −180…180). A bad coordinate logs a warning and disables after-hours rather than taking the daemon down, so a typo here can't leave the clock stuck in a restart loop.
 
 The schedule becomes: normal clock from sunrise (or wake-up at 7 AM, whichever is later) to sunset, inverted clock from sunset to bedtime at 11 PM, then "Goodnight" until 7 AM. Mode transitions are checked every minute, so the swap happens within a minute of the sun crossing the horizon.
 

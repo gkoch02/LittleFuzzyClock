@@ -1,8 +1,9 @@
 """Unit tests for the pure helpers in fuzzyclock_daemon.
 
 Covers `current_mode` (across the day/night/after-hours branch table),
-`_sleep_to_next_tick` (boundary math), `_load_config` (YAML config-file
-error paths and dialect/font/coordinate validation), the button thread's
+`_sleep_to_next_tick` (boundary math), `_config_path` (local settings file or
+the shipped example), `_load_config` (YAML config-file error paths and
+dialect/font/coordinate validation), the button thread's
 press classification and supervisor restart logic, the shutdown procedure's
 independent guards, the cross-thread render counter, and the EPD-touching
 helpers via a fake panel.
@@ -285,6 +286,57 @@ class LoadConfigTests(unittest.TestCase):
                     _dialect, _font, _frame, lat, lon = d._load_config(path)
                 self.assertEqual(lat, lat_val)
                 self.assertEqual(lon, lon_val)
+
+
+class ConfigPathTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.local = os.path.join(self.tmp.name, "fuzzyclock_config.yaml")
+        self.example = os.path.join(self.tmp.name, "fuzzyclock_config.example.yaml")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_local_file_wins_when_present(self):
+        cases = (
+            ("local and example", True, True, self.local),
+            ("local only", True, False, self.local),
+            ("example only", False, True, self.example),
+            # Neither: the example path, so _load_config warns and runs on defaults.
+            ("neither", False, False, self.example),
+        )
+        for label, has_local, has_example, expected in cases:
+            with self.subTest(label):
+                for path, present in ((self.local, has_local), (self.example, has_example)):
+                    if present:
+                        with open(path, "w") as f:
+                            f.write("dialect: classic\n")
+                    elif os.path.exists(path):
+                        os.remove(path)
+                self.assertEqual(d._config_path(self.local, self.example), expected)
+
+    def test_defaults_are_next_to_the_daemon(self):
+        here = os.path.dirname(os.path.abspath(d.__file__))
+        self.assertEqual(d.CONFIG_PATH, os.path.join(here, "fuzzyclock_config.yaml"))
+        self.assertEqual(
+            d.EXAMPLE_CONFIG_PATH, os.path.join(here, "fuzzyclock_config.example.yaml")
+        )
+
+    def test_shipped_example_loads_cleanly(self):
+        with self.assertNoLogs("root", level="WARNING"):
+            dialect, font, frame, lat, lon = d._load_config(d.EXAMPLE_CONFIG_PATH)
+        self.assertIn(dialect, d.DIALECTS)
+        self.assertIn(font, d.FONT_VARIANTS)
+        self.assertEqual(frame, d.AUTO_FRAME)
+        self.assertIsNotNone(lat)
+        self.assertIsNotNone(lon)
+
+    def test_settings_file_is_not_tracked_but_example_is(self):
+        repo = os.path.dirname(os.path.abspath(d.__file__))
+        with open(os.path.join(repo, ".gitignore")) as f:
+            ignored = [line.strip() for line in f]
+        self.assertIn("/fuzzyclock_config.yaml", ignored)
+        self.assertTrue(os.path.exists(d.EXAMPLE_CONFIG_PATH))
 
 
 class ResolveFontTests(unittest.TestCase):

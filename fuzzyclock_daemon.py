@@ -80,7 +80,17 @@ SHORT_PRESS_MAX_SECONDS = 2.0  # anything between MAX and LONG_PRESS is ignored
 GOODNIGHT_FONT = "unifraktur-maguntia"
 
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fuzzyclock_config.yaml")
+# The settings live in a local, gitignored CONFIG_PATH; the repo ships only
+# EXAMPLE_CONFIG_PATH, so `git pull` never meets an edited tracked file.
+# Without a local copy the daemon runs on the example.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(_HERE, "fuzzyclock_config.yaml")
+EXAMPLE_CONFIG_PATH = os.path.join(_HERE, "fuzzyclock_config.example.yaml")
+
+
+def _config_path(local=CONFIG_PATH, example=EXAMPLE_CONFIG_PATH):
+    """Return the settings file to read: the local one if it exists, else the example."""
+    return local if os.path.exists(local) else example
 
 
 def _load_config(path=CONFIG_PATH):
@@ -614,7 +624,9 @@ def main():
         )
 
     global DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE, AFTER_HOURS_ENABLED
-    DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE = _load_config()
+    config_path = _config_path()
+    logging.info("Reading settings from %s.", config_path)
+    DIALECT, FONT_VARIANT, FRAME_VARIANT, LATITUDE, LONGITUDE = _load_config(config_path)
     AFTER_HOURS_ENABLED = LATITUDE is not None and LONGITUDE is not None
     _init_fonts()
 
