@@ -15,7 +15,7 @@ _PI_PILLOW = "9.4.0"
 def _floor_pins():
     with open(os.path.join(_REPO, ".github", "workflows", "test.yml")) as f:
         workflow = yaml.safe_load(f)
-    return workflow["jobs"]["test-pillow-floor"]["strategy"]["matrix"]["pillow"]
+    return workflow["jobs"]["pillow-versions"]["strategy"]["matrix"]["pillow"]
 
 
 def _requirements_floor():
@@ -42,6 +42,17 @@ class PillowFloorTests(unittest.TestCase):
         with open(os.path.join(_REPO, ".github", "workflows", "test.yml")) as f:
             workflow = yaml.safe_load(f)
         self.assertEqual(list(workflow["jobs"]["test"]["strategy"]["matrix"]), ["python-version"])
+
+    def test_floor_gate_reports_the_required_context(self):
+        # The ruleset requires the context "test-pillow-floor"; a matrix job
+        # reports "name (pin)" instead, so a plain gate job carries the name and
+        # fails (not skips) when any pin fails.
+        with open(os.path.join(_REPO, ".github", "workflows", "test.yml")) as f:
+            workflow = yaml.safe_load(f)
+        gate = workflow["jobs"]["test-pillow-floor"]
+        self.assertNotIn("strategy", gate)
+        self.assertEqual(gate["needs"], "pillow-versions")
+        self.assertEqual(gate["if"], "always()")
 
 
 if __name__ == "__main__":

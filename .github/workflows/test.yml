@@ -62,8 +62,11 @@ jobs:
   # .github/rulesets/main.json requires the contexts "test (3.11)" and
   # "test (3.12)" by exact name. A required context that never reports blocks
   # every merge (see .github/rulesets/README.md), and bypass_actors is empty.
-  # This job's own matrix is fine: its contexts aren't required.
-  test-pillow-floor:
+  # Its matrix runs as "Pillow <version>"; the gate job below reports the one
+  # context the live ruleset requires, "test-pillow-floor", which a bare matrix
+  # job can't (its contexts carry the version in parentheses).
+  pillow-versions:
+    name: Pillow ${{ matrix.pillow }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -95,3 +98,14 @@ jobs:
 
       - name: Run tests
         run: python -m unittest discover -v
+
+  # The required "test-pillow-floor" context: passes only when every Pillow pin
+  # passed. if: always() so a failed or cancelled pin fails this job instead of
+  # skipping it (a skipped required check counts as passing).
+  test-pillow-floor:
+    needs: pillow-versions
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every Pillow pin passed
+        run: test "${{ needs.pillow-versions.result }}" = "success"
