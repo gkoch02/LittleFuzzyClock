@@ -166,7 +166,7 @@ For a dead SD card or a new Pi. Allow half an hour.
 Left alone, the Pi will run for years. What breaks it is change:
 
 - **A big Raspberry Pi OS upgrade** (a new Debian version) brings a new Python and new versions of the libraries the clock uses (`python3-pil`, `python3-yaml`, `python3-gpiozero`). There's no separate environment to strand, so the clock usually survives, but the drawing library can change underneath it. Symptom: the service fails with an error from `PIL`. Simplest of all: don't do major upgrades on an appliance that works.
-- **The drawing library (Pillow)** on the Pi is the one Debian ships, which is older than the one the tests on GitHub use. A code change that passes those tests could still use something the Pi's version lacks. Try a change on the Pi before relying on it.
+- **The drawing library (Pillow)** on the Pi is the one Debian ships (9.4 on Bookworm), much older than the one most of the tests on GitHub use. One test job runs on that exact version, so a change that passes on GitHub works with the Pi's Pillow. A new Debian version brings a newer Pillow, and that job's pin should move with it.
 - **The SD card** wears out. A spare card and the backup above make this a short job.
 
 The clock needs no internet once it's running: sunset is worked out on the Pi.

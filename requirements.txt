@@ -3,6 +3,8 @@
 # Upper bounds guard against future major-version breakage; widen as
 # newer majors are validated against the daemon and --dry-run.
 # Pillow 13 (the first release clear of the open advisories) needs Python 3.11+.
+# The Pi runs Debian Bookworm's Pillow 9.4 from apt instead; CI tests both
+# (pillow-versions in .github/workflows/test.yml).
 Pillow>=13,<14
 PyYAML>=6,<7
 gpiozero>=1.6,<3

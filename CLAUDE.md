@@ -55,7 +55,7 @@ Rules for Claude Code sessions on this repo. User-facing usage is in the README.
 
 ## CI and deploy
 
-- `.github/rulesets/main.json` requires the checks `lint`, `test (3.11)` and `test (3.12)` by exact name, with no bypass. Never rename those jobs or add a matrix axis to `test`, or `main` locks. That is why `test-pillow-floor` is a separate job; keep its exact Pillow pin in step with `requirements.txt`.
+- `.github/rulesets/main.json` requires the checks `lint`, `test (3.11)` and `test (3.12)` by exact name, with no bypass. Never rename those jobs or add a matrix axis to `test`, or `main` locks. That is why the Pillow pins run in their own `pillow-versions` job, whose `test-pillow-floor` gate job reports the context the live ruleset also requires. Its pins are Debian Bookworm's `python3-pil` (9.4.0, what the Pi runs) and the `requirements.txt` floor; keep each in step with its source.
 - Keep ruff's `target-version = "py39"`. Bumping it lets UP017 rewrite `timezone.utc` → `UTC`, which breaks 3.9/3.10.
 - `deploy.sh` installs Python deps through apt, not pip (PEP 668). It is idempotent and substitutes `__REPO_DIR__` / `__USER__` in the unit file. Don't hardcode `/home/pi`.
 - There is no `.timer`. The unit has `Restart=always`, and the daemon handles day/night itself.

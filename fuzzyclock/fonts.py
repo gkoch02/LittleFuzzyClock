@@ -354,8 +354,9 @@ def pick_random_font():
 def _has_weight_axis(font):
     """True for a variable font with a weight axis; False for static fonts.
 
-    Checked before set_variation_by_name: on Pillow 10.0.0 that call segfaults
-    on a variable font with no named instances (Jaro's only axis is optical size).
+    Checked before set_variation_by_name: on Pillow 9.4.0 (the Pi's) and 10.0.0
+    that call, and get_variation_names, segfault on a variable font with no named
+    instances (Jaro's only axis is optical size).
     """
     try:
         axes = font.get_variation_axes()

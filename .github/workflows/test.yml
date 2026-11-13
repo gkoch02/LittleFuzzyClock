@@ -62,8 +62,23 @@ jobs:
   # .github/rulesets/main.json requires the contexts "test (3.11)" and
   # "test (3.12)" by exact name. A required context that never reports blocks
   # every merge (see .github/rulesets/README.md), and bypass_actors is empty.
-  test-pillow-floor:
+  # Its matrix runs as "Pillow <version>"; the gate job below reports the one
+  # context the live ruleset requires, "test-pillow-floor", which a bare matrix
+  # job can't (its contexts carry the version in parentheses).
+  pillow-versions:
+    name: Pillow ${{ matrix.pillow }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Exact pins, not ranges: pip resolves the NEWEST version satisfying a
+        # specifier, so a range would test the newest release in it and miss an
+        # API the older one lacks.
+        #   9.4.0  — Debian Bookworm's python3-pil, which deploy.sh installs on
+        #            the Pi with apt. The oldest Pillow the code must run on.
+        #   13.0.0 — the floor of requirements.txt (off-Pi installs); keep it in
+        #            step with that file.
+        pillow: ["9.4.0", "13.0.0"]
     steps:
       - uses: actions/checkout@v7
 
@@ -73,17 +88,8 @@ jobs:
           # 3.11 matches Raspberry Pi OS Bookworm, the deployment target.
           python-version: "3.11"
 
-      - name: Install the oldest supported Pillow
-        # The `test` jobs install "Pillow>=13,<14", which always resolves to the
-        # newest release — so code using an API that only exists in the latest
-        # Pillow passes CI and breaks anyone on an older one still allowed by
-        # requirements.txt. This job pins that floor so the range is honest.
-        #
-        # An exact pin, not a range: pip resolves the NEWEST version satisfying
-        # a specifier, so "Pillow>=13,<14" installs the newest 13.x and an API
-        # added after 13.0.0 would still pass while breaking a user on 13.0.0 — which
-        # requirements.txt permits. Keep this in step with that floor.
-        run: pip install "Pillow==13.0.0" "PyYAML>=6,<7"
+      - name: Install Pillow ${{ matrix.pillow }}
+        run: pip install "Pillow==${{ matrix.pillow }}" "PyYAML>=6,<7"
 
       - name: Show the resolved Pillow version
         # This job's whole value is testing a specific old Pillow, so state which
@@ -92,3 +98,14 @@ jobs:
 
       - name: Run tests
         run: python -m unittest discover -v
+
+  # The required "test-pillow-floor" context: passes only when every Pillow pin
+  # passed. if: always() so a failed or cancelled pin fails this job instead of
+  # skipping it (a skipped required check counts as passing).
+  test-pillow-floor:
+    needs: pillow-versions
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every Pillow pin passed
+        run: test "${{ needs.pillow-versions.result }}" = "success"
