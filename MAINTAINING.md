@@ -54,7 +54,7 @@ The settings, each listed with every option in the file's own comments:
 
 | Setting | What it does | Example |
 |---|---|---|
-| `dialect` | The wording: `classic`, `shakespeare`, `klingon`, `belter`, `german`, `hal`, `cthulhu`, `latin` | `dialect: shakespeare` |
+| `dialect` | The wording: `classic`, `shakespeare`, `klingon`, `belter`, `german`, `spanish`, `french`, `hal`, `cthulhu`, `latin` | `dialect: shakespeare` |
 | `font` | The typeface, or `random` for a new one each time the words change. `docs/fonts.md` shows them all | `font: literata` |
 | `frame` | The border: `auto` (matches the font), `bauhaus`, `rustic`, `sketchy`, `retro` | `frame: auto` |
 | `latitude`, `longitude` | Where you are, for sunset; set both to `null` to turn after-hours mode off | `latitude: 51.4769` |

@@ -3,7 +3,8 @@
 # so `git pull` leaves it alone) and edit the copy, not this file.
 
 # Time phrasing.
-# Options: classic, shakespeare, klingon, belter, german, hal, cthulhu, latin
+# Options: classic, shakespeare, klingon, belter, german, spanish, french,
+#   hal, cthulhu, latin
 dialect: classic
 
 # Font variant. For the full list and previews see docs/fonts.md. Grouped by
