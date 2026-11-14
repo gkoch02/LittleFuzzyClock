@@ -846,6 +846,22 @@ class DrawClockTests(_FontFixtureMixin, unittest.TestCase):
         self.assertEqual([c[0] for c in epd.calls], ["partial"])
         self.assertGreater(_black_fraction(epd.last_image), 0.5)
 
+    def test_hour_first_dialect_keys_the_font_on_both_lines(self):
+        # Two renders five minutes apart in one hour must hand _resolve_font
+        # different keys, in a dialect whose top line is the hour.
+        times = iter([datetime(2026, 4, 25, 9, 15), datetime(2026, 4, 25, 9, 20)])
+        fake_datetime = mock.Mock(now=lambda: next(times))
+        with (
+            mock.patch.object(d, "DIALECT", "spanish"),
+            mock.patch.object(d, "datetime", fake_datetime),
+            mock.patch.object(d, "_resolve_font", return_value="dejavu") as resolve,
+        ):
+            d.draw_clock(_FakeEPD(), invert=False)
+            d.draw_clock(_FakeEPD(), invert=False)
+        first, second = (call.args[0] for call in resolve.call_args_list)
+        self.assertEqual(first, "las nueve y cuarto")
+        self.assertEqual(second, "las nueve y veinte")
+
     def test_frame_change_reseeds_base_before_partial(self):
         # Random-font + auto-frame can shift the frame between renders. If
         # draw_clock didn't reseed the partial-refresh base in that case,
