@@ -7,7 +7,8 @@ import unittest
 
 from fuzzyclock_core import DIALECTS, fuzzy_time
 
-# (hour, minute, phrase, hour_str) per dialect. Every dialect pins 9:58 and
+# (hour, minute, top line, bottom line) per dialect: phrase then hour, or
+# hour then phrase for the hour-first ones. Every dialect pins 9:58 and
 # 23:58: the min(..., 11) cap must keep minutes 57-59 on "almost [next hour]".
 CASES = {
     "classic": [
@@ -101,6 +102,36 @@ CASES = {
         (12, 0, "modo post", "hora XII p.m."),
         (23, 58, "fere", "hora XII a.m."),
     ],
+    "spanish": [
+        (9, 0, "las nueve", "y pico"),
+        (9, 15, "las nueve", "y cuarto"),
+        (9, 30, "las nueve", "y media"),
+        (9, 35, "las diez", "menos veinticinco"),
+        (9, 45, "las diez", "menos cuarto"),
+        (9, 58, "casi", "las diez"),
+        (23, 58, "casi", "las doce"),
+        (0, 0, "las doce", "y pico"),
+        (1, 15, "la una", "y cuarto"),
+        (12, 45, "la una", "menos cuarto"),
+        (0, 58, "casi", "la una"),
+    ],
+    "french": [
+        (9, 0, "neuf heures", "passées"),
+        (9, 5, "neuf heures", "cinq"),
+        (9, 15, "neuf heures", "et quart"),
+        (9, 30, "neuf heures", "et demie"),
+        (9, 45, "dix heures", "moins le quart"),
+        (9, 58, "presque", "dix heures"),
+        (23, 58, "presque", "minuit"),
+        (11, 58, "presque", "midi"),
+        (12, 0, "midi", "passé"),
+        (12, 30, "midi", "et demi"),
+        (0, 30, "minuit", "et demi"),
+        (23, 40, "minuit", "moins vingt"),
+        (1, 0, "une heure", "passée"),
+        (13, 30, "une heure", "et demie"),
+        (12, 45, "une heure", "moins le quart"),
+    ],
 }
 
 
@@ -131,15 +162,18 @@ class FuzzyTimeTableTests(unittest.TestCase):
 
 class AllDialectsRoundtripTests(unittest.TestCase):
     def test_every_minute_every_dialect(self):
-        # Every dialect must produce a valid phrase from its own table for
-        # every minute of every hour, with no exceptions.
+        # Every dialect must produce a valid phrase from its own table (or
+        # its agreeing form) and a non-empty hour, for every minute.
         for dialect, spec in DIALECTS.items():
             valid = set(spec["phrases"])
+            for forms in spec.get("agree", {}).values():
+                valid.update(forms.values())
             for h in range(24):
                 for m in range(60):
-                    phrase, hour_str = fuzzy_time(h, m, dialect)
+                    top, bottom = fuzzy_time(h, m, dialect)
+                    self.assertTrue(top and bottom, f"{dialect} {h:02d}:{m:02d}")
+                    phrase = top if top in valid else bottom
                     self.assertIn(phrase, valid, f"{dialect} {h:02d}:{m:02d}")
-                    self.assertTrue(hour_str, f"{dialect} {h:02d}:{m:02d}")
 
     def test_unknown_dialect_raises(self):
         with self.assertRaises(KeyError):

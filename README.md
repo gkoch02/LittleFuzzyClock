@@ -70,6 +70,8 @@ The dialects, each reading 9:30 so you can compare them:
 | `klingon`              | `half past / Hut rep`              | Real tlhIngan Hol numerals; "rep" is Klingon for *hour*.           |
 | `belter`               | `half past / nine bell, ya`        | Lang Belta creole from *The Expanse*; nautical "bell" for time.    |
 | `german`               | `halb / zehn`                      | Standard High German; "halb" anchors on the *next* hour.           |
+| `spanish`              | `las nueve / y media`              | Spain's usage; the hour comes first; "casi" leads the last slot.   |
+| `french`               | `neuf heures / et demie`           | The hour comes first; "midi" and "minuit" for twelve.              |
 | `hal`                  | `MIDPOINT / 0900 HOURS`            | HAL 9000 mission-control patter; 24h numeric for AM/PM clarity.    |
 | `cthulhu`              | `the half-hour / the ninth hour`   | Lovecraftian dread; ordinal hours; climaxes with "the stars are right". |
 | `latin`                | `media post / hora IX a.m.`        | Roman-numeral hours; real Latin prepositions.                      |

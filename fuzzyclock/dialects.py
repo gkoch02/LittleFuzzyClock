@@ -254,6 +254,84 @@ DIALECTS = {
         },
         "format_hour": lambda hw, is_pm: f"hora {hw} {'p.m.' if is_pm else 'a.m.'}",
     },
+    "spanish": {
+        # Spain's usage ("las diez menos cuarto"; much of Latin America says
+        # "cuarto para las diez"). The hour comes first, so `hour_first` puts
+        # it on the top line and the phrase below; "casi" still leads.
+        # "y pico" is "and a bit". No am/pm, as in German.
+        "phrases": [
+            "y pico",
+            "y cinco",
+            "y diez",
+            "y cuarto",
+            "y veinte",
+            "y veinticinco",
+            "y media",
+            "menos veinticinco",
+            "menos veinte",
+            "menos cuarto",
+            "menos diez",
+            "casi",
+        ],
+        "hours": {
+            1: "la una",
+            2: "las dos",
+            3: "las tres",
+            4: "las cuatro",
+            5: "las cinco",
+            6: "las seis",
+            7: "las siete",
+            8: "las ocho",
+            9: "las nueve",
+            10: "las diez",
+            11: "las once",
+            12: "las doce",
+        },
+        "hour_first": True,
+        "format_hour": lambda hour_word, is_pm: hour_word,
+    },
+    "french": {
+        # Hour first, like Spanish. Twelve is "midi" or "minuit", which take
+        # no "heures" and are masculine, and "une heure" is singular: `agree`
+        # holds the phrases that change after them.
+        "phrases": [
+            "passées",
+            "cinq",
+            "dix",
+            "et quart",
+            "vingt",
+            "vingt-cinq",
+            "et demie",
+            "moins vingt-cinq",
+            "moins vingt",
+            "moins le quart",
+            "moins dix",
+            "presque",
+        ],
+        "hours": {
+            1: "une heure",
+            2: "deux heures",
+            3: "trois heures",
+            4: "quatre heures",
+            5: "cinq heures",
+            6: "six heures",
+            7: "sept heures",
+            8: "huit heures",
+            9: "neuf heures",
+            10: "dix heures",
+            11: "onze heures",
+            12: "midi",
+        },
+        "hour_first": True,
+        "agree": {
+            "une heure": {"passées": "passée"},
+            "midi": {"passées": "passé", "et demie": "et demi"},
+            "minuit": {"passées": "passé", "et demie": "et demi"},
+        },
+        "format_hour": lambda hour_word, is_pm: (
+            "minuit" if hour_word == "midi" and not is_pm else hour_word
+        ),
+    },
 }
 
 DEFAULT_DIALECT = "classic"
@@ -278,6 +356,12 @@ _validate_dialects(DIALECTS)
 
 
 def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
+    """The time as the display's two lines, top then bottom.
+
+    Most dialects read phrase then hour ("quarter past" / "nine am"). An
+    `hour_first` dialect reads hour then phrase ("las nueve" / "y cuarto"),
+    except on the "almost" slot, whose word still leads ("casi" / "las diez").
+    """
     spec = DIALECTS[dialect]
     # Minutes 58-59 round to 12; cap them onto index 11 ("almost [next hour]").
     rounded = min(int(round(minute / 5.0)), 11)
@@ -289,4 +373,7 @@ def fuzzy_time(hour, minute, dialect=DEFAULT_DIALECT):
     display_hour = hour if rounded < advance_at else (hour + 1) % 24
     hour_12 = display_hour % 12 or 12
     is_pm = display_hour >= 12
-    return word, spec["format_hour"](spec["hours"][hour_12], is_pm)
+    hour_text = spec["format_hour"](spec["hours"][hour_12], is_pm)
+    if not spec.get("hour_first") or rounded == 11:
+        return word, hour_text
+    return hour_text, spec.get("agree", {}).get(hour_text, {}).get(word, word)

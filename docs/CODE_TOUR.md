@@ -19,7 +19,7 @@ The rest: `fonts/` (the typefaces, copied in), `waveshare_epd/` (the panel maker
 
 | Word | Means |
 |---|---|
-| **fuzzy time** | The time in words, rounded to five minutes: "twenty past", "almost". `fuzzy_time()` returns two lines, the phrase and the hour |
+| **fuzzy time** | The time in words, rounded to five minutes: "twenty past", "almost". `fuzzy_time()` returns the display's two lines: the phrase and the hour, or the hour and the phrase in a dialect that says the hour first (`spanish`, `french`) |
 | **phrase**, **hour line** | The two lines of the clock face: "quarter past" / "nine am" |
 | **dialect** | A set of phrases and hour words: `classic`, `shakespeare`, `klingon`, … Each is an entry in `DIALECTS` in `fuzzyclock/dialects.py` |
 | **`hour_advance_at`** | Which five-minute step the hour line moves on to the next hour ("twenty-five *to ten*"). Most dialects switch at 35 past; German at 25 past |
@@ -51,7 +51,7 @@ should_render = last_state != mode or datetime.now().minute % UPDATE_MINUTES == 
 
 15 is a multiple of 5, so yes.
 
-**4. Pick the words.** `draw_clock()` calls `fuzzy_time(9, 15, "classic")` in `fuzzyclock/dialects.py`. It rounds the minute to the nearest five (15 → step 3), looks up step 3 in the dialect's list of phrases ("quarter past"), and works out the hour line ("nine am"). Past `hour_advance_at` it uses the next hour instead, so 9:40 is "twenty to ten am".
+**4. Pick the words.** `draw_clock()` calls `fuzzy_time(9, 15, "classic")` in `fuzzyclock/dialects.py`. It rounds the minute to the nearest five (15 → step 3), looks up step 3 in the dialect's list of phrases ("quarter past"), and works out the hour line ("nine am"). Past `hour_advance_at` it uses the next hour instead, so 9:40 is "twenty to ten am". A dialect marked `hour_first` gets the two lines the other way round: "las nueve" over "y cuarto".
 
 **5. Pick the font and frame.** `_resolve_font()` returns the configured font, or deals the next one from the bag under `font: random`. `_resolve_frame()` turns `auto` into the frame for that font's category. If the frame differs from the last one, `reset_base_image()` sends a fresh base image first.
 

@@ -506,7 +506,8 @@ def draw_clock(epd, invert=False):
         now = datetime.now()
         # Resolve the font before render so random-mode picks a fresh variant
         # whenever the phrase rolls over to the next 5-minute bucket.
-        phrase, _ = fuzzy_time(now.hour, now.minute, DIALECT)
+        # Both lines: an hour-first dialect's top line holds for the hour.
+        phrase = " ".join(fuzzy_time(now.hour, now.minute, DIALECT))
         variant = _resolve_font(phrase)
         frame = _resolve_frame(variant)
         if frame != _last_applied_frame:
