@@ -30,7 +30,8 @@
         "required_status_checks": [
           {"context": "lint"},
           {"context": "test (3.11)"},
-          {"context": "test (3.12)"}
+          {"context": "test (3.12)"},
+          {"context": "test-pillow-floor"}
         ]
       }
     }
