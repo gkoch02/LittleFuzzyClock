@@ -161,7 +161,7 @@ python3 -m unittest discover
 python3 -m unittest tests.test_fuzzy_time
 ```
 
-The same suite runs in CI on every push and pull request — see `.github/workflows/test.yml`. The repo's layout is described in [`CLAUDE.md`](CLAUDE.md).
+The same suite runs in CI on pull requests and pushes to `main` — see `.github/workflows/test.yml`. The repo's layout is described in [`CLAUDE.md`](CLAUDE.md).
 
 ## Under the hood
 
